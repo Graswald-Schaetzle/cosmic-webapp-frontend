@@ -1,0 +1,83 @@
+name: Feature Request
+description: Neue Funktion oder Verbesserung vorschlagen
+title: "[Feature]: "
+labels: ["enhancement", "needs-discussion"]
+projects: []
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke für deinen Verbesserungsvorschlag!
+
+  - type: dropdown
+    id: thema
+    attributes:
+      label: Thema / Bereich
+      description: Welchem Bereich soll diese Funktion zugeordnet werden?
+      options:
+        - Matterport 3D-Visualisierung
+        - Aufgabenverwaltung (Tasks)
+        - Dokumentenverwaltung
+        - Benachrichtigungen
+        - Authentifizierung
+        - Kalender
+        - Dashboard
+        - Navigation / Menü
+        - Performance
+        - UI / UX
+        - API-Integration
+        - Neuer Bereich
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / Motivation
+      description: Welches Problem soll diese Funktion lösen?
+      placeholder: Als Nutzer möchte ich..., weil...
+    validations:
+      required: true
+
+  - type: textarea
+    id: loesung
+    attributes:
+      label: Gewünschte Lösung
+      description: Wie stellst du dir die Lösung vor?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternativen
+    attributes:
+      label: Alternativen
+      description: Gibt es alternative Lösungsansätze, die du bedacht hast?
+
+  - type: dropdown
+    id: prioritaet
+    attributes:
+      label: Priorität
+      options:
+        - Muss-haben (MVP)
+        - Sollte vorhanden sein
+        - Wäre schön (Nice-to-have)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: aufwand
+    attributes:
+      label: Geschätzter Aufwand
+      options:
+        - Klein (< 1 Tag)
+        - Mittel (1-3 Tage)
+        - Groß (1 Woche)
+        - Sehr groß (> 1 Woche)
+
+  - type: textarea
+    id: kontext
+    attributes:
+      label: Zusätzlicher Kontext
+      description: Mockups, Referenzen, weitere Informationen

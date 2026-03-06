@@ -1,0 +1,64 @@
+name: Aufgabe / Task
+description: Entwicklungsaufgabe oder Refactoring
+title: "[Task]: "
+labels: ["task"]
+projects: []
+assignees: []
+
+body:
+  - type: dropdown
+    id: thema
+    attributes:
+      label: Thema / Sprint-Bereich
+      options:
+        - Matterport 3D-Visualisierung
+        - Aufgabenverwaltung (Tasks)
+        - Dokumentenverwaltung
+        - Benachrichtigungen
+        - Authentifizierung
+        - Kalender
+        - Dashboard
+        - Refactoring / Code-Qualität
+        - Testing
+        - DevOps / CI/CD
+        - Performance
+        - Dokumentation
+    validations:
+      required: true
+
+  - type: textarea
+    id: beschreibung
+    attributes:
+      label: Aufgabenbeschreibung
+      description: Was muss getan werden?
+    validations:
+      required: true
+
+  - type: textarea
+    id: akzeptanzkriterien
+    attributes:
+      label: Akzeptanzkriterien
+      description: Wann gilt die Aufgabe als erledigt?
+      placeholder: |
+        - [ ] Kriterium 1
+        - [ ] Kriterium 2
+    validations:
+      required: true
+
+  - type: dropdown
+    id: prioritaet
+    attributes:
+      label: Priorität
+      options:
+        - Kritisch
+        - Hoch
+        - Mittel
+        - Niedrig
+    validations:
+      required: true
+
+  - type: input
+    id: story_points
+    attributes:
+      label: Story Points (optional)
+      placeholder: z.B. 3

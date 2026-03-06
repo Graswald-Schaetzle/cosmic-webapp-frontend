@@ -1,0 +1,85 @@
+name: Bug Report
+description: Einen Fehler im Frontend melden
+title: "[Bug]: "
+labels: ["bug", "triage"]
+projects: []
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke, dass du dir die Zeit nimmst, diesen Fehler zu melden!
+
+  - type: dropdown
+    id: thema
+    attributes:
+      label: Thema / Bereich
+      description: Welcher Teil der Anwendung ist betroffen?
+      options:
+        - Matterport 3D-Visualisierung
+        - Aufgabenverwaltung (Tasks)
+        - Dokumentenverwaltung
+        - Benachrichtigungen
+        - Authentifizierung (Clerk)
+        - Kalender
+        - Dashboard
+        - Navigation / Menü
+        - UI / Layout
+        - API / Datenabruf
+        - Sonstiges
+    validations:
+      required: true
+
+  - type: textarea
+    id: beschreibung
+    attributes:
+      label: Fehlerbeschreibung
+      description: Was ist passiert? Was hast du erwartet?
+      placeholder: Beschreibe den Fehler so genau wie möglich
+    validations:
+      required: true
+
+  - type: textarea
+    id: schritte
+    attributes:
+      label: Schritte zur Reproduktion
+      description: Wie kann der Fehler reproduziert werden?
+      placeholder: |
+        1. Gehe zu '...'
+        2. Klicke auf '...'
+        3. Fehler erscheint
+    validations:
+      required: true
+
+  - type: textarea
+    id: erwartetes_verhalten
+    attributes:
+      label: Erwartetes Verhalten
+      description: Was sollte eigentlich passieren?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: prioritaet
+    attributes:
+      label: Priorität
+      options:
+        - Kritisch (Anwendung unbenutzbar)
+        - Hoch (wichtige Funktion kaputt)
+        - Mittel (Workaround vorhanden)
+        - Niedrig (kosmetisch / minor)
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser & Version
+      placeholder: z.B. Chrome 122, Firefox 123
+
+  - type: textarea
+    id: kontext
+    attributes:
+      label: Zusätzlicher Kontext
+      description: Screenshots, Fehlermeldungen, Logs etc.
