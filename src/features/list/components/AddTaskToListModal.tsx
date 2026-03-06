@@ -92,7 +92,7 @@ export const AddTaskToListModal = ({
         case 'Status':
           return filterValues.some(value => task.status === value);
         case 'Task type':
-          return filterValues.some(value => task.activity?.name === value);
+          return filterValues.some(value => task.task_type === value);
         case 'Assignee':
           return filterValues.some(
             value => (task.assignee?.first_name + ' ' + task.assignee?.last_name).trim() === value
@@ -104,8 +104,8 @@ export const AddTaskToListModal = ({
         case 'Room':
           return filterValues.some(value => task.locations?.room_id?.toString() === value);
         case 'Due date':
-          if (!task.dueDate) return false;
-          const taskDate = new Date(task.dueDate);
+          if (!task.due_at) return false;
+          const taskDate = new Date(task.due_at);
           const today = new Date();
 
           return filterValues.some(filterValue => {

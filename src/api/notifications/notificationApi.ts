@@ -6,7 +6,7 @@ export interface Notification {
   created_at: string;
   name: string;
   text: string;
-  is_new: boolean;
+  read_at: string | null;
   type: string;
   user_id: number;
   room_id: number;
@@ -20,18 +20,18 @@ export interface NotificationRoom {
   room_id: number;
   room_name: string;
   notifications: Notification[];
-  newCount: number;
+  unreadCount: number;
 }
 
 export interface NotificationFloor {
   floor_id: number;
   floor_name: string;
-  newCount: number;
+  unreadCount: number;
   rooms: NotificationRoom[];
 }
 
 export interface NotificationsResponse {
-  totalNewCount: number;
+  totalUnreadCount: number;
   floors: NotificationFloor[];
 }
 
@@ -50,7 +50,6 @@ export interface CreateNotificationPayload {
   name: string;
   text: string;
   type: string;
-  is_new: boolean;
   room_id?: number;
   location_id?: string;
   document_id?: number;

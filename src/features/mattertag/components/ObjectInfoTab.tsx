@@ -33,7 +33,7 @@ export const ObjectInfoTab = ({ tag, handleClose, locationData }: ObjectInfoTabP
           id: task.task_id,
           name: task.title || 'Untitled Task',
           status: task.status || 'Unknown Status',
-          activity: task.activity?.name || 'Unknown Activity',
+          activity: task.task_type || 'Unknown Activity',
         };
       })
     : [];

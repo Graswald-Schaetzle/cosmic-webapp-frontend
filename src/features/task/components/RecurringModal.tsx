@@ -4,7 +4,7 @@ import { Box } from '@mui/material';
 interface RecurringModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (recurring: string, recurringId: number) => void;
+  onSelect: (recurring: string) => void;
   currentRecurring: string;
   anchorEl: HTMLElement | null;
 }
@@ -69,7 +69,7 @@ export const RecurringModal = ({
           <MenuItem
             key={option.id}
             onClick={() => {
-              onSelect(option.name, option.id);
+              onSelect(option.name);
               onClose();
             }}
             sx={{

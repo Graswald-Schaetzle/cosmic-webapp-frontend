@@ -66,12 +66,9 @@ export interface Task {
   title: string;
   description: string;
   status: string;
-  dueDate: string;
+  due_at: string | null;
   priority: number;
-  activity: {
-    activity_id: number;
-    name: string;
-  };
+  task_type: string | null;
   location: {
     location_id: string;
     created_at: string;

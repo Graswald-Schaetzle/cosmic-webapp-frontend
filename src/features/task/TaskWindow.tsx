@@ -110,8 +110,8 @@ export const TaskWindow = () => {
       let parsedDueDate = '00.00.0000';
       let parsedDueTime = '00:00';
 
-      if (apiTask.dueDate) {
-        const date = new Date(apiTask.dueDate);
+      if (apiTask.due_at) {
+        const date = new Date(apiTask.due_at);
         const day = date.getDate().toString().padStart(2, '0');
         const month = (date.getMonth() + 1).toString().padStart(2, '0');
         const year = date.getFullYear();
@@ -127,7 +127,7 @@ export const TaskWindow = () => {
         apiTask.location?.location_name || apiTask.title.split('|')[1]?.trim() || '';
 
       const newLocalTask = {
-        type: apiTask.activity?.name || 'Select Action',
+        type: apiTask.task_type || 'Select Action',
         name: locationName,
         status: apiTask.status || '',
         assignee: apiTask.assignee
@@ -136,7 +136,7 @@ export const TaskWindow = () => {
         lists: apiTask.lists || [],
         dueTime: parsedDueTime,
         dueDate: parsedDueDate,
-        recurring: apiTask.reccuring?.name || 'No',
+        recurring: apiTask.recurrence_rule || 'No',
         description: apiTask.description || '',
         tags: [],
       };
@@ -236,7 +236,7 @@ export const TaskWindow = () => {
   };
 
   // Live edit handlers
-  const handleTypeSelect = async (newType: string, activityId: number) => {
+  const handleTypeSelect = async (newType: string) => {
     if (!taskId || !taskResponse?.task) return;
 
     // Update local state immediately
@@ -252,7 +252,7 @@ export const TaskWindow = () => {
       await updateTask({
         id: taskId,
         payload: {
-          activity_id: activityId,
+          task_type: newType,
           title: newTitle,
           location_id: taskResponse.task.location.location_id,
         },
@@ -284,8 +284,8 @@ export const TaskWindow = () => {
     setLocalTask(prev => ({ ...prev, name: newName }));
 
     try {
-      // Get current activity name from task response
-      const currentActivityName = taskResponse.task.activity?.name || task.type;
+      // Get current task type from task response
+      const currentActivityName = taskResponse.task.task_type || task.type;
 
       // Create new title without separator
       const newTitle = `${currentActivityName} ${newName}`;
@@ -361,7 +361,7 @@ export const TaskWindow = () => {
       await updateTask({
         id: taskId,
         payload: {
-          user_id: userId,
+          created_by_user_id: userId,
           location_id: taskResponse.task.location.location_id,
         },
       });
@@ -435,7 +435,7 @@ export const TaskWindow = () => {
     setIsListModalOpen(true);
   };
 
-  const handleRecurringSelect = async (newRecurring: string, recurringId: number) => {
+  const handleRecurringSelect = async (newRecurring: string) => {
     if (!taskId || !taskResponse?.task) return;
 
     // Update local state immediately
@@ -445,7 +445,7 @@ export const TaskWindow = () => {
       await updateTask({
         id: taskId,
         payload: {
-          reccuring_id: recurringId,
+          recurrence_rule: newRecurring,
           location_id: taskResponse.task.location.location_id,
         },
       });
@@ -486,7 +486,7 @@ export const TaskWindow = () => {
       await updateTask({
         id: taskId,
         payload: {
-          dueDate: isoDate,
+          due_at: isoDate,
           location_id: taskResponse.task.location.location_id,
         },
       });
@@ -527,7 +527,7 @@ export const TaskWindow = () => {
       await updateTask({
         id: taskId,
         payload: {
-          dueDate: isoDate,
+          due_at: isoDate,
           location_id: taskResponse.task.location.location_id,
         },
       });

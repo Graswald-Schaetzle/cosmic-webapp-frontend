@@ -85,16 +85,16 @@ export const DocumentInfoWindow = () => {
       setTempDocumentName(document.name);
 
       // Set the document URL from the API response
-      if (document.file_signed_url || document.file_url) {
+      if (document.file_signed_url || document.storage_path) {
         const url = constructDocumentUrl(
-          document.file_url || '',
+          document.storage_path || '',
           document.file_signed_url || undefined
         );
         setPdfUrl(url);
         setIsFileLoading(true); // Start file loading
 
         // Check if it's an image file
-        const imageFile = isImageFile(document.file_url || '');
+        const imageFile = isImageFile(document.storage_path || '');
         setIsImage(imageFile);
 
         // Reset page controls for images
