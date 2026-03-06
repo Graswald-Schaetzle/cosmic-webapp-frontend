@@ -74,9 +74,9 @@ export const DashboardWindow = () => {
   const notifications = [
     ...(notificationsResponse?.floors?.flatMap(f => f.rooms).flatMap(r => r.notifications) || []),
   ].sort((a, b) => {
-    // First priority: new notifications come first
-    if (a.is_new && !b.is_new) return -1;
-    if (!a.is_new && b.is_new) return 1;
+    // First priority: unread notifications come first
+    if (a.read_at === null && b.read_at !== null) return -1;
+    if (a.read_at !== null && b.read_at === null) return 1;
 
     // Second priority: newest notifications first (by created_at)
     const dateA = new Date(a.created_at).getTime();

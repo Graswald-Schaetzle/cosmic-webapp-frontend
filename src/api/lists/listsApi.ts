@@ -7,10 +7,10 @@ export interface ListTask {
   title: string;
   description: string;
   status: string;
-  dueDate: string;
+  due_at: string | null;
   priority: string | null;
-  user_id: number | null;
-  activity_id: number;
+  created_by_user_id: number | null;
+  task_type: string | null;
   location_id: string;
   assignee: {
     user_id: number;
@@ -18,18 +18,14 @@ export interface ListTask {
     first_name: string;
     last_name: string;
   } | null;
-  activity: {
-    activity_id: number;
-    name: string;
-  };
   documents: Array<{
     document_id: number;
     created_at: string;
     name: string;
     task_id: number;
-    file_url: string | null;
+    storage_path: string | null;
     room_id: number;
-    user_id: number | null;
+    uploaded_by_user_id: number | null;
     location_id: string | null;
   }>;
 }

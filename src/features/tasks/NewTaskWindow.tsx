@@ -73,10 +73,8 @@ export const NewTaskWindow = () => {
     dueTime: '00:00',
     dueDate: '00.00.0000',
     recurring: '',
-    recurringId: 1,
     description: '',
     tags: [],
-    activityId: 0,
     locationId: '',
   };
   const [task, setTask] = useState(defaultTaskState);
@@ -181,8 +179,8 @@ export const NewTaskWindow = () => {
     setValidationErrors({});
   };
 
-  const handleTypeSelect = (newType: string, activityId: number) => {
-    setTask(prev => ({ ...prev, type: newType, activityId }));
+  const handleTypeSelect = (newType: string) => {
+    setTask(prev => ({ ...prev, type: newType }));
     clearValidationError('type');
   };
 
@@ -233,8 +231,8 @@ export const NewTaskWindow = () => {
     setIsListModalOpen(true);
   };
 
-  const handleRecurringSelect = (newRecurring: string, recurringId: number) => {
-    setTask(prev => ({ ...prev, recurring: newRecurring, recurringId }));
+  const handleRecurringSelect = (newRecurring: string) => {
+    setTask(prev => ({ ...prev, recurring: newRecurring }));
   };
 
   const handleRecurringClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -284,10 +282,10 @@ export const NewTaskWindow = () => {
         title,
         description: task.description,
         status: task.status,
-        dueDate,
-        activity_id: task.activityId,
-        user_id: task.assigneeId || undefined,
-        reccuring_id: task.recurringId,
+        due_at: dueDate,
+        task_type: task.type || undefined,
+        created_by_user_id: task.assigneeId || undefined,
+        recurrence_rule: task.recurring || undefined,
         location_id: task.locationId || undefined,
         lists_id: task.listId || undefined,
       };

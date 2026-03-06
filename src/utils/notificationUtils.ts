@@ -38,7 +38,6 @@ export const createNotification = async (
       name: notificationData.name,
       text: notificationData.text,
       type: notificationData.type,
-      is_new: true,
       room_id: notificationData.room_id || room_id,
       location_id: notificationData.location_id,
       document_id: notificationData.document_id,

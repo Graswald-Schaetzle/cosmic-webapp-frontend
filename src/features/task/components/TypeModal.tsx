@@ -3,7 +3,7 @@ import { Menu, MenuItem } from '@mui/material';
 interface TypeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (type: string, activityId: number) => void;
+  onSelect: (type: string) => void;
   currentType: string;
   anchorEl: HTMLElement | null;
   marginTop?: string;
@@ -73,7 +73,7 @@ export const TypeModal = ({
         <MenuItem
           key={type.id}
           onClick={() => {
-            onSelect(type.name, type.id);
+            onSelect(type.name);
             onClose();
           }}
           sx={{

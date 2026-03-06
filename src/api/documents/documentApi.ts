@@ -31,12 +31,12 @@ export interface Document {
   document_id: number;
   name: string;
   created_at: string;
-  file_url: string | null;
+  storage_path: string | null;
   file_signed_url: string | null;
   task_id: number | null;
   location_id: string | null;
   room_id: number | null;
-  user_id: number | null;
+  uploaded_by_user_id: number | null;
 }
 
 // New document interface for all_documents endpoint
@@ -45,9 +45,9 @@ export interface DocumentItem {
   created_at: string;
   name: string;
   task_id: number | null;
-  file_url: string | null;
+  storage_path: string | null;
   room_id: number;
-  user_id: number | null;
+  uploaded_by_user_id: number | null;
   location_id: string | null;
 }
 

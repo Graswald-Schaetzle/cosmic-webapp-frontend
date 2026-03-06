@@ -105,7 +105,7 @@ export function CalendarWindow() {
           case 'Status':
             return task.status === filter.value;
           case 'Task type':
-            return task.activity?.name === filter.value;
+            return task.task_type === filter.value;
           case 'Assignee':
             return (
               (task.assignee?.first_name + ' ' + task.assignee?.last_name).trim() === filter.value
@@ -118,8 +118,8 @@ export function CalendarWindow() {
             return task.locations?.room_id?.toString() === filter.value;
           case 'Due date':
             // Handle due date filtering based on the specific value
-            if (!task.dueDate) return false;
-            const taskDate = new Date(task.dueDate);
+            if (!task.due_at) return false;
+            const taskDate = new Date(task.due_at);
             const today = new Date();
 
             switch (filter.value) {
@@ -162,8 +162,8 @@ export function CalendarWindow() {
     });
 
     filteredTasks.forEach(task => {
-      if (task.dueDate) {
-        const taskDate = new Date(task.dueDate);
+      if (task.due_at) {
+        const taskDate = new Date(task.due_at);
         const existingDateIndex = datesWithTasks.findIndex(
           dateWithTasks =>
             dateWithTasks.date.getDate() === taskDate.getDate() &&
@@ -175,7 +175,7 @@ export function CalendarWindow() {
           datesWithTasks[existingDateIndex].tasks.push({
             id: task.task_id,
             name: task.title,
-            dueDate: task.dueDate,
+            dueDate: task.due_at,
           });
         } else {
           datesWithTasks.push({
@@ -184,7 +184,7 @@ export function CalendarWindow() {
               {
                 id: task.task_id,
                 name: task.title,
-                dueDate: task.dueDate,
+                dueDate: task.due_at,
               },
             ],
           });

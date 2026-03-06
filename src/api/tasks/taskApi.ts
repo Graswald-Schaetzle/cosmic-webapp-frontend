@@ -6,10 +6,10 @@ export interface TaskPayload {
   description?: string;
   status?: string;
   location_id?: string;
-  activity_id?: number;
-  user_id?: number;
-  dueDate?: string;
-  reccuring_id?: number;
+  task_type?: string;
+  created_by_user_id?: number;
+  due_at?: string;
+  recurrence_rule?: string;
   lists_ids?: number[];
 }
 
@@ -20,19 +20,14 @@ export interface Assignee {
   last_name: string;
 }
 
-export interface Activity {
-  activity_id: number;
-  name: string;
-}
-
 export interface Document {
   document_id: number;
   created_at: string;
   name: string;
   task_id: number;
-  file_url: string | null;
+  storage_path: string | null;
   room_id: number;
-  user_id: number | null;
+  uploaded_by_user_id: number | null;
   location_id: string | null;
 }
 
@@ -57,10 +52,10 @@ export interface TaskDetail {
   title: string;
   description: string;
   status: string;
-  dueDate: string;
+  due_at: string | null;
   priority: string | null;
   assignee: Assignee;
-  activity: Activity;
+  task_type: string | null;
   locations: Location;
 }
 
@@ -71,14 +66,11 @@ export interface TaskDetailSingle {
   title: string;
   description: string;
   status: string;
-  dueDate: string | null;
+  due_at: string | null;
   priority: string | null;
   assignee: Assignee;
-  activity: Activity;
-  reccuring: {
-    reccuring_id: number;
-    name: string;
-  };
+  task_type: string | null;
+  recurrence_rule: string | null;
   location: Location;
   documents: Document[];
   lists: Array<{
@@ -95,11 +87,11 @@ export interface TaskCreateResponse {
     title: string;
     description: string;
     status: string;
-    dueDate: string;
+    due_at: string | null;
     priority: string | null;
-    user_id: number;
-    activity_id: number;
-    reccuring_id: number;
+    created_by_user_id: number | null;
+    task_type: string | null;
+    recurrence_rule: string | null;
     location_id: string;
     lists_id?: number;
   };

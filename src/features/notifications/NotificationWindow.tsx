@@ -124,11 +124,11 @@ export const NotificationWindow = () => {
           ?.rooms.flatMap(r => r.notifications) || [];
     }
 
-    // Sort notifications: new notifications first, then by creation date (newest first)
+    // Sort notifications: unread notifications first, then by creation date (newest first)
     return notifications.sort((a, b) => {
-      // First priority: new notifications come first
-      if (a.is_new && !b.is_new) return -1;
-      if (!a.is_new && b.is_new) return 1;
+      // First priority: unread notifications come first
+      if (a.read_at === null && b.read_at !== null) return -1;
+      if (a.read_at !== null && b.read_at === null) return 1;
 
       // Second priority: newest notifications first (by created_at)
       const dateA = new Date(a.created_at).getTime();
@@ -601,7 +601,7 @@ export const NotificationWindow = () => {
                   >
                     {notification.name}
                   </Typography>
-                  {notification.is_new && (
+                  {notification.read_at === null && (
                     <NewBadge>
                       <Typography>New</Typography>
                     </NewBadge>
