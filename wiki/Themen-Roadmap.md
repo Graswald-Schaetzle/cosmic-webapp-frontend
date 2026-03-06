@@ -1,68 +1,68 @@
-# Themen & Roadmap – Frontend
+# Topics & Roadmap – Frontend
 
-Diese Seite gibt einen Überblick über alle Entwicklungsthemen und ihren aktuellen Status.
+This page provides an overview of all development topics and their current status.
 
-## Aktive Themen
+## Active Topics
 
-### Matterport 3D-Visualisierung
-**Label:** `thema: matterport`
+### Matterport 3D Visualization
+**Label:** `topic: matterport`
 
-- SDK-Integration und Lifecycle-Management
-- Mattertag-Erstellung und -Bearbeitung
-- 3D-Navigation und Kamera-Steuerung
-- Verknüpfung von Tasks/Dokumenten mit Mattertags
+- SDK integration and lifecycle management
+- Mattertag creation and editing
+- 3D navigation and camera control
+- Linking tasks/documents to mattertags
 
-### Aufgabenverwaltung
-**Label:** `thema: tasks`
+### Task Management
+**Label:** `topic: tasks`
 
-- Task-Erstellung, -Bearbeitung und -Löschung
-- Listen-Management
-- Drag & Drop Sortierung
-- Aufgaben-Zuweisung und Fälligkeitsdaten
+- Task creation, editing and deletion
+- List management
+- Drag & drop sorting
+- Task assignment and due dates
 
-### Dokumentenverwaltung
-**Label:** `thema: dokumente`
+### Document Management
+**Label:** `topic: documents`
 
-- PDF-Upload und -Ansicht
-- Dokument-Verknüpfung mit Locations/Tasks
-- Datei-Download
+- PDF upload and viewing
+- Document linking to locations/tasks
+- File download
 
-### Benachrichtigungen
-**Label:** `thema: benachrichtigungen`
+### Notifications
+**Label:** `topic: notifications`
 
-- Echtzeit-Benachrichtigungen
-- Benachrichtigungs-Center
-- Aktivitätslog
+- Real-time notifications
+- Notification center
+- Activity log
 
-### Authentifizierung
-**Label:** `thema: auth`
+### Authentication
+**Label:** `topic: auth`
 
-- Clerk-Integration
-- JWT-Token-Management
-- Benutzerprofile
+- Clerk integration
+- JWT token management
+- User profiles
 
 ### UI / UX
-**Label:** `thema: ui-ux`
+**Label:** `topic: ui-ux`
 
-- Responsive Design
-- Dark/Light-Mode
-- Barrierefreiheit
-
----
-
-## Board-Ansichten
-
-Im GitHub Project Board kannst du nach Thema filtern:
-
-```
-Label: "thema: matterport"     → Nur Matterport-Issues
-Label: "thema: tasks"          → Nur Task-Management Issues
-Label: "thema: ui-ux"          → Nur UI/UX Issues
-```
+- Responsive design
+- Dark/light mode
+- Accessibility
 
 ---
 
-## Backlog-Priorisierung
+## Board Views
 
-In wöchentlichen Meetings werden Issues aus dem Backlog priorisiert und in "Bereit" verschoben.
-Issues können über das Label `status: bereit` für den nächsten Sprint markiert werden.
+In the GitHub Project Board you can filter by topic:
+
+```
+Label: "topic: matterport"     → Matterport issues only
+Label: "topic: tasks"          → Task management issues only
+Label: "topic: ui-ux"          → UI/UX issues only
+```
+
+---
+
+## Backlog Prioritization
+
+In weekly meetings, issues are prioritized from the backlog and moved to "Ready".
+Issues can be marked for the next sprint using the label `status: ready`.

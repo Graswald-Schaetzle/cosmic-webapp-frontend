@@ -1,59 +1,59 @@
-# Entwicklungs-Setup – Frontend
+# Development Setup – Frontend
 
-## Voraussetzungen
+## Prerequisites
 
 - Node.js 18+ ([Download](https://nodejs.org))
-- npm oder yarn
+- npm or yarn
 
 ## Installation
 
 ```bash
-# Repository klonen
+# Clone the repository
 git clone https://github.com/Graswald-Schaetzle/cosmic-webapp-frontend.git
 cd cosmic-webapp-frontend
 
-# Abhängigkeiten installieren
+# Install dependencies
 npm install
 ```
 
-## Umgebungsvariablen
+## Environment Variables
 
-Erstelle eine `.env`-Datei im Root-Verzeichnis:
+Create a `.env` file in the root directory:
 
 ```env
 # Matterport
-VITE_MATTERPORT_KEY=dein_matterport_api_key
-VITE_MATTERPORT_MODEL_ID=dein_matterport_model_id
+VITE_MATTERPORT_KEY=your_matterport_api_key
+VITE_MATTERPORT_MODEL_ID=your_matterport_model_id
 
-# Authentifizierung (Clerk)
-VITE_CLERK_PUBLISHABLE_KEY=dein_clerk_publishable_key
+# Authentication (Clerk)
+VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
 
-# Wetter-API
-VITE_OPENWEATHER_API_KEY=dein_openweather_api_key
+# Weather API
+VITE_OPENWEATHER_API_KEY=your_openweather_api_key
 
-# Backend-URL
+# Backend URL
 VITE_API_BASE_URL=http://localhost:4000
 ```
 
-## Entwicklungsserver starten
+## Start Development Server
 
 ```bash
 npm run dev
-# → Öffnet http://localhost:5173
+# → Opens http://localhost:5173
 ```
 
-## Verfügbare Scripts
+## Available Scripts
 
 ```bash
-npm run dev          # Entwicklungsserver
-npm run build        # Production Build
-npm run preview      # Production Build vorschauen
-npm run lint         # ESLint ausführen
-npm run type-check   # TypeScript prüfen
-npm run format       # Prettier formatieren
+npm run dev          # Development server
+npm run build        # Production build
+npm run preview      # Preview production build
+npm run lint         # Run ESLint
+npm run type-check   # TypeScript type checking
+npm run format       # Format with Prettier
 ```
 
-## Backend verbinden
+## Connect to Backend
 
-Das Frontend benötigt das laufende Backend:
-→ Siehe [cosmic-backend Setup](https://github.com/Graswald-Schaetzle/cosmic-backend/wiki)
+The frontend requires the backend to be running:
+→ See [cosmic-backend Setup](https://github.com/Graswald-Schaetzle/cosmic-backend/wiki)

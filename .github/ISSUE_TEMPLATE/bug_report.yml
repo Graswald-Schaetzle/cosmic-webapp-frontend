@@ -1,5 +1,5 @@
 name: Bug Report
-description: Einen Fehler im Frontend melden
+description: Report a bug in the frontend
 title: "[Bug]: "
 labels: ["bug", "triage"]
 projects: []
@@ -9,66 +9,66 @@ body:
   - type: markdown
     attributes:
       value: |
-        Danke, dass du dir die Zeit nimmst, diesen Fehler zu melden!
+        Thanks for taking the time to report this bug!
 
   - type: dropdown
-    id: thema
+    id: topic
     attributes:
-      label: Thema / Bereich
-      description: Welcher Teil der Anwendung ist betroffen?
+      label: Topic / Area
+      description: Which part of the application is affected?
       options:
-        - Matterport 3D-Visualisierung
-        - Aufgabenverwaltung (Tasks)
-        - Dokumentenverwaltung
-        - Benachrichtigungen
-        - Authentifizierung (Clerk)
-        - Kalender
+        - Matterport 3D Visualization
+        - Task Management
+        - Document Management
+        - Notifications
+        - Authentication (Clerk)
+        - Calendar
         - Dashboard
-        - Navigation / Menü
+        - Navigation / Menu
         - UI / Layout
-        - API / Datenabruf
-        - Sonstiges
+        - API / Data Fetching
+        - Other
     validations:
       required: true
 
   - type: textarea
-    id: beschreibung
+    id: description
     attributes:
-      label: Fehlerbeschreibung
-      description: Was ist passiert? Was hast du erwartet?
-      placeholder: Beschreibe den Fehler so genau wie möglich
+      label: Bug Description
+      description: What happened? What did you expect?
+      placeholder: Describe the bug as precisely as possible
     validations:
       required: true
 
   - type: textarea
-    id: schritte
+    id: steps
     attributes:
-      label: Schritte zur Reproduktion
-      description: Wie kann der Fehler reproduziert werden?
+      label: Steps to Reproduce
+      description: How can the bug be reproduced?
       placeholder: |
-        1. Gehe zu '...'
-        2. Klicke auf '...'
-        3. Fehler erscheint
+        1. Go to '...'
+        2. Click on '...'
+        3. Error appears
     validations:
       required: true
 
   - type: textarea
-    id: erwartetes_verhalten
+    id: expected_behavior
     attributes:
-      label: Erwartetes Verhalten
-      description: Was sollte eigentlich passieren?
+      label: Expected Behavior
+      description: What should have happened?
     validations:
       required: true
 
   - type: dropdown
-    id: prioritaet
+    id: priority
     attributes:
-      label: Priorität
+      label: Priority
       options:
-        - Kritisch (Anwendung unbenutzbar)
-        - Hoch (wichtige Funktion kaputt)
-        - Mittel (Workaround vorhanden)
-        - Niedrig (kosmetisch / minor)
+        - Critical (application unusable)
+        - High (important feature broken)
+        - Medium (workaround available)
+        - Low (cosmetic / minor)
     validations:
       required: true
 
@@ -76,10 +76,10 @@ body:
     id: browser
     attributes:
       label: Browser & Version
-      placeholder: z.B. Chrome 122, Firefox 123
+      placeholder: e.g. Chrome 122, Firefox 123
 
   - type: textarea
-    id: kontext
+    id: context
     attributes:
-      label: Zusätzlicher Kontext
-      description: Screenshots, Fehlermeldungen, Logs etc.
+      label: Additional Context
+      description: Screenshots, error messages, logs, etc.

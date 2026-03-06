@@ -1,94 +1,94 @@
-# GitHub Labels für cosmic-webapp-frontend
-# Diese Datei dokumentiert die Themen-Labels für das Projekt-Board.
-# Labels können über die GitHub UI oder mit dem Tool 'github-label-sync' eingepflegt werden.
+# GitHub Labels for cosmic-webapp-frontend
+# This file documents the topic labels for the project board.
+# Labels can be applied via the GitHub UI or with the 'github-label-sync' tool.
 
-# ─── Themen-Labels (für Projekt-Board-Filterung) ───────────────────────────
-- name: "thema: matterport"
+# ─── Topic Labels (for project board filtering) ─────────────────────────────
+- name: "topic: matterport"
   color: "5319e7"
-  description: Matterport 3D-Visualisierung und SDK-Integration
+  description: Matterport 3D visualization and SDK integration
 
-- name: "thema: tasks"
+- name: "topic: tasks"
   color: "0075ca"
-  description: Aufgabenverwaltung und Task-Listen
+  description: Task management and task lists
 
-- name: "thema: dokumente"
+- name: "topic: documents"
   color: "0052cc"
-  description: Dokumentenverwaltung und PDF-Support
+  description: Document management and PDF support
 
-- name: "thema: benachrichtigungen"
+- name: "topic: notifications"
   color: "e4e669"
-  description: Notification-System
+  description: Notification system
 
-- name: "thema: auth"
+- name: "topic: auth"
   color: "d93f0b"
-  description: Authentifizierung und Clerk-Integration
+  description: Authentication and Clerk integration
 
-- name: "thema: kalender"
+- name: "topic: calendar"
   color: "bfd4f2"
-  description: Kalender-Funktionalität
+  description: Calendar functionality
 
-- name: "thema: dashboard"
+- name: "topic: dashboard"
   color: "c5def5"
-  description: Dashboard und Übersichtsansichten
+  description: Dashboard and overview views
 
-- name: "thema: ui-ux"
+- name: "topic: ui-ux"
   color: "f9d0c4"
-  description: User Interface und User Experience
+  description: User interface and user experience
 
-- name: "thema: api"
+- name: "topic: api"
   color: "0e8a16"
-  description: API-Integration und Datenabruf
+  description: API integration and data fetching
 
-- name: "thema: performance"
+- name: "topic: performance"
   color: "fbca04"
-  description: Performance-Optimierungen
+  description: Performance optimizations
 
-- name: "thema: devops"
+- name: "topic: devops"
   color: "b60205"
-  description: CI/CD, Deployment und Infrastruktur
+  description: CI/CD, deployment and infrastructure
 
-# ─── Status-Labels ──────────────────────────────────────────────────────────
+# ─── Status Labels ───────────────────────────────────────────────────────────
 - name: "status: backlog"
   color: "eeeeee"
-  description: Im Backlog, noch nicht priorisiert
+  description: In backlog, not yet prioritized
 
-- name: "status: bereit"
+- name: "status: ready"
   color: "0e8a16"
-  description: Bereit zur Bearbeitung
+  description: Ready to be worked on
 
-- name: "status: in-bearbeitung"
+- name: "status: in-progress"
   color: "fbca04"
-  description: Wird gerade bearbeitet
+  description: Currently being worked on
 
 - name: "status: review"
   color: "e4e669"
-  description: Wartet auf Code-Review
+  description: Waiting for code review
 
-- name: "status: blockiert"
+- name: "status: blocked"
   color: "b60205"
-  description: Durch externe Abhängigkeit blockiert
+  description: Blocked by external dependency
 
-# ─── Typ-Labels ─────────────────────────────────────────────────────────────
+# ─── Type Labels ─────────────────────────────────────────────────────────────
 - name: "bug"
   color: "d73a4a"
-  description: Etwas funktioniert nicht richtig
+  description: Something is not working correctly
 
 - name: "enhancement"
   color: "a2eeef"
-  description: Neue Funktion oder Verbesserung
+  description: New feature or improvement
 
 - name: "task"
   color: "7057ff"
-  description: Entwicklungsaufgabe
+  description: Development task
 
 - name: "triage"
   color: "e6e6e6"
-  description: Muss noch bewertet werden
+  description: Needs to be evaluated
 
 - name: "needs-discussion"
   color: "cc317c"
-  description: Erfordert Diskussion vor der Umsetzung
+  description: Requires discussion before implementation
 
-- name: "dokumentation"
+- name: "documentation"
   color: "0075ca"
-  description: Dokumentationsaufgabe
+  description: Documentation task

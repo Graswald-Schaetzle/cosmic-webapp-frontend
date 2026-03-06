@@ -1,5 +1,5 @@
-name: Aufgabe / Task
-description: Entwicklungsaufgabe oder Refactoring
+name: Task
+description: Development task or refactoring
 title: "[Task]: "
 labels: ["task"]
 projects: []
@@ -7,53 +7,53 @@ assignees: []
 
 body:
   - type: dropdown
-    id: thema
+    id: topic
     attributes:
-      label: Thema / Sprint-Bereich
+      label: Topic / Sprint Area
       options:
-        - Matterport 3D-Visualisierung
-        - Aufgabenverwaltung (Tasks)
-        - Dokumentenverwaltung
-        - Benachrichtigungen
-        - Authentifizierung
-        - Kalender
+        - Matterport 3D Visualization
+        - Task Management
+        - Document Management
+        - Notifications
+        - Authentication
+        - Calendar
         - Dashboard
-        - Refactoring / Code-Qualität
+        - Refactoring / Code Quality
         - Testing
         - DevOps / CI/CD
         - Performance
-        - Dokumentation
+        - Documentation
     validations:
       required: true
 
   - type: textarea
-    id: beschreibung
+    id: description
     attributes:
-      label: Aufgabenbeschreibung
-      description: Was muss getan werden?
+      label: Task Description
+      description: What needs to be done?
     validations:
       required: true
 
   - type: textarea
-    id: akzeptanzkriterien
+    id: acceptance_criteria
     attributes:
-      label: Akzeptanzkriterien
-      description: Wann gilt die Aufgabe als erledigt?
+      label: Acceptance Criteria
+      description: When is the task considered done?
       placeholder: |
-        - [ ] Kriterium 1
-        - [ ] Kriterium 2
+        - [ ] Criterion 1
+        - [ ] Criterion 2
     validations:
       required: true
 
   - type: dropdown
-    id: prioritaet
+    id: priority
     attributes:
-      label: Priorität
+      label: Priority
       options:
-        - Kritisch
-        - Hoch
-        - Mittel
-        - Niedrig
+        - Critical
+        - High
+        - Medium
+        - Low
     validations:
       required: true
 
@@ -61,4 +61,4 @@ body:
     id: story_points
     attributes:
       label: Story Points (optional)
-      placeholder: z.B. 3
+      placeholder: e.g. 3

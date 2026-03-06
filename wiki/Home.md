@@ -1,30 +1,30 @@
 # Cosmic WebApp Frontend – Wiki
 
-Willkommen im Wiki des **Cosmic WebApp Frontend**-Projekts!
+Welcome to the wiki of the **Cosmic WebApp Frontend** project!
 
-## Inhaltsverzeichnis
+## Table of Contents
 
-| Seite | Beschreibung |
-|-------|-------------|
-| [Architektur-Übersicht](Architektur) | Technische Architektur, Tech-Stack und Komponentenstruktur |
-| [Entwicklungs-Setup](Entwicklungs-Setup) | Lokale Entwicklungsumgebung einrichten |
-| [Projektmanagement](Projektmanagement) | Workflow, Issue-Tracking und Board-Nutzung |
-| [Deployment](Deployment) | Build-Prozess und Deployment-Anleitung |
-| [Coding Guidelines](Coding-Guidelines) | Code-Style, Konventionen und Best Practices |
-| [API-Integration](API-Integration) | Backend-Anbindung und RTK Query |
-| [Themen & Roadmap](Themen-Roadmap) | Übersicht aller Entwicklungsthemen |
+| Page | Description |
+|------|-------------|
+| [Architecture Overview](Architecture) | Technical architecture, tech stack and component structure |
+| [Development Setup](Development-Setup) | Setting up the local development environment |
+| [Project Management](Project-Management) | Workflow, issue tracking and board usage |
+| [Deployment](Deployment) | Build process and deployment guide |
+| [Coding Guidelines](Coding-Guidelines) | Code style, conventions and best practices |
+| [API Integration](API-Integration) | Backend connection and RTK Query |
+| [Topics & Roadmap](Topics-Roadmap) | Overview of all development topics |
 
 ---
 
-## Schnellübersicht
+## Quick Overview
 
-**Tech-Stack:**
+**Tech Stack:**
 - React 18 + TypeScript
-- Vite (Build-Tool)
+- Vite (build tool)
 - Material-UI + Tailwind CSS
 - Redux Toolkit + RTK Query
 - Matterport SDK 1.4.24
-- Clerk (Authentifizierung)
+- Clerk (authentication)
 
 **Repositories:**
 - Frontend: [cosmic-webapp-frontend](https://github.com/Graswald-Schaetzle/cosmic-webapp-frontend)
@@ -32,4 +32,4 @@ Willkommen im Wiki des **Cosmic WebApp Frontend**-Projekts!
 
 ---
 
-*Zuletzt aktualisiert: März 2026*
+*Last updated: March 2026*

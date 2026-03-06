@@ -1,59 +1,59 @@
-# GitHub Project Board - Konfiguration
+# GitHub Project Board - Configuration
 # Cosmic WebApp Frontend
 #
-# Anleitung zum Erstellen des Projekt-Boards:
-# 1. Gehe zu https://github.com/Graswald-Schaetzle/cosmic-webapp-frontend
-# 2. Klicke auf "Projects" > "New project"
-# 3. Wähle "Board" als Template
-# 4. Benenne das Projekt: "Cosmic Frontend – Entwicklungs-Roadmap"
-# 5. Füge die Spalten gemäß dieser Konfiguration hinzu
+# Instructions to create the project board:
+# 1. Go to https://github.com/Graswald-Schaetzle/cosmic-webapp-frontend
+# 2. Click "Projects" > "New project"
+# 3. Choose "Board" as template
+# 4. Name the project: "Cosmic Frontend – Development Roadmap"
+# 5. Add columns according to this configuration
 
-name: "Cosmic Frontend – Entwicklungs-Roadmap"
+name: "Cosmic Frontend – Development Roadmap"
 description: >
-  Themengesteuertes Projekt-Board für die Entwicklung der Cosmic WebApp.
-  Issues werden über Labels nach Themen gefiltert und priorisiert.
+  Topic-driven project board for Cosmic WebApp frontend development.
+  Issues are filtered and prioritized by topic labels.
 
-# ─── Board-Spalten ───────────────────────────────────────────────────────────
+# ─── Board Columns ───────────────────────────────────────────────────────────
 columns:
   - name: "Backlog"
-    description: Alle offenen, noch nicht priorisierten Aufgaben
+    description: All open, not yet prioritized tasks
     filter: "is:open label:\"status: backlog\""
 
-  - name: "Bereit"
-    description: Priorisierte Aufgaben, bereit zur Bearbeitung
-    filter: "is:open label:\"status: bereit\""
+  - name: "Ready"
+    description: Prioritized tasks ready to be worked on
+    filter: "is:open label:\"status: ready\""
 
-  - name: "In Bearbeitung"
-    description: Aktuell in Entwicklung
-    filter: "is:open label:\"status: in-bearbeitung\""
+  - name: "In Progress"
+    description: Currently in development
+    filter: "is:open label:\"status: in-progress\""
 
   - name: "Review / QA"
-    description: Wartet auf Code-Review oder Testen
+    description: Waiting for code review or testing
     filter: "is:open label:\"status: review\""
 
-  - name: "Erledigt"
-    description: Abgeschlossene Aufgaben
+  - name: "Done"
+    description: Completed tasks
     filter: "is:closed"
 
-# ─── Themen-Filter (für Board-Ansichten) ─────────────────────────────────────
-themen_views:
+# ─── Topic Views (for board filtering) ───────────────────────────────────────
+topic_views:
   - name: "Matterport 3D"
-    filter: "label:\"thema: matterport\""
+    filter: "label:\"topic: matterport\""
 
-  - name: "Task-Management"
-    filter: "label:\"thema: tasks\""
+  - name: "Task Management"
+    filter: "label:\"topic: tasks\""
 
-  - name: "Dokumentenverwaltung"
-    filter: "label:\"thema: dokumente\""
+  - name: "Document Management"
+    filter: "label:\"topic: documents\""
 
-  - name: "Benachrichtigungen"
-    filter: "label:\"thema: benachrichtigungen\""
+  - name: "Notifications"
+    filter: "label:\"topic: notifications\""
 
   - name: "Auth & Security"
-    filter: "label:\"thema: auth\""
+    filter: "label:\"topic: auth\""
 
   - name: "UI / UX"
-    filter: "label:\"thema: ui-ux\""
+    filter: "label:\"topic: ui-ux\""
 
   - name: "DevOps"
-    filter: "label:\"thema: devops\""
+    filter: "label:\"topic: devops\""

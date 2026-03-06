@@ -1,89 +1,89 @@
-# Architektur-Übersicht – Frontend
+# Architecture Overview – Frontend
 
-## Technologie-Stack
+## Technology Stack
 
-| Kategorie | Technologie | Version |
-|-----------|------------|---------|
+| Category | Technology | Version |
+|----------|-----------|---------|
 | Framework | React | 18.2.0 |
-| Sprache | TypeScript | 5.2.2 |
+| Language | TypeScript | 5.2.2 |
 | Build | Vite | 6.3.5 |
-| UI-Library | Material-UI | 7.1.0 |
+| UI Library | Material-UI | 7.1.0 |
 | CSS | Tailwind CSS | 3.4.1 |
 | State | Redux Toolkit | 2.8.2 |
-| API-Fetching | RTK Query | (in Redux Toolkit) |
-| 3D-SDK | Matterport | 1.4.24 |
+| API Fetching | RTK Query | (in Redux Toolkit) |
+| 3D SDK | Matterport | 1.4.24 |
 | Auth | Clerk | 4.30.7 |
 | Routing | React Router DOM | 6.22.3 |
 
 ---
 
-## Projektstruktur
+## Project Structure
 
 ```
 src/
-├── api/                   # RTK Query API-Definitionen
-│   ├── documents/         # Dokument-Endpunkte
-│   ├── lists/             # Listen-Endpunkte
-│   ├── notifications/     # Benachrichtigungs-Endpunkte
-│   ├── tasks/             # Task-Endpunkte
-│   └── weather/           # Wetter-Endpunkte
+├── api/                   # RTK Query API definitions
+│   ├── documents/         # Document endpoints
+│   ├── lists/             # List endpoints
+│   ├── notifications/     # Notification endpoints
+│   ├── tasks/             # Task endpoints
+│   └── weather/           # Weather endpoints
 │
-├── app/                   # Core-Konfiguration
-│   ├── api.ts             # Basis-API-Konfiguration
-│   ├── axios.ts           # Axios-Instanz
-│   └── matterport.ts      # Matterport SDK-Init
+├── app/                   # Core configuration
+│   ├── api.ts             # Base API configuration
+│   ├── axios.ts           # Axios instance
+│   └── matterport.ts      # Matterport SDK init
 │
-├── components/            # Wiederverwendbare UI-Komponenten
-│   └── ui/                # Basis-Komponenten (Shadcn-Style)
+├── components/            # Reusable UI components
+│   └── ui/                # Base components (Shadcn-style)
 │
-├── contexts/              # React-Kontexte
-│   ├── AuthContext.tsx    # Authentifizierungs-Kontext
-│   ├── MatterportContext.tsx  # SDK-Lifecycle-Management
-│   └── TaskContext.tsx    # Aufgaben-Kontext
+├── contexts/              # React contexts
+│   ├── AuthContext.tsx    # Authentication context
+│   ├── MatterportContext.tsx  # SDK lifecycle management
+│   └── TaskContext.tsx    # Task context
 │
-├── features/              # Feature-basierte Komponenten
-│   ├── calendar/          # Kalender
+├── features/              # Feature-based components
+│   ├── calendar/          # Calendar
 │   ├── dashboard/         # Dashboard
-│   ├── documents/         # Dokumentenverwaltung
-│   ├── list/              # Listen-Management
-│   ├── mattertag/         # Matterport-Tags
+│   ├── documents/         # Document management
+│   ├── list/              # List management
+│   ├── mattertag/         # Matterport tags
 │   ├── menu/              # Navigation
-│   ├── notifications/     # Benachrichtigungen
-│   ├── profile/           # Nutzerprofil
-│   └── tasks/             # Aufgabenverwaltung
+│   ├── notifications/     # Notifications
+│   ├── profile/           # User profile
+│   └── tasks/             # Task management
 │
-├── hooks/                 # Custom React Hooks
-├── Layouts/               # Layout-Komponenten
-├── store/                 # Redux Store
-└── types/                 # TypeScript-Typdefinitionen
+├── hooks/                 # Custom React hooks
+├── Layouts/               # Layout components
+├── store/                 # Redux store
+└── types/                 # TypeScript type definitions
 ```
 
 ---
 
-## Datenfluss
+## Data Flow
 
 ```
-Nutzeraktion
+User Action
     │
     ▼
-React-Komponente
+React Component
     │
-    ├──► Redux Store (lokaler State)
+    ├──► Redux Store (local state)
     │         │
     │         ▼
     │    RTK Query / Axios
     │         │
     │         ▼
-    │    Backend-API
+    │    Backend API
     │
-    └──► Matterport SDK (3D-Interaktion)
+    └──► Matterport SDK (3D interaction)
 ```
 
 ---
 
 ## Key Design Decisions
 
-1. **Feature-basierte Architektur**: Jedes Feature hat eigene Komponenten, Hooks und API-Calls
-2. **RTK Query**: Automatisches Caching und Cache-Invalidierung für Server-Daten
-3. **Matterport Context**: SDK-Lifecycle wird zentral im Context verwaltet
-4. **Clerk**: Authentifizierung ausgelagert an SaaS-Lösung
+1. **Feature-based architecture**: Each feature has its own components, hooks and API calls
+2. **RTK Query**: Automatic caching and cache invalidation for server data
+3. **Matterport Context**: SDK lifecycle is managed centrally in the context
+4. **Clerk**: Authentication delegated to SaaS solution

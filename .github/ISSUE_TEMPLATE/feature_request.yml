@@ -1,5 +1,5 @@
 name: Feature Request
-description: Neue Funktion oder Verbesserung vorschlagen
+description: Suggest a new feature or improvement
 title: "[Feature]: "
 labels: ["enhancement", "needs-discussion"]
 projects: []
@@ -9,26 +9,26 @@ body:
   - type: markdown
     attributes:
       value: |
-        Danke für deinen Verbesserungsvorschlag!
+        Thanks for your suggestion!
 
   - type: dropdown
-    id: thema
+    id: topic
     attributes:
-      label: Thema / Bereich
-      description: Welchem Bereich soll diese Funktion zugeordnet werden?
+      label: Topic / Area
+      description: Which area should this feature be assigned to?
       options:
-        - Matterport 3D-Visualisierung
-        - Aufgabenverwaltung (Tasks)
-        - Dokumentenverwaltung
-        - Benachrichtigungen
-        - Authentifizierung
-        - Kalender
+        - Matterport 3D Visualization
+        - Task Management
+        - Document Management
+        - Notifications
+        - Authentication
+        - Calendar
         - Dashboard
-        - Navigation / Menü
+        - Navigation / Menu
         - Performance
         - UI / UX
-        - API-Integration
-        - Neuer Bereich
+        - API Integration
+        - New Area
     validations:
       required: true
 
@@ -36,48 +36,48 @@ body:
     id: problem
     attributes:
       label: Problem / Motivation
-      description: Welches Problem soll diese Funktion lösen?
-      placeholder: Als Nutzer möchte ich..., weil...
+      description: What problem should this feature solve?
+      placeholder: As a user I want..., because...
     validations:
       required: true
 
   - type: textarea
-    id: loesung
+    id: solution
     attributes:
-      label: Gewünschte Lösung
-      description: Wie stellst du dir die Lösung vor?
+      label: Desired Solution
+      description: How do you envision the solution?
     validations:
       required: true
 
   - type: textarea
-    id: alternativen
+    id: alternatives
     attributes:
-      label: Alternativen
-      description: Gibt es alternative Lösungsansätze, die du bedacht hast?
+      label: Alternatives
+      description: Are there alternative approaches you have considered?
 
   - type: dropdown
-    id: prioritaet
+    id: priority
     attributes:
-      label: Priorität
+      label: Priority
       options:
-        - Muss-haben (MVP)
-        - Sollte vorhanden sein
-        - Wäre schön (Nice-to-have)
+        - Must-have (MVP)
+        - Should have
+        - Nice-to-have
     validations:
       required: true
 
   - type: dropdown
-    id: aufwand
+    id: effort
     attributes:
-      label: Geschätzter Aufwand
+      label: Estimated Effort
       options:
-        - Klein (< 1 Tag)
-        - Mittel (1-3 Tage)
-        - Groß (1 Woche)
-        - Sehr groß (> 1 Woche)
+        - Small (< 1 day)
+        - Medium (1-3 days)
+        - Large (1 week)
+        - Very large (> 1 week)
 
   - type: textarea
-    id: kontext
+    id: context
     attributes:
-      label: Zusätzlicher Kontext
-      description: Mockups, Referenzen, weitere Informationen
+      label: Additional Context
+      description: Mockups, references, further information
