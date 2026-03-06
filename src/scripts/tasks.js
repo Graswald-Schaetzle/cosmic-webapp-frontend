@@ -1,0 +1,7 @@
+function initTasks() {
+
+}
+
+export {
+    initTasks
+}

@@ -1,0 +1,16 @@
+#clerk-sign-in-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+}
+#clerk-sign-in-modal.hidden { display: none }
+
+#clerk-user-button {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+#clerk-user-button.hidden { display: none }
