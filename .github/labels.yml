@@ -1,0 +1,94 @@
+# GitHub Labels für cosmic-webapp-frontend
+# Diese Datei dokumentiert die Themen-Labels für das Projekt-Board.
+# Labels können über die GitHub UI oder mit dem Tool 'github-label-sync' eingepflegt werden.
+
+# ─── Themen-Labels (für Projekt-Board-Filterung) ───────────────────────────
+- name: "thema: matterport"
+  color: "5319e7"
+  description: Matterport 3D-Visualisierung und SDK-Integration
+
+- name: "thema: tasks"
+  color: "0075ca"
+  description: Aufgabenverwaltung und Task-Listen
+
+- name: "thema: dokumente"
+  color: "0052cc"
+  description: Dokumentenverwaltung und PDF-Support
+
+- name: "thema: benachrichtigungen"
+  color: "e4e669"
+  description: Notification-System
+
+- name: "thema: auth"
+  color: "d93f0b"
+  description: Authentifizierung und Clerk-Integration
+
+- name: "thema: kalender"
+  color: "bfd4f2"
+  description: Kalender-Funktionalität
+
+- name: "thema: dashboard"
+  color: "c5def5"
+  description: Dashboard und Übersichtsansichten
+
+- name: "thema: ui-ux"
+  color: "f9d0c4"
+  description: User Interface und User Experience
+
+- name: "thema: api"
+  color: "0e8a16"
+  description: API-Integration und Datenabruf
+
+- name: "thema: performance"
+  color: "fbca04"
+  description: Performance-Optimierungen
+
+- name: "thema: devops"
+  color: "b60205"
+  description: CI/CD, Deployment und Infrastruktur
+
+# ─── Status-Labels ──────────────────────────────────────────────────────────
+- name: "status: backlog"
+  color: "eeeeee"
+  description: Im Backlog, noch nicht priorisiert
+
+- name: "status: bereit"
+  color: "0e8a16"
+  description: Bereit zur Bearbeitung
+
+- name: "status: in-bearbeitung"
+  color: "fbca04"
+  description: Wird gerade bearbeitet
+
+- name: "status: review"
+  color: "e4e669"
+  description: Wartet auf Code-Review
+
+- name: "status: blockiert"
+  color: "b60205"
+  description: Durch externe Abhängigkeit blockiert
+
+# ─── Typ-Labels ─────────────────────────────────────────────────────────────
+- name: "bug"
+  color: "d73a4a"
+  description: Etwas funktioniert nicht richtig
+
+- name: "enhancement"
+  color: "a2eeef"
+  description: Neue Funktion oder Verbesserung
+
+- name: "task"
+  color: "7057ff"
+  description: Entwicklungsaufgabe
+
+- name: "triage"
+  color: "e6e6e6"
+  description: Muss noch bewertet werden
+
+- name: "needs-discussion"
+  color: "cc317c"
+  description: Erfordert Diskussion vor der Umsetzung
+
+- name: "dokumentation"
+  color: "0075ca"
+  description: Dokumentationsaufgabe

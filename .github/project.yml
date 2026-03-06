@@ -1,0 +1,59 @@
+# GitHub Project Board - Konfiguration
+# Cosmic WebApp Frontend
+#
+# Anleitung zum Erstellen des Projekt-Boards:
+# 1. Gehe zu https://github.com/Graswald-Schaetzle/cosmic-webapp-frontend
+# 2. Klicke auf "Projects" > "New project"
+# 3. Wähle "Board" als Template
+# 4. Benenne das Projekt: "Cosmic Frontend – Entwicklungs-Roadmap"
+# 5. Füge die Spalten gemäß dieser Konfiguration hinzu
+
+name: "Cosmic Frontend – Entwicklungs-Roadmap"
+description: >
+  Themengesteuertes Projekt-Board für die Entwicklung der Cosmic WebApp.
+  Issues werden über Labels nach Themen gefiltert und priorisiert.
+
+# ─── Board-Spalten ───────────────────────────────────────────────────────────
+columns:
+  - name: "Backlog"
+    description: Alle offenen, noch nicht priorisierten Aufgaben
+    filter: "is:open label:\"status: backlog\""
+
+  - name: "Bereit"
+    description: Priorisierte Aufgaben, bereit zur Bearbeitung
+    filter: "is:open label:\"status: bereit\""
+
+  - name: "In Bearbeitung"
+    description: Aktuell in Entwicklung
+    filter: "is:open label:\"status: in-bearbeitung\""
+
+  - name: "Review / QA"
+    description: Wartet auf Code-Review oder Testen
+    filter: "is:open label:\"status: review\""
+
+  - name: "Erledigt"
+    description: Abgeschlossene Aufgaben
+    filter: "is:closed"
+
+# ─── Themen-Filter (für Board-Ansichten) ─────────────────────────────────────
+themen_views:
+  - name: "Matterport 3D"
+    filter: "label:\"thema: matterport\""
+
+  - name: "Task-Management"
+    filter: "label:\"thema: tasks\""
+
+  - name: "Dokumentenverwaltung"
+    filter: "label:\"thema: dokumente\""
+
+  - name: "Benachrichtigungen"
+    filter: "label:\"thema: benachrichtigungen\""
+
+  - name: "Auth & Security"
+    filter: "label:\"thema: auth\""
+
+  - name: "UI / UX"
+    filter: "label:\"thema: ui-ux\""
+
+  - name: "DevOps"
+    filter: "label:\"thema: devops\""
