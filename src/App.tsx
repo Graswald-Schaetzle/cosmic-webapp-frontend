@@ -19,6 +19,7 @@ import { AddDocumentWindow } from './features/documents/AddDocumentWindow.tsx';
 import { NotificationWindow } from './features/notifications/NotificationWindow';
 import { ObjectManagerWindow } from './features/objectManager/ObjectManagerWindow';
 import { CalendarWindow } from './features/calendar/CalendarWindow';
+import { ReconstructionWindow } from './features/reconstruction/ReconstructionWindow';
 
 import { Box, CircularProgress, Typography } from '@mui/material';
 
@@ -110,6 +111,8 @@ const AuthenticatedContent = () => {
             <ObjectManagerWindow />
 
             <CalendarWindow />
+
+            <ReconstructionWindow />
           </MatterportLayout>
         </Layout>
       </TaskProvider>

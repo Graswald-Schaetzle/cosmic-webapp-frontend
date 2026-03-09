@@ -84,6 +84,10 @@ interface ModalState {
     isOpen: boolean;
     selectedDate?: Date | null;
   };
+  reconstructionWindowModal: {
+    isOpen: boolean;
+    spaceId?: number | null;
+  };
 }
 
 const initialState: ModalState = {
@@ -146,6 +150,10 @@ const initialState: ModalState = {
   calendarWindowModal: {
     isOpen: false,
     selectedDate: null,
+  },
+  reconstructionWindowModal: {
+    isOpen: false,
+    spaceId: null,
   },
 };
 
@@ -344,6 +352,14 @@ const modalSlice = createSlice({
       state.calendarWindowModal.isOpen = false;
       state.calendarWindowModal.selectedDate = null;
     },
+    openReconstructionWindow: (state, action: PayloadAction<{ spaceId?: number } | undefined>) => {
+      state.reconstructionWindowModal.isOpen = true;
+      state.reconstructionWindowModal.spaceId = action.payload?.spaceId || null;
+    },
+    closeReconstructionWindow: state => {
+      state.reconstructionWindowModal.isOpen = false;
+      state.reconstructionWindowModal.spaceId = null;
+    },
     closeAllModals: state => {
       state.matterTagWindowModal.isOpen = false;
       state.matterTagWindowModal.selectedTag = null;
@@ -374,6 +390,8 @@ const modalSlice = createSlice({
       state.objectManagerWindowModal.isOpen = false;
       state.calendarWindowModal.isOpen = false;
       state.calendarWindowModal.selectedDate = null;
+      state.reconstructionWindowModal.isOpen = false;
+      state.reconstructionWindowModal.spaceId = null;
     },
   },
 });
@@ -408,6 +426,8 @@ export const {
   closeObjectManagerWindow,
   openCalendarWindow,
   closeCalendarWindow,
+  openReconstructionWindow,
+  closeReconstructionWindow,
   closeAllModals,
 } = modalSlice.actions;
 
