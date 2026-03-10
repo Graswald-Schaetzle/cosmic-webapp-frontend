@@ -9,10 +9,8 @@ import {
   Button,
   TextField,
   LinearProgress,
-  Select,
-  MenuItem,
 } from '@mui/material';
-import { useCallback, useState, useEffect, useRef } from 'react';
+import { useCallback, useState } from 'react';
 import {
   useCreateJobMutation,
   useStartJobMutation,
