@@ -50,8 +50,6 @@ jobs:
         docker build \
           --build-arg VITE_MATTERPORT_KEY=${{ secrets.VITE_MATTERPORT_KEY }} \
           --build-arg VITE_MATTERPORT_MODEL_ID=${{ secrets.VITE_MATTERPORT_MODEL_ID }} \
-          --build-arg VITE_CLERK_PUBLISHABLE_KEY=${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }} \
-          --build-arg VITE_OPENWEATHER_API_KEY=${{ secrets.VITE_OPENWEATHER_API_KEY }} \
           --build-arg VITE_API_BASE_URL=${{ secrets.BACKEND_URL }} \
           -t ${{ env.IMAGE }}:${{ github.sha }} \
           -t ${{ env.IMAGE }}:latest \

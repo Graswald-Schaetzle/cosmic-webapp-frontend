@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { useUser } from '@clerk/clerk-react';
 import { useDispatch } from 'react-redux';
 import { authorizeUser } from '../app/api';
 import { useGetAllLocationsQuery } from '../api/locationApi/locationApi';
@@ -29,13 +28,17 @@ interface AuthContextType {
   isLoading: boolean;
   error: string | null;
   currentUser: CurrentUser | null;
+  login: (email: string, firstName: string, lastName: string) => Promise<void>;
+  logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
-  isLoading: true,
+  isLoading: false,
   error: null,
   currentUser: null,
+  login: async () => {},
+  logout: () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -45,7 +48,6 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const { user, isSignedIn, isLoaded } = useUser();
   const dispatch = useDispatch();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -61,50 +63,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     skip: !isAuthenticated,
   });
 
+  // Restore session from localStorage on mount
   useEffect(() => {
-    const handleAuthentication = async () => {
-      if (!isLoaded) return;
-
-      if (isSignedIn && user) {
-        try {
-          setIsLoading(true);
-          setError(null);
-
-          // Call our custom signup endpoint with Clerk user data
-          const userData = await authorizeUser(user);
-
-          // Check if token was set
-          const token = localStorage.getItem('access_token');
-          if (!token) {
-            throw new Error('No access token found after authentication');
-          }
-
-          // Set current user data from login response
-          setCurrentUserState(userData);
-          dispatch(setCurrentUser(userData));
-
-          // Set authentication as complete
-          setIsAuthenticated(true);
-          setIsLoading(false);
-        } catch (err) {
-          console.error('Authentication failed:', err);
-          setError(err instanceof Error ? err.message : 'Authentication failed');
-          setIsAuthenticated(false);
-          setIsLoading(false);
-        }
-      } else {
-        // User is not signed in
-        setIsAuthenticated(false);
-        setIsLoading(false);
-        setError(null);
-        setCurrentUserState(null);
-        dispatch(clearCurrentUser());
-        dispatch(clearLocations());
+    const token = localStorage.getItem('access_token');
+    const storedUser = localStorage.getItem('current_user');
+    if (token && storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        setCurrentUserState(user);
+        dispatch(setCurrentUser(user));
+        setIsAuthenticated(true);
+      } catch {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('current_user');
       }
-    };
-
-    handleAuthentication();
-  }, [isSignedIn, user, isLoaded, dispatch]);
+    }
+    setIsLoading(false);
+  }, [dispatch]);
 
   // Update locations state when data is fetched
   useEffect(() => {
@@ -113,10 +88,35 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } else if (locationsError) {
       dispatch(setLocationsError('Failed to load locations'));
     } else if (locationsData) {
-      // The API now returns a simple array of LocationItem objects
       dispatch(setLocations(locationsData));
     }
   }, [locationsData, locationsLoading, locationsError, dispatch]);
+
+  const login = async (email: string, firstName: string, lastName: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const userData = await authorizeUser({ email, first_name: firstName, last_name: lastName });
+      localStorage.setItem('access_token', userData.access_token);
+      localStorage.setItem('current_user', JSON.stringify(userData));
+      setCurrentUserState(userData);
+      dispatch(setCurrentUser(userData));
+      setIsAuthenticated(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Authentication failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('current_user');
+    setIsAuthenticated(false);
+    setCurrentUserState(null);
+    dispatch(clearCurrentUser());
+    dispatch(clearLocations());
+  };
 
   return (
     <AuthContext.Provider
@@ -125,6 +125,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         isLoading: isLoading || (isAuthenticated && locationsLoading),
         error,
         currentUser,
+        login,
+        logout,
       }}
     >
       {children}

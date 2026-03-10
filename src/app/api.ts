@@ -1,5 +1,3 @@
-// @ts-ignore
-import { User } from '@clerk/clerk-react';
 import { BaseQueryFn, createApi } from '@reduxjs/toolkit/query/react';
 import { AxiosRequestConfig } from 'axios';
 import axiosInstance from './axios';
@@ -21,7 +19,6 @@ interface AuthResponse {
 
 const baseQuery: BaseQueryFn = async (args, { signal }) => {
   try {
-    // Create axios config
     const config: AxiosRequestConfig = {
       url: args.url,
       method: args.method,
@@ -65,14 +62,20 @@ export const api = createApi({
   tagTypes: ['Tasks', 'Documents', 'Notifications', 'UserMenu', 'Lists', 'Locations', 'Users'],
 });
 
-export async function authorizeUser(clerkUser: User): Promise<AuthResponse['user']> {
+interface UserInput {
+  email: string;
+  first_name: string;
+  last_name: string;
+}
+
+export async function authorizeUser(userInput: UserInput): Promise<AuthResponse['user']> {
   const user = {
-    first_name: clerkUser.firstName || '',
-    last_name: clerkUser.lastName || '',
-    email: clerkUser.emailAddresses[0].emailAddress || '',
-    clerk_id: clerkUser.id || '',
+    first_name: userInput.first_name,
+    last_name: userInput.last_name,
+    email: userInput.email,
+    clerk_id: userInput.email,
     role: 'user',
-    username: clerkUser.fullName.replace(/\s/g, '') || '',
+    username: `${userInput.first_name}${userInput.last_name}`.replace(/\s/g, ''),
   };
 
   try {
@@ -86,9 +89,6 @@ export async function authorizeUser(clerkUser: User): Promise<AuthResponse['user
     if (!data.user?.access_token) {
       throw new Error('Failed to get access token');
     }
-
-    // Save token to localStorage
-    localStorage.setItem('access_token', data.user.access_token);
 
     return data.user;
   } catch (error: any) {

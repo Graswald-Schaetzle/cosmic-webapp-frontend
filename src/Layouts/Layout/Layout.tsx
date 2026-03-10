@@ -1,15 +1,23 @@
 import React from 'react';
-import { UserButton } from '@clerk/clerk-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { IconButton, Tooltip } from '@mui/material';
+import LogoutIcon from '@mui/icons-material/Logout';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 export function Layout({ children }: LayoutProps) {
+  const { logout } = useAuth();
+
   return (
     <div className="relative w-full h-screen overflow-hidden">
       <div className="absolute top-4 right-4 z-50">
-        <UserButton />
+        <Tooltip title="Sign out">
+          <IconButton onClick={logout} size="small" sx={{ color: '#fff' }}>
+            <LogoutIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
       </div>
       {children}
     </div>

@@ -1,4 +1,4 @@
-import { SignedIn, SignedOut, SignIn } from '@clerk/clerk-react';
+import { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { MatterportProvider } from './contexts/MatterportContext';
 import { TaskProvider } from './contexts/TaskContext';
@@ -21,9 +21,92 @@ import { ObjectManagerWindow } from './features/objectManager/ObjectManagerWindo
 import { CalendarWindow } from './features/calendar/CalendarWindow';
 import { ReconstructionWindow } from './features/reconstruction/ReconstructionWindow';
 
-import { Box, CircularProgress, Typography } from '@mui/material';
+import { Box, Button, CircularProgress, TextField, Typography } from '@mui/material';
 
-// Component to handle authenticated content
+function LoginForm() {
+  const { login, isLoading, error } = useAuth();
+  const [email, setEmail] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    login(email, firstName, lastName);
+  };
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        background: '#1a1a2e',
+      }}
+    >
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+          p: 4,
+          background: '#16213e',
+          borderRadius: 2,
+          minWidth: 320,
+        }}
+      >
+        <Typography variant="h5" sx={{ color: '#fff', mb: 1 }}>
+          Sign In
+        </Typography>
+
+        {error && (
+          <Typography sx={{ color: '#ff6b6b', fontSize: 14 }}>{error}</Typography>
+        )}
+
+        <TextField
+          label="Email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          variant="outlined"
+          size="small"
+          sx={{ input: { color: '#fff' }, label: { color: '#aaa' } }}
+        />
+        <TextField
+          label="First Name"
+          value={firstName}
+          onChange={(e) => setFirstName(e.target.value)}
+          required
+          variant="outlined"
+          size="small"
+          sx={{ input: { color: '#fff' }, label: { color: '#aaa' } }}
+        />
+        <TextField
+          label="Last Name"
+          value={lastName}
+          onChange={(e) => setLastName(e.target.value)}
+          required
+          variant="outlined"
+          size="small"
+          sx={{ input: { color: '#fff' }, label: { color: '#aaa' } }}
+        />
+
+        <Button
+          type="submit"
+          variant="contained"
+          disabled={isLoading}
+          sx={{ mt: 1 }}
+        >
+          {isLoading ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : 'Sign In'}
+        </Button>
+      </Box>
+    </Box>
+  );
+}
+
 const AuthenticatedContent = () => {
   const { isAuthenticated, isLoading, error } = useAuth();
 
@@ -65,18 +148,7 @@ const AuthenticatedContent = () => {
   }
 
   if (!isAuthenticated) {
-    return (
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100vh',
-        }}
-      >
-        <Typography sx={{ color: '#fff' }}>Please sign in to continue</Typography>
-      </Box>
-    );
+    return <LoginForm />;
   }
 
   return (
@@ -127,14 +199,7 @@ export default function App() {
         path="/"
         element={
           <AuthProvider>
-            <SignedIn>
-              <AuthenticatedContent />
-            </SignedIn>
-            <SignedOut>
-              <div className="min-h-screen flex items-center justify-center bg-gray-100">
-                <SignIn />
-              </div>
-            </SignedOut>
+            <AuthenticatedContent />
           </AuthProvider>
         }
       />
