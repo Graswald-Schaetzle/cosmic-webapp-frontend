@@ -1,4 +1,4 @@
-name: Build
+name: Build & Deploy Frontend
 
 on:
   push:
@@ -6,10 +6,18 @@ on:
       - main
   workflow_dispatch:
 
+env:
+  PROJECT_ID: cosmic-489720
+  REGION: europe-west4
+  REGISTRY: europe-west4-docker.pkg.dev
+  AR_REPOSITORY: cosmic-frontend
+  SERVICE: cosmic-frontend
+  IMAGE: europe-west4-docker.pkg.dev/cosmic-489720/cosmic-frontend/frontend
+
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    name: Build frontend
+    name: Build and deploy frontend
 
     steps:
     - name: Checkout code
@@ -22,20 +30,46 @@ jobs:
       id: get_tag
       run: |
         git fetch --tags
-        latest_tag=$(git describe --tags --abbrev=0 || echo "v0.0.0")
+        latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
         echo "Latest tag: $latest_tag"
         echo "latest_tag=$latest_tag" >> $GITHUB_ENV
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
       with:
-        node-version: '22'
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-    - name: Install Yarn
-      run: npm install -g yarn
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
 
-    - name: Install dependencies
-      run: yarn install
+    - name: Configure Docker for Artifact Registry
+      run: gcloud auth configure-docker ${{ env.REGISTRY }} --quiet
 
-    - name: Build frontend
-      run: yarn run build
+    - name: Build and push Docker image
+      run: |
+        docker build \
+          --build-arg VITE_MATTERPORT_KEY=${{ secrets.VITE_MATTERPORT_KEY }} \
+          --build-arg VITE_MATTERPORT_MODEL_ID=${{ secrets.VITE_MATTERPORT_MODEL_ID }} \
+          --build-arg VITE_CLERK_PUBLISHABLE_KEY=${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }} \
+          --build-arg VITE_OPENWEATHER_API_KEY=${{ secrets.VITE_OPENWEATHER_API_KEY }} \
+          --build-arg VITE_API_BASE_URL=${{ secrets.BACKEND_URL }} \
+          -t ${{ env.IMAGE }}:${{ github.sha }} \
+          -t ${{ env.IMAGE }}:latest \
+          .
+        docker push ${{ env.IMAGE }}:${{ github.sha }}
+        docker push ${{ env.IMAGE }}:latest
+
+    - name: Deploy to Cloud Run
+      run: |
+        gcloud run deploy ${{ env.SERVICE }} \
+          --image=${{ env.IMAGE }}:${{ github.sha }} \
+          --region=${{ env.REGION }} \
+          --platform=managed \
+          --allow-unauthenticated \
+          --port=80
+
+    - name: Show deployed URL
+      run: |
+        gcloud run services describe ${{ env.SERVICE }} \
+          --region=${{ env.REGION }} \
+          --format='value(status.url)'
