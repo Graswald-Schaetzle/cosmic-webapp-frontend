@@ -142,7 +142,7 @@ export const reconstructionApi = createApi({
       }),
       transformResponse: (response: { data: ReconstructionJob }) =>
         response.data,
-      providesTags: (result, error, jobId) => [
+      providesTags: (_result, _error, jobId) => [
         { type: 'ReconstructionJobs', id: jobId },
       ],
     }),
