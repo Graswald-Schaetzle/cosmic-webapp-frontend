@@ -10,7 +10,9 @@ import {
   TextField,
   LinearProgress,
 } from '@mui/material';
+import ThreeDRotationIcon from '@mui/icons-material/ThreeDRotation';
 import { useCallback, useState } from 'react';
+import { SplatViewer } from './SplatViewer';
 import {
   useCreateJobMutation,
   useStartJobMutation,
@@ -603,6 +605,9 @@ const JobDetail = ({
   const { data: output } = useGetJobOutputQuery(jobId, {
     skip: job?.status !== 'completed',
   });
+  const [splatViewerUrl, setSplatViewerUrl] = useState<string | null>(null);
+
+  const viewableSplatUrl = output?.splat_url || output?.spz_url || null;
 
   if (isLoading || !job) {
     return (
@@ -736,6 +741,35 @@ const JobDetail = ({
             <DownloadButton label="SPZ Datei" url={output.spz_url} />
           )}
         </Box>
+      )}
+
+      {/* 3D Viewer button */}
+      {job.status === 'completed' && viewableSplatUrl && (
+        <Button
+          onClick={() => setSplatViewerUrl(viewableSplatUrl)}
+          startIcon={<ThreeDRotationIcon />}
+          sx={{
+            width: '100%',
+            height: '48px',
+            borderRadius: '20px',
+            backgroundColor: 'rgba(33, 150, 243, 0.15)',
+            color: '#2196F3',
+            textTransform: 'none',
+            fontSize: '14px',
+            fontWeight: 600,
+            '&:hover': { backgroundColor: 'rgba(33, 150, 243, 0.25)' },
+          }}
+        >
+          3D ansehen
+        </Button>
+      )}
+
+      {/* Splat Viewer overlay */}
+      {splatViewerUrl && (
+        <SplatViewer
+          splatUrl={splatViewerUrl}
+          onClose={() => setSplatViewerUrl(null)}
+        />
       )}
 
       {/* Cancel button */}

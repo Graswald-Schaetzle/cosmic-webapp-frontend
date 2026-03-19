@@ -16,6 +16,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@matterport/sdk": "^1.4.24",
+    "@mkkellogg/gaussian-splats-3d": "^0.4.7",
     "@mui/icons-material": "^7.1.0",
     "@mui/material": "^7.1.0",
     "@radix-ui/react-popover": "^1.1.14",
@@ -25,6 +26,7 @@
     "@types/react-dnd": "^3.0.2",
     "@types/react-pdf": "^6.2.0",
     "@types/sortablejs": "^1.15.8",
+    "@types/three": "^0.183.1",
     "antd": "^5.25.3",
     "axios": "^1.9.0",
     "class-variance-authority": "^0.7.1",
@@ -43,7 +45,8 @@
     "react-router-dom": "^6.22.3",
     "sortablejs": "^1.15.6",
     "tailwind-merge": "^3.3.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "three": "^0.183.2"
   },
   "devDependencies": {
     "@types/react": "^18.2.64",
