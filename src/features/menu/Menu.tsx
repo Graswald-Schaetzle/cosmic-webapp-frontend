@@ -9,6 +9,7 @@ import {
   openNotificationWindow,
   openObjectManagerWindow,
   openCalendarWindow,
+  openReconstructionWindow,
   closeAllModals,
 } from '../../store/modalSlice.ts';
 import { RootState } from '../../store/store';
@@ -135,6 +136,14 @@ const defaultMenuItems: MenuItem[] = [
     enabled: true,
     order: 11,
     name: 'Games',
+  },
+  {
+    id: 'reconstruction',
+    icon: '/icons/menu/white/3d-reconstruction.svg',
+    label: '3D-Rekonstruktion',
+    enabled: true,
+    order: 12,
+    name: '3D-Rekonstruktion',
   },
 ];
 
@@ -667,6 +676,9 @@ export function Menu() {
         break;
       case 'calendar':
         dispatch(openCalendarWindow());
+        break;
+      case 'reconstruction':
+        dispatch(openReconstructionWindow({ spaceId: 1 }));
         break;
       default:
         break;

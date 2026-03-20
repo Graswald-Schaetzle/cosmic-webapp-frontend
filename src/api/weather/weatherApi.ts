@@ -31,11 +31,12 @@ export class WeatherApiError extends Error {
 export const fetchWeatherData = async (
   latitude: number,
   longitude: number
-): Promise<WeatherData> => {
+): Promise<WeatherData | null> => {
   const apiKey = import.meta.env.VITE_OPENWEATHER_API_KEY;
 
   if (!apiKey) {
-    throw new WeatherApiError('OpenWeather API key is not configured');
+    // Weather feature disabled - no API key configured
+    return null;
   }
 
   try {

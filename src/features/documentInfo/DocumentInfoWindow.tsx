@@ -30,7 +30,7 @@ const constructDocumentUrl = (fileUrl: string, signedUrl?: string): string => {
 
   const fullUrl = fileUrl.startsWith('http')
     ? fileUrl
-    : `https://test1.aestar.com.ua/cosmic/${fileUrl}`;
+    : `${import.meta.env.VITE_API_BASE_URL}/${fileUrl}`;
   return `${fullUrl}?t=${Date.now()}`;
 };
 
