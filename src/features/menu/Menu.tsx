@@ -105,12 +105,15 @@ const defaultMenuItems: MenuItem[] = [
     order: 7,
     name: 'Profile',
   },
+];
+
+const defaultOtherItems: MenuItem[] = [
   {
     id: 'interior-designer',
     icon: '/icons/menu/white/tasks.svg',
     label: 'Interior Designer',
     enabled: true,
-    order: 8,
+    order: 0,
     name: 'Interior Designer',
   },
   {
@@ -118,7 +121,7 @@ const defaultMenuItems: MenuItem[] = [
     icon: '/icons/menu/white/tasks.svg',
     label: 'Food Delivery',
     enabled: true,
-    order: 9,
+    order: 1,
     name: 'Food Delivery',
   },
   {
@@ -126,7 +129,7 @@ const defaultMenuItems: MenuItem[] = [
     icon: '/icons/menu/white/tasks.svg',
     label: 'Insurance',
     enabled: true,
-    order: 10,
+    order: 2,
     name: 'Insurance',
   },
   {
@@ -134,7 +137,7 @@ const defaultMenuItems: MenuItem[] = [
     icon: '/icons/menu/white/tasks.svg',
     label: 'Games',
     enabled: true,
-    order: 11,
+    order: 3,
     name: 'Games',
   },
   {
@@ -142,12 +145,10 @@ const defaultMenuItems: MenuItem[] = [
     icon: '/icons/menu/white/3d-reconstruction.svg',
     label: '3D-Rekonstruktion',
     enabled: true,
-    order: 12,
+    order: 4,
     name: '3D-Rekonstruktion',
   },
 ];
-
-const defaultOtherItems: MenuItem[] = [];
 
 const StyledPaper = styled(Paper)({
   position: 'fixed',
@@ -714,10 +715,10 @@ export function Menu() {
       }
     }
 
-    // Check if trying to add to main menu and it's already at max capacity (10 items)
+    // Check if trying to add to main menu and it's already at max capacity (8 items)
     // Only apply this check when moving FROM other TO main menu
-    if (targetList === 'main' && sourceList !== 'main' && targetItems.length >= 10) {
-      console.warn('Main menu is at maximum capacity (10 items). Cannot add more items.');
+    if (targetList === 'main' && sourceList !== 'main' && targetItems.length >= 8) {
+      console.warn('Main menu is at maximum capacity (8 items). Cannot add more items.');
       return;
     }
 
@@ -836,7 +837,7 @@ export function Menu() {
                 moveItem={moveItem}
                 listType="main"
                 isWide={isWide}
-                isAtMaxCapacity={menuItems.length >= 10}
+                isAtMaxCapacity={menuItems.length >= 8}
               />
             )}
           </Box>
@@ -847,7 +848,7 @@ export function Menu() {
             {isWide && (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <StyledListItemText primary={'More'} />
-                {menuItems.length >= 10 && (
+                {menuItems.length >= 8 && (
                   <Box
                     sx={{
                       backgroundColor: 'rgba(255, 255, 255, 0.15)',
