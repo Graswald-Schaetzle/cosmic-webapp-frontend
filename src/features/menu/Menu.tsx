@@ -650,9 +650,9 @@ export function Menu() {
       setMenuItems(userMenuItems);
       setOtherItems(otherMenuItems);
     } else if (userMenuData && (!userMenuData.data || userMenuData.data.length === 0)) {
-      // API returned empty data - main menu is empty, all items go to other menu
-      setMenuItems([]);
-      setOtherItems(defaultMenuItems.map(item => ({ ...item, enabled: true })));
+      // API returned empty data - fall back to default menu items
+      setMenuItems(defaultMenuItems);
+      setOtherItems(defaultOtherItems);
     }
   }, [userMenuData, createUserMenu]);
 
