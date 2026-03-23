@@ -40,31 +40,26 @@ interface MenuItem {
   icon: string;
   muiIcon?: React.ComponentType<SvgIconProps>;
   label: string;
-  enabled: boolean;
+  section: 'main' | 'other';
   order: number;
   name: string;
 }
 
 const DND_TYPE = 'MENU_ITEM';
 
-const MAX_MAIN_ITEMS = 8;
-
 const defaultMenuItems: MenuItem[] = [
-  { id: 'dashboard', icon: '/icons/menu/white/dashboard.svg', label: 'Dashboard', enabled: true, order: 0, name: 'Dashboard' },
-  { id: 'objects', icon: '/icons/menu/white/objects.svg', label: 'Objects', enabled: true, order: 1, name: 'Objects' },
-  { id: 'tasks', icon: '/icons/menu/white/tasks.svg', label: 'Tasks', enabled: true, order: 2, name: 'Tasks' },
-  { id: 'notifications', icon: '/icons/menu/white/notifications.svg', label: 'Notifications', enabled: true, order: 3, name: 'Notifications' },
-  { id: 'calendar', icon: '/icons/menu/white/calendar.svg', label: 'Calendar', enabled: true, order: 4, name: 'Calendar' },
-  { id: 'documents', icon: '/icons/menu/white/documents.svg', label: 'Documents', enabled: true, order: 5, name: 'Documents' },
-  { id: 'profile', icon: '/icons/menu/white/profile.svg', label: 'Profile', enabled: true, order: 6, name: 'Profile' },
-];
-
-const defaultOtherItems: MenuItem[] = [
-  { id: 'interior-designer', icon: '', muiIcon: DesignServicesIcon, label: 'Interior Designer', enabled: true, order: 0, name: 'Interior Designer' },
-  { id: 'food-delivery', icon: '', muiIcon: TakeoutDiningIcon, label: 'Food Delivery', enabled: true, order: 1, name: 'Food Delivery' },
-  { id: 'insurance', icon: '', muiIcon: HealthAndSafetyIcon, label: 'Insurance', enabled: true, order: 2, name: 'Insurance' },
-  { id: 'games', icon: '', muiIcon: SportsEsportsIcon, label: 'Games', enabled: true, order: 3, name: 'Games' },
-  { id: 'reconstruction', icon: '/icons/menu/white/3d-reconstruction.svg', label: '3D-Rekonstruktion', enabled: true, order: 4, name: '3D-Rekonstruktion' },
+  { id: 'dashboard', icon: '/icons/menu/white/dashboard.svg', label: 'Dashboard', section: 'main', order: 0, name: 'Dashboard' },
+  { id: 'objects', icon: '/icons/menu/white/objects.svg', label: 'Objects', section: 'main', order: 1, name: 'Objects' },
+  { id: 'tasks', icon: '/icons/menu/white/tasks.svg', label: 'Tasks', section: 'main', order: 2, name: 'Tasks' },
+  { id: 'notifications', icon: '/icons/menu/white/notifications.svg', label: 'Notifications', section: 'main', order: 3, name: 'Notifications' },
+  { id: 'calendar', icon: '/icons/menu/white/calendar.svg', label: 'Calendar', section: 'main', order: 4, name: 'Calendar' },
+  { id: 'documents', icon: '/icons/menu/white/documents.svg', label: 'Documents', section: 'main', order: 5, name: 'Documents' },
+  { id: 'profile', icon: '/icons/menu/white/profile.svg', label: 'Profile', section: 'main', order: 6, name: 'Profile' },
+  { id: 'interior-designer', icon: '', muiIcon: DesignServicesIcon, label: 'Interior Designer', section: 'other', order: 0, name: 'Interior Designer' },
+  { id: 'food-delivery', icon: '', muiIcon: TakeoutDiningIcon, label: 'Food Delivery', section: 'other', order: 1, name: 'Food Delivery' },
+  { id: 'insurance', icon: '', muiIcon: HealthAndSafetyIcon, label: 'Insurance', section: 'other', order: 2, name: 'Insurance' },
+  { id: 'games', icon: '', muiIcon: SportsEsportsIcon, label: 'Games', section: 'other', order: 3, name: 'Games' },
+  { id: 'reconstruction', icon: '/icons/menu/white/3d-reconstruction.svg', label: '3D-Rekonstruktion', section: 'other', order: 4, name: '3D-Rekonstruktion' },
 ];
 
 // --- Styled Components ---
@@ -265,6 +260,7 @@ interface DragItem {
   id: string;
   index: number;
   sourceList: string;
+  moved?: boolean;
 }
 
 // --- DropZone Component (between items) ---
@@ -273,17 +269,14 @@ interface DropZoneProps {
   targetList: string;
   targetIndex: number;
   onDrop: (sourceList: string, sourceIndex: number, targetList: string, targetIndex: number) => void;
-  isMainList: boolean;
-  currentMainCount: number;
 }
 
-function DropZone({ targetList, targetIndex, onDrop, isMainList, currentMainCount }: DropZoneProps) {
-  const [{ isOver, canDrop, draggedItem }, drop] = useDrop({
+function DropZone({ targetList, targetIndex, onDrop }: DropZoneProps) {
+  const [{ isOver, canDrop }, drop] = useDrop({
     accept: DND_TYPE,
     collect: (monitor) => ({
       isOver: monitor.isOver({ shallow: true }),
       canDrop: monitor.canDrop(),
-      draggedItem: monitor.getItem() as DragItem | null,
     }),
     drop: (item: DragItem) => {
       if (item.sourceList === targetList && item.index === targetIndex) return;
@@ -292,11 +285,7 @@ function DropZone({ targetList, targetIndex, onDrop, isMainList, currentMainCoun
     },
   });
 
-  const isRestricted = draggedItem?.id === 'tasks' || draggedItem?.id === 'dashboard';
-  const isCrossList = draggedItem && draggedItem.sourceList !== targetList;
-  const wouldExceedMax = isMainList && isCrossList && currentMainCount >= MAX_MAIN_ITEMS;
-  const blocked = (isCrossList && isRestricted && targetList === 'other') || wouldExceedMax;
-  const active = isOver && canDrop && !blocked;
+  const active = isOver && canDrop;
 
   return (
     <div
@@ -328,6 +317,15 @@ interface DraggableMenuItemProps {
   isOpen: boolean;
   isObjectsOpen: boolean;
   isWide: boolean;
+  layout?: 'list' | 'grid';
+  onHoverMove?: (
+    sourceList: string,
+    sourceIndex: number,
+    targetList: string,
+    targetIndex: number
+  ) => void;
+  onDragStart?: () => void;
+  onDragEnd?: (didDrop: boolean, moved: boolean) => void;
 }
 
 function DraggableMenuItem({
@@ -338,10 +336,21 @@ function DraggableMenuItem({
   isOpen,
   isObjectsOpen,
   isWide,
+  layout = 'list',
+  onHoverMove,
+  onDragStart,
+  onDragEnd,
 }: DraggableMenuItemProps) {
+  const ref = useRef<HTMLDivElement | null>(null);
   const [{ isDragging }, drag] = useDrag({
     type: DND_TYPE,
-    item: { id: item.id, index, sourceList: listType },
+    item: () => {
+      onDragStart?.();
+      return { id: item.id, index, sourceList: listType, moved: false };
+    },
+    end: (draggedItem, monitor) => {
+      onDragEnd?.(monitor.didDrop(), Boolean(draggedItem?.moved));
+    },
     collect: (monitor: DragSourceMonitor) => ({
       isDragging: monitor.isDragging(),
     }),
@@ -350,19 +359,109 @@ function DraggableMenuItem({
   const isSelected =
     (item.id === 'dashboard' && isOpen) || (item.id === 'objects' && isObjectsOpen);
 
+  const [, drop] = useDrop({
+    accept: DND_TYPE,
+    hover: (draggedItem: DragItem, monitor) => {
+      if (!ref.current || !onHoverMove) return;
+
+      const clientOffset = monitor.getClientOffset();
+      if (!clientOffset) return;
+
+      const hoverRect = ref.current.getBoundingClientRect();
+      const hoverMiddleX = (hoverRect.right - hoverRect.left) / 2;
+      const hoverMiddleY = (hoverRect.bottom - hoverRect.top) / 2;
+      const hoverClientX = clientOffset.x - hoverRect.left;
+      const hoverClientY = clientOffset.y - hoverRect.top;
+      const sameList = draggedItem.sourceList === listType;
+
+      if (sameList && draggedItem.index === index) return;
+
+      const insertAfter =
+        layout === 'grid' && sameList && Math.floor(draggedItem.index / 3) === Math.floor(index / 3)
+          ? hoverClientX > hoverMiddleX
+          : hoverClientY > hoverMiddleY;
+
+      const targetIndex = index + (insertAfter ? 1 : 0);
+      if (sameList && draggedItem.index < targetIndex && draggedItem.index + 1 === targetIndex) {
+        return;
+      }
+      if (sameList && draggedItem.index === targetIndex) {
+        return;
+      }
+
+      onHoverMove(draggedItem.sourceList, draggedItem.index, listType, targetIndex);
+      draggedItem.sourceList = listType;
+      draggedItem.index =
+        sameList && draggedItem.index < targetIndex ? targetIndex - 1 : targetIndex;
+      draggedItem.moved = true;
+    },
+    drop: () => ({ handled: true }),
+  });
+  drag(drop(ref));
+
+  if (layout === 'grid') {
+    return (
+      <Box
+        ref={ref}
+        sx={{
+          opacity: isDragging ? 0.4 : 1,
+          cursor: 'grab',
+          transform: isDragging ? 'scale(1.06)' : 'scale(1)',
+          transition: 'transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease',
+        }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 0.5,
+            p: 1,
+            borderRadius: 3,
+            opacity: isSelected ? 1 : 0.75,
+            backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.18)' : 'transparent',
+            '&:hover': { opacity: 1, backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+            minWidth: 56,
+            transition:
+              'transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.2s ease, opacity 0.2s ease',
+          }}
+          onClick={() => onItemClick(item.id)}
+        >
+          <MenuItemIcon item={item} />
+          <Typography
+            sx={{
+              color: 'white',
+              fontSize: 10,
+              lineHeight: '12px',
+              textAlign: 'center',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {item.label}
+          </Typography>
+        </Box>
+      </Box>
+    );
+  }
+
   return (
     <div
-      ref={drag}
+      ref={ref}
       style={{
         opacity: isDragging ? 0.4 : 1,
         cursor: 'grab',
-        transform: isDragging ? 'scale(1.05)' : 'scale(1)',
-        transition: 'all 0.2s ease',
+        transform: isDragging ? 'scale(1.03)' : 'scale(1)',
+        transition: 'transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease',
       }}
     >
       <StyledListItem
         onClick={() => onItemClick(item.id)}
         className={isSelected ? 'selected' : ''}
+        sx={{
+          transition:
+            'transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease',
+        }}
       >
         <StyledListItemIcon>
           <MenuItemIcon item={item} />
@@ -378,27 +477,17 @@ function DraggableMenuItem({
 interface DroppableMoreButtonProps {
   onClick: () => void;
   isWide: boolean;
-  menuItems: MenuItem[];
-  otherItems: MenuItem[];
-  setMenuItems: (items: MenuItem[]) => void;
-  setOtherItems: (items: MenuItem[]) => void;
+  onDropToOther: (sourceList: string, sourceIndex: number) => void;
   setShowOtherElements: (show: boolean) => void;
   setIsWide: (isWide: boolean) => void;
-  isUpdatingUserMenu: React.MutableRefObject<boolean>;
-  updateUserMenu: ReturnType<typeof useUpdateUserMenuMutation>[0];
 }
 
 function DroppableMoreButton({
   onClick,
   isWide,
-  menuItems,
-  otherItems,
-  setMenuItems,
-  setOtherItems,
+  onDropToOther,
   setShowOtherElements,
   setIsWide,
-  isUpdatingUserMenu,
-  updateUserMenu,
 }: DroppableMoreButtonProps) {
   const [{ isOver, canDrop }, drop] = useDrop({
     accept: DND_TYPE,
@@ -406,35 +495,11 @@ function DroppableMoreButton({
       isOver: monitor.isOver({ shallow: true }),
       canDrop: monitor.canDrop(),
     }),
-    drop: async (item: DragItem) => {
-      if (item.sourceList === 'other') return;
-      if (item.id === 'tasks' || item.id === 'dashboard') return;
-
-      const newMain = [...menuItems];
-      const newOther = [...otherItems];
-      const draggedMenuItem = newMain[item.index];
-      if (!draggedMenuItem) return;
-
-      newMain.splice(item.index, 1);
-      newOther.push(draggedMenuItem);
-
-      setMenuItems(newMain);
-      setOtherItems(newOther);
+    drop: (item: DragItem) => {
       setShowOtherElements(true);
       setIsWide(true);
-
-      const payload = newMain.map((mi, idx) => ({
-        name: mi.name,
-        order: idx,
-        enabled: true,
-      }));
-      try {
-        isUpdatingUserMenu.current = true;
-        await updateUserMenu(payload).unwrap();
-      } catch (err) {
-        console.error('Failed to update user menu:', err);
-      } finally {
-        isUpdatingUserMenu.current = false;
+      if (item.sourceList !== 'other') {
+        onDropToOther(item.sourceList, item.index);
       }
     },
   });
@@ -460,20 +525,6 @@ function DroppableMoreButton({
         {isWide && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <StyledListItemText primary={isOver && canDrop ? 'Drop here' : 'More'} />
-            {menuItems.length >= MAX_MAIN_ITEMS && (
-              <Box
-                sx={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                  color: 'rgba(255, 255, 255, 0.8)',
-                  fontSize: '10px',
-                  padding: '2px 6px',
-                  borderRadius: '8px',
-                  fontWeight: 'bold',
-                }}
-              >
-                MAX
-              </Box>
-            )}
           </Box>
         )}
       </StyledListItem>
@@ -491,9 +542,15 @@ interface DroppableListProps {
   isObjectsOpen: boolean;
   isWide: boolean;
   onDrop: (sourceList: string, sourceIndex: number, targetList: string, targetIndex: number) => void;
-  isMainList: boolean;
-  currentMainCount: number;
   layout?: 'list' | 'grid';
+  onHoverMove?: (
+    sourceList: string,
+    sourceIndex: number,
+    targetList: string,
+    targetIndex: number
+  ) => void;
+  onDragStart?: () => void;
+  onDragEnd?: (didDrop: boolean, moved: boolean) => void;
 }
 
 function DroppableList({
@@ -504,45 +561,31 @@ function DroppableList({
   isObjectsOpen,
   isWide,
   onDrop,
-  isMainList,
-  currentMainCount,
   layout = 'list',
+  onHoverMove,
+  onDragStart,
+  onDragEnd,
 }: DroppableListProps) {
   if (layout === 'grid') {
     return (
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, p: 0.5 }}>
         {items.map((item, index) => (
-          <Box key={item.id} sx={{ position: 'relative' }}>
-            <Box sx={{ position: 'absolute', top: 0, left: -4, right: -4, height: '50%', zIndex: 1 }}>
-              <DropZone targetList={listType} targetIndex={index} onDrop={onDrop} isMainList={isMainList} currentMainCount={currentMainCount} />
-            </Box>
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 0.5,
-                p: 1,
-                borderRadius: 3,
-                cursor: 'grab',
-                opacity: 0.75,
-                '&:hover': { opacity: 1, backgroundColor: 'rgba(255, 255, 255, 0.1)' },
-                minWidth: 56,
-              }}
-              onClick={() => onItemClick(item.id)}
-            >
-              <MenuItemIcon item={item} />
-              <Typography sx={{ color: 'white', fontSize: 10, lineHeight: '12px', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                {item.label}
-              </Typography>
-            </Box>
-            <Box sx={{ position: 'absolute', bottom: 0, left: -4, right: -4, height: '50%', zIndex: 1 }}>
-              <DropZone targetList={listType} targetIndex={index + 1} onDrop={onDrop} isMainList={isMainList} currentMainCount={currentMainCount} />
-            </Box>
+          <Box key={item.id} sx={{ minWidth: 0 }}>
+            <DraggableMenuItem
+              item={item}
+              index={index}
+              listType={listType}
+              onItemClick={onItemClick}
+              isOpen={isOpen}
+              isObjectsOpen={isObjectsOpen}
+              isWide={isWide}
+              layout="grid"
+              onHoverMove={onHoverMove}
+              onDragStart={onDragStart}
+              onDragEnd={onDragEnd}
+            />
           </Box>
         ))}
-        <DropZone targetList={listType} targetIndex={items.length} onDrop={onDrop} isMainList={isMainList} currentMainCount={currentMainCount} />
       </Box>
     );
   }
@@ -551,13 +594,6 @@ function DroppableList({
     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
       {items.map((item, index) => (
         <Box key={item.id}>
-          <DropZone
-            targetList={listType}
-            targetIndex={index}
-            onDrop={onDrop}
-            isMainList={isMainList}
-            currentMainCount={currentMainCount}
-          />
           <DraggableMenuItem
             item={item}
             index={index}
@@ -566,6 +602,9 @@ function DroppableList({
             isOpen={isOpen}
             isObjectsOpen={isObjectsOpen}
             isWide={isWide}
+            onHoverMove={onHoverMove}
+            onDragStart={onDragStart}
+            onDragEnd={onDragEnd}
           />
         </Box>
       ))}
@@ -573,8 +612,6 @@ function DroppableList({
         targetList={listType}
         targetIndex={items.length}
         onDrop={onDrop}
-        isMainList={isMainList}
-        currentMainCount={currentMainCount}
       />
     </Box>
   );
@@ -593,39 +630,191 @@ export function Menu() {
   const { data: userMenuData, isLoading: isLoadingUserMenu } = useGetUserMenuQuery();
   const [updateUserMenu] = useUpdateUserMenuMutation();
 
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(defaultMenuItems.filter((i) => i.id !== 'ai-agent'));
-  const [otherItems, setOtherItems] = useState<MenuItem[]>(defaultOtherItems);
+  const [customMenuItems, setCustomMenuItems] = useState<MenuItem[]>(defaultMenuItems);
   const [isWide, setIsWide] = useState(false);
   const [showOtherElements, setShowOtherElements] = useState(false);
   const isUpdatingUserMenu = useRef(false);
+  const customMenuItemsRef = useRef<MenuItem[]>(defaultMenuItems);
+  const dragSnapshotRef = useRef<MenuItem[] | null>(null);
+
+  useEffect(() => {
+    customMenuItemsRef.current = customMenuItems;
+  }, [customMenuItems]);
+
+  const getSectionItems = useCallback(
+    (items: MenuItem[], section: MenuItem['section']) =>
+      items
+        .filter((item) => item.section === section)
+        .sort((a, b) => a.order - b.order),
+    []
+  );
+
+  const normalizeMenuItems = useCallback(
+    (items: MenuItem[]) => {
+      const mainItems = getSectionItems(items, 'main').map((item, index) => ({
+        ...item,
+        section: 'main' as const,
+        order: index,
+      }));
+      const otherItems = getSectionItems(items, 'other').map((item, index) => ({
+        ...item,
+        section: 'other' as const,
+        order: index,
+      }));
+
+      return [...mainItems, ...otherItems];
+    },
+    [getSectionItems]
+  );
+
+  const persistMenuItems = useCallback(
+    async (items: MenuItem[]) => {
+      const mainItems = getSectionItems(items, 'main');
+      const otherItems = getSectionItems(items, 'other');
+      const payload: UserMenuPayload[] = [
+        ...mainItems.map((item, index) => ({
+          name: item.name,
+          order: index,
+          enabled: true,
+        })),
+        ...otherItems.map((item, index) => ({
+          name: item.name,
+          order: index,
+          enabled: false,
+        })),
+      ];
+
+      try {
+        isUpdatingUserMenu.current = true;
+        await updateUserMenu(payload).unwrap();
+      } catch (err) {
+        console.error('Failed to update user menu:', err);
+      } finally {
+        isUpdatingUserMenu.current = false;
+      }
+    },
+    [getSectionItems, updateUserMenu]
+  );
+
+  const moveMenuItem = useCallback(
+    (
+      items: MenuItem[],
+      sourceList: string,
+      sourceIndex: number,
+      targetList: string,
+      targetIndex: number
+    ) => {
+      const sourceSection = sourceList as MenuItem['section'];
+      const targetSection = targetList as MenuItem['section'];
+      const sourceItems = getSectionItems(items, sourceSection);
+      const targetItems =
+        sourceSection === targetSection ? sourceItems : getSectionItems(items, targetSection);
+
+      const draggedItem = sourceItems[sourceIndex];
+      if (!draggedItem) return null;
+
+      if (sourceSection === targetSection) {
+        const reorderedItems = [...sourceItems];
+        reorderedItems.splice(sourceIndex, 1);
+        let insertAt = targetIndex;
+        if (sourceIndex < targetIndex) insertAt -= 1;
+        reorderedItems.splice(insertAt, 0, draggedItem);
+
+        const nextItems = [
+          ...items.filter((item) => item.section !== sourceSection),
+          ...reorderedItems.map((item, index) => ({
+            ...item,
+            section: sourceSection,
+            order: index,
+          })),
+        ];
+        return normalizeMenuItems(nextItems);
+      }
+
+      const nextSourceItems = [...sourceItems];
+      const nextTargetItems = [...targetItems];
+      nextSourceItems.splice(sourceIndex, 1);
+      const clampedTargetIndex = Math.min(Math.max(0, targetIndex), nextTargetItems.length);
+      nextTargetItems.splice(clampedTargetIndex, 0, {
+        ...draggedItem,
+        section: targetSection,
+      });
+
+      const untouchedItems = items.filter(
+        (item) => item.section !== sourceSection && item.section !== targetSection
+      );
+
+      return normalizeMenuItems([
+        ...untouchedItems,
+        ...nextSourceItems.map((item, index) => ({
+          ...item,
+          section: sourceSection,
+          order: index,
+        })),
+        ...nextTargetItems.map((item, index) => ({
+          ...item,
+          section: targetSection,
+          order: index,
+        })),
+      ]);
+    },
+    [getSectionItems, normalizeMenuItems]
+  );
+
+  const menuItems = getSectionItems(customMenuItems, 'main');
+  const otherItems = getSectionItems(customMenuItems, 'other');
+
+  const applyMenuMove = useCallback(
+    (
+      sourceList: string,
+      sourceIndex: number,
+      targetList: string,
+      targetIndex: number,
+      items = customMenuItemsRef.current
+    ) => {
+      const nextItems = moveMenuItem(items, sourceList, sourceIndex, targetList, targetIndex);
+      if (!nextItems) return null;
+
+      setCustomMenuItems(nextItems);
+      customMenuItemsRef.current = nextItems;
+      return nextItems;
+    },
+    [moveMenuItem]
+  );
 
   // Initialize from user menu API
   useEffect(() => {
     if (isUpdatingUserMenu.current) return;
 
     if (userMenuData?.data && userMenuData.data.length > 0) {
-      const userMenuItems = userMenuData.data
-        .filter((item) => item.enabled)
+      const defaultItemMap = new Map(defaultMenuItems.map((item) => [item.name, item]));
+      const configuredNames = new Set<string>();
+      const configuredItems = [...userMenuData.data]
         .sort((a, b) => a.order - b.order)
         .map((item) => {
-          const defaultItem = [...defaultMenuItems, ...defaultOtherItems].find((di) => di.name === item.name);
-          return defaultItem ? { ...defaultItem, order: item.order } : null;
+          const defaultItem = defaultItemMap.get(item.name);
+          if (!defaultItem) return null;
+          configuredNames.add(item.name);
+          return {
+            ...defaultItem,
+            section: item.enabled ? 'main' as const : 'other' as const,
+            order: item.order,
+          };
         })
-        .filter(Boolean)
-        .filter((item) => (item as MenuItem).id !== 'ai-agent') as MenuItem[];
+        .filter(Boolean) as MenuItem[];
 
-      const userMenuNames = userMenuData.data.map((item) => item.name);
-      const otherMenuItems = [...defaultMenuItems, ...defaultOtherItems]
-        .filter((item) => !userMenuNames.includes(item.name))
-        .map((item) => ({ ...item, enabled: true }));
+      const missingItems = defaultMenuItems
+        .filter((item) => !configuredNames.has(item.name))
+        .map((item) => ({
+          ...item,
+          section: 'other' as const,
+        }));
 
-      setMenuItems(userMenuItems);
-      setOtherItems(otherMenuItems);
+      setCustomMenuItems(normalizeMenuItems([...configuredItems, ...missingItems]));
     } else if (userMenuData && (!userMenuData.data || userMenuData.data.length === 0)) {
-      setMenuItems(defaultMenuItems.filter((i) => i.id !== 'ai-agent'));
-      setOtherItems(defaultOtherItems);
+      setCustomMenuItems(normalizeMenuItems(defaultMenuItems));
     }
-  }, [userMenuData]);
+  }, [normalizeMenuItems, userMenuData]);
 
   const handleMenuItemClick = (itemId: string) => {
     dispatch(closeAllModals());
@@ -649,74 +838,43 @@ export function Menu() {
     setIsWide(true);
   };
 
-  const handleDrop = useCallback(
-    async (sourceList: string, sourceIndex: number, targetList: string, targetIndex: number) => {
-      const source = sourceList === 'main' ? [...menuItems] : [...otherItems];
-      const target = targetList === 'main' ? [...menuItems] : [...otherItems];
+  const handleDragStart = useCallback(() => {
+    dragSnapshotRef.current = customMenuItemsRef.current;
+  }, []);
 
-      const draggedItem = source[sourceIndex];
-      if (!draggedItem) return;
-
-      // Prevent moving tasks/dashboard from main to other
-      if (sourceList === 'main' && targetList === 'other') {
-        if (draggedItem.id === 'tasks' || draggedItem.id === 'dashboard') return;
-      }
-
-      // Prevent exceeding max in main menu when moving from other
-      if (sourceList !== 'main' && targetList === 'main' && menuItems.length >= MAX_MAIN_ITEMS) {
+  const handleDragEnd = useCallback(
+    async (didDrop: boolean, moved: boolean) => {
+      if (!moved) {
+        dragSnapshotRef.current = null;
         return;
       }
 
-      if (sourceList === targetList) {
-        // Reorder within the same list
-        source.splice(sourceIndex, 1);
-        let insertAt = targetIndex;
-        if (sourceIndex < targetIndex) insertAt -= 1;
-        source.splice(insertAt, 0, draggedItem);
-
-        if (sourceList === 'main') {
-          setMenuItems(source);
-        } else {
-          setOtherItems(source);
-        }
-      } else {
-        // Move between lists
-        source.splice(sourceIndex, 1);
-        // Clamp target index to valid range for the target list
-        const clampedTarget = Math.min(Math.max(0, targetIndex), target.length);
-        target.splice(clampedTarget, 0, draggedItem);
-
-        if (sourceList === 'main') {
-          setMenuItems(source);
-          setOtherItems(target);
-        } else {
-          setMenuItems(target);
-          setOtherItems(source);
-        }
+      if (!didDrop && dragSnapshotRef.current) {
+        setCustomMenuItems(dragSnapshotRef.current);
+        customMenuItemsRef.current = dragSnapshotRef.current;
+        dragSnapshotRef.current = null;
+        return;
       }
 
-      // Persist to API (main menu items only)
-      const newMain = sourceList === 'main'
-        ? (targetList === 'main' ? source : target)
-        : (targetList === 'main' ? target : source);
-
-      if (sourceList === 'main' || targetList === 'main') {
-        const payload: UserMenuPayload[] = newMain.map((item, idx) => ({
-          name: item.name,
-          order: idx,
-          enabled: true,
-        }));
-        try {
-          isUpdatingUserMenu.current = true;
-          await updateUserMenu(payload).unwrap();
-        } catch (err) {
-          console.error('Failed to update user menu:', err);
-        } finally {
-          isUpdatingUserMenu.current = false;
-        }
-      }
+      dragSnapshotRef.current = null;
+      await persistMenuItems(customMenuItemsRef.current);
     },
-    [menuItems, otherItems, updateUserMenu]
+    [persistMenuItems]
+  );
+
+  const handleDrop = useCallback(
+    async (sourceList: string, sourceIndex: number, targetList: string, targetIndex: number) => {
+      const nextItems = applyMenuMove(
+        sourceList,
+        sourceIndex,
+        targetList,
+        targetIndex,
+        customMenuItems
+      );
+      if (!nextItems) return;
+      await persistMenuItems(nextItems);
+    },
+    [applyMenuMove, customMenuItems, persistMenuItems]
   );
 
   if (isLoadingUserMenu || isMatterportLoading) return null;
@@ -769,21 +927,19 @@ export function Menu() {
             isObjectsOpen={isObjectsOpen}
             isWide={isWide}
             onDrop={handleDrop}
-            isMainList={true}
-            currentMainCount={menuItems.length}
+            onHoverMove={applyMenuMove}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
           />
 
           <DroppableMoreButton
             onClick={handleOtherElementsClick}
             isWide={isWide}
-            menuItems={menuItems}
-            otherItems={otherItems}
-            setMenuItems={setMenuItems}
-            setOtherItems={setOtherItems}
+            onDropToOther={(sourceList, sourceIndex) => {
+              void handleDrop(sourceList, sourceIndex, 'other', otherItems.length);
+            }}
             setShowOtherElements={setShowOtherElements}
             setIsWide={setIsWide}
-            isUpdatingUserMenu={isUpdatingUserMenu}
-            updateUserMenu={updateUserMenu}
           />
         </StyledPaper>
 
@@ -849,8 +1005,9 @@ export function Menu() {
                 isObjectsOpen={isObjectsOpen}
                 isWide={true}
                 onDrop={handleDrop}
-                isMainList={false}
-                currentMainCount={menuItems.length}
+                onHoverMove={applyMenuMove}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
                 layout="grid"
               />
             </Box>
