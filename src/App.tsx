@@ -20,18 +20,19 @@ import { NotificationWindow } from './features/notifications/NotificationWindow'
 import { ObjectManagerWindow } from './features/objectManager/ObjectManagerWindow';
 import { CalendarWindow } from './features/calendar/CalendarWindow';
 import { ReconstructionWindow } from './features/reconstruction/ReconstructionWindow';
+import { SpacesWindow } from './features/spaces/SpacesWindow';
+import { SpaceViewerWindow } from './features/spaces/SpaceViewerWindow';
 
 import { Box, Button, CircularProgress, TextField, Typography } from '@mui/material';
 
 function LoginForm() {
   const { login, isLoading, error } = useAuth();
   const [email, setEmail] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    login(email, firstName, lastName);
+    login(email, password);
   };
 
   return (
@@ -76,18 +77,10 @@ function LoginForm() {
           sx={{ input: { color: '#fff' }, label: { color: '#aaa' } }}
         />
         <TextField
-          label="First Name"
-          value={firstName}
-          onChange={(e) => setFirstName(e.target.value)}
-          required
-          variant="outlined"
-          size="small"
-          sx={{ input: { color: '#fff' }, label: { color: '#aaa' } }}
-        />
-        <TextField
-          label="Last Name"
-          value={lastName}
-          onChange={(e) => setLastName(e.target.value)}
+          label="Password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           required
           variant="outlined"
           size="small"
@@ -185,6 +178,10 @@ const AuthenticatedContent = () => {
             <CalendarWindow />
 
             <ReconstructionWindow />
+
+            <SpacesWindow />
+
+            <SpaceViewerWindow />
           </MatterportLayout>
         </Layout>
       </TaskProvider>

@@ -10,6 +10,7 @@ import {
   openObjectManagerWindow,
   openCalendarWindow,
   openReconstructionWindow,
+  openSpacesWindow,
   closeAllModals,
 } from '../../store/modalSlice.ts';
 import { RootState } from '../../store/store';
@@ -28,6 +29,7 @@ import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
 import DesignServicesIcon from '@mui/icons-material/DesignServices';
 import TakeoutDiningIcon from '@mui/icons-material/TakeoutDining';
+import HomeWorkIcon from '@mui/icons-material/HomeWork';
 import type { SvgIconProps } from '@mui/material';
 import {
   useGetUserMenuQuery,
@@ -60,6 +62,7 @@ const defaultMenuItems: MenuItem[] = [
   { id: 'insurance', icon: '', muiIcon: HealthAndSafetyIcon, label: 'Insurance', section: 'other', order: 2, name: 'Insurance' },
   { id: 'games', icon: '', muiIcon: SportsEsportsIcon, label: 'Games', section: 'other', order: 3, name: 'Games' },
   { id: 'reconstruction', icon: '/icons/menu/white/3d-reconstruction.svg', label: '3D-Rekonstruktion', section: 'other', order: 4, name: '3D-Rekonstruktion' },
+  { id: 'spaces', icon: '', muiIcon: HomeWorkIcon, label: 'Meine Räume', section: 'other', order: 5, name: 'Meine Räume' },
 ];
 
 // --- Styled Components ---
@@ -826,6 +829,7 @@ export function Menu() {
       case 'documents': dispatch(openDocumentsWindow()); break;
       case 'calendar': dispatch(openCalendarWindow()); break;
       case 'reconstruction': dispatch(openReconstructionWindow({ spaceId: 1 })); break;
+      case 'spaces': dispatch(openSpacesWindow()); break;
     }
   };
 

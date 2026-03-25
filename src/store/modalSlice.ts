@@ -88,6 +88,16 @@ interface ModalState {
     isOpen: boolean;
     spaceId?: number | null;
   };
+  spacesWindowModal: {
+    isOpen: boolean;
+  };
+  spaceViewerWindowModal: {
+    isOpen: boolean;
+    spaceId: number | null;
+    spaceName: string | null;
+    modelUrl: string | null;
+    jobId: number | null;
+  };
 }
 
 const initialState: ModalState = {
@@ -154,6 +164,16 @@ const initialState: ModalState = {
   reconstructionWindowModal: {
     isOpen: false,
     spaceId: null,
+  },
+  spacesWindowModal: {
+    isOpen: false,
+  },
+  spaceViewerWindowModal: {
+    isOpen: false,
+    spaceId: null,
+    spaceName: null,
+    modelUrl: null,
+    jobId: null,
   },
 };
 
@@ -360,6 +380,34 @@ const modalSlice = createSlice({
       state.reconstructionWindowModal.isOpen = false;
       state.reconstructionWindowModal.spaceId = null;
     },
+    openSpacesWindow: state => {
+      state.spacesWindowModal.isOpen = true;
+    },
+    closeSpacesWindow: state => {
+      state.spacesWindowModal.isOpen = false;
+    },
+    openSpaceViewerWindow: (
+      state,
+      action: PayloadAction<{
+        spaceId: number;
+        spaceName: string;
+        modelUrl: string | null;
+        jobId: number | null;
+      }>
+    ) => {
+      state.spaceViewerWindowModal.isOpen = true;
+      state.spaceViewerWindowModal.spaceId = action.payload.spaceId;
+      state.spaceViewerWindowModal.spaceName = action.payload.spaceName;
+      state.spaceViewerWindowModal.modelUrl = action.payload.modelUrl;
+      state.spaceViewerWindowModal.jobId = action.payload.jobId;
+    },
+    closeSpaceViewerWindow: state => {
+      state.spaceViewerWindowModal.isOpen = false;
+      state.spaceViewerWindowModal.spaceId = null;
+      state.spaceViewerWindowModal.spaceName = null;
+      state.spaceViewerWindowModal.modelUrl = null;
+      state.spaceViewerWindowModal.jobId = null;
+    },
     closeAllModals: state => {
       state.matterTagWindowModal.isOpen = false;
       state.matterTagWindowModal.selectedTag = null;
@@ -392,6 +440,12 @@ const modalSlice = createSlice({
       state.calendarWindowModal.selectedDate = null;
       state.reconstructionWindowModal.isOpen = false;
       state.reconstructionWindowModal.spaceId = null;
+      state.spacesWindowModal.isOpen = false;
+      state.spaceViewerWindowModal.isOpen = false;
+      state.spaceViewerWindowModal.spaceId = null;
+      state.spaceViewerWindowModal.spaceName = null;
+      state.spaceViewerWindowModal.modelUrl = null;
+      state.spaceViewerWindowModal.jobId = null;
     },
   },
 });
@@ -428,6 +482,10 @@ export const {
   closeCalendarWindow,
   openReconstructionWindow,
   closeReconstructionWindow,
+  openSpacesWindow,
+  closeSpacesWindow,
+  openSpaceViewerWindow,
+  closeSpaceViewerWindow,
   closeAllModals,
 } = modalSlice.actions;
 
