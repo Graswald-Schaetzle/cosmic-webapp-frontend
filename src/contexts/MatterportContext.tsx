@@ -73,15 +73,29 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
             }
             dwellTimerRef.current = setTimeout(async () => {
               try {
-                const screenPos = await sdk.Conversion.worldToScreen(pos);
+                // worldToScreen returns normalized [0,1] coordinates
+                // multiply by renderer size to get pixel coordinates
+                const screenPos = sdk.Conversion.worldToScreen(pos);
+                const size = sdk.Renderer.getSize();
+                const x = screenPos.x * size.width;
+                const y = screenPos.y * size.height;
+                // Only show if on-screen (coordinates within viewport)
+                if (x > 0 && y > 0 && x < size.width && y < size.height) {
+                  setDwellIndicator({
+                    screenX: x,
+                    screenY: y,
+                    worldPos: pos,
+                    floorId: newIntersection.floorId || '',
+                  });
+                }
+              } catch {
+                // worldToScreen may fail if position is off-screen; show at center as fallback
                 setDwellIndicator({
-                  screenX: screenPos.x,
-                  screenY: screenPos.y,
+                  screenX: -9999,
+                  screenY: -9999,
                   worldPos: pos,
                   floorId: newIntersection.floorId || '',
                 });
-              } catch {
-                // worldToScreen may fail if position is off-screen
               }
             }, 3000);
           }
@@ -143,7 +157,8 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
     };
 
     initMatterport();
-  }, [sdk, mattertags]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sdk]);
 
   const createTag = async (data: TagData) => {
     if (!sdk) throw new Error('Matterport SDK not initialized');
