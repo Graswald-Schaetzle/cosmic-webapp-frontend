@@ -71,6 +71,8 @@ const SUPABASE_ANON_KEY =
 interface UserInput {
   email: string;
   password: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 async function supabaseSignIn(email: string, password: string): Promise<string> {
@@ -89,6 +91,70 @@ async function supabaseSignIn(email: string, password: string): Promise<string> 
 
   const data = await response.json();
   return data.user.id as string;
+}
+
+async function supabaseSignUp(
+  email: string,
+  password: string,
+  firstName: string,
+  lastName: string,
+): Promise<string> {
+  const response = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify({
+      email,
+      password,
+      data: { first_name: firstName, last_name: lastName },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Registrierung fehlgeschlagen.');
+  }
+
+  const data = await response.json();
+  if (!data.user?.id) {
+    throw new Error(
+      'Registrierung fehlgeschlagen. Bitte überprüfe deine E-Mail-Adresse.',
+    );
+  }
+  return data.user.id as string;
+}
+
+export async function registerUser(userInput: UserInput): Promise<AuthResponse['user']> {
+  const supabaseUserId = await supabaseSignUp(
+    userInput.email,
+    userInput.password,
+    userInput.firstName!,
+    userInput.lastName!,
+  );
+
+  try {
+    const response = await axiosInstance({
+      url: '/auth/login',
+      method: 'POST',
+      data: {
+        supabase_id: supabaseUserId,
+        first_name: userInput.firstName,
+        last_name: userInput.lastName,
+      },
+    });
+
+    const data: AuthResponse = response.data;
+    if (!data.user?.access_token) {
+      throw new Error('Failed to get access token');
+    }
+
+    return data.user;
+  } catch (error: any) {
+    console.error('Registration error:', error);
+    throw new Error(error.response?.data?.message || error.message || 'Registrierung fehlgeschlagen');
+  }
 }
 
 export async function authorizeUser(userInput: UserInput): Promise<AuthResponse['user']> {

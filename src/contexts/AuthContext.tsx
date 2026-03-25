@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { authorizeUser } from '../app/api';
+import { authorizeUser, registerUser } from '../app/api';
 import { useGetAllLocationsQuery } from '../api/locationApi/locationApi';
 import {
   setLocations,
@@ -29,6 +29,7 @@ interface AuthContextType {
   error: string | null;
   currentUser: CurrentUser | null;
   login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -38,6 +39,7 @@ const AuthContext = createContext<AuthContextType>({
   error: null,
   currentUser: null,
   login: async (_email: string, _password: string) => {},
+  register: async () => {},
   logout: () => {},
 });
 
@@ -99,11 +101,30 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const userData = await authorizeUser({ email, password });
       localStorage.setItem('access_token', userData.access_token);
       localStorage.setItem('current_user', JSON.stringify(userData));
+      localStorage.setItem('cosmic_returning_user', 'true');
       setCurrentUserState(userData);
       dispatch(setCurrentUser(userData));
       setIsAuthenticated(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Authentication failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const register = async (email: string, password: string, firstName: string, lastName: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const userData = await registerUser({ email, password, firstName, lastName });
+      localStorage.setItem('access_token', userData.access_token);
+      localStorage.setItem('current_user', JSON.stringify(userData));
+      localStorage.setItem('cosmic_returning_user', 'true');
+      setCurrentUserState(userData);
+      dispatch(setCurrentUser(userData));
+      setIsAuthenticated(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Registrierung fehlgeschlagen');
     } finally {
       setIsLoading(false);
     }
@@ -126,6 +147,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         error,
         currentUser,
         login,
+        register,
         logout,
       }}
     >

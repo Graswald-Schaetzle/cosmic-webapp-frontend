@@ -26,14 +26,25 @@ import { NewLocationWindow } from './features/mattertag/NewLocationWindow';
 
 import { Box, Button, CircularProgress, TextField, Typography } from '@mui/material';
 
+const fieldSx = { input: { color: '#fff' }, label: { color: '#aaa' } };
+
 function LoginForm() {
-  const { login, isLoading, error } = useAuth();
+  const { login, register, isLoading, error } = useAuth();
+  const isReturningUser = Boolean(localStorage.getItem('cosmic_returning_user'));
+
+  const [isSignUp, setIsSignUp] = useState(!isReturningUser);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    login(email, password);
+    if (isSignUp) {
+      register(email, password, firstName, lastName);
+    } else {
+      login(email, password);
+    }
   };
 
   return (
@@ -60,32 +71,57 @@ function LoginForm() {
         }}
       >
         <Typography variant="h5" sx={{ color: '#fff', mb: 1 }}>
-          Sign In
+          {isSignUp ? 'Konto erstellen' : 'Anmelden'}
         </Typography>
 
         {error && (
           <Typography sx={{ color: '#ff6b6b', fontSize: 14 }}>{error}</Typography>
         )}
 
+        {isSignUp && (
+          <>
+            <TextField
+              label="Vorname"
+              type="text"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              required
+              variant="outlined"
+              size="small"
+              sx={fieldSx}
+            />
+            <TextField
+              label="Nachname"
+              type="text"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              required
+              variant="outlined"
+              size="small"
+              sx={fieldSx}
+            />
+          </>
+        )}
+
         <TextField
-          label="Email"
+          label="E-Mail"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
           variant="outlined"
           size="small"
-          sx={{ input: { color: '#fff' }, label: { color: '#aaa' } }}
+          sx={fieldSx}
         />
         <TextField
-          label="Password"
+          label="Passwort"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
           variant="outlined"
           size="small"
-          sx={{ input: { color: '#fff' }, label: { color: '#aaa' } }}
+          sx={fieldSx}
         />
 
         <Button
@@ -94,8 +130,21 @@ function LoginForm() {
           disabled={isLoading}
           sx={{ mt: 1 }}
         >
-          {isLoading ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : 'Sign In'}
+          {isLoading ? (
+            <CircularProgress size={20} sx={{ color: '#fff' }} />
+          ) : isSignUp ? (
+            'Registrieren'
+          ) : (
+            'Anmelden'
+          )}
         </Button>
+
+        <Typography
+          sx={{ color: '#aaa', fontSize: 13, textAlign: 'center', cursor: 'pointer' }}
+          onClick={() => setIsSignUp(!isSignUp)}
+        >
+          {isSignUp ? 'Bereits registriert? Anmelden' : 'Noch kein Konto? Registrieren'}
+        </Typography>
       </Box>
     </Box>
   );
