@@ -22,6 +22,7 @@ import { CalendarWindow } from './features/calendar/CalendarWindow';
 import { ReconstructionWindow } from './features/reconstruction/ReconstructionWindow';
 import { SpacesWindow } from './features/spaces/SpacesWindow';
 import { SpaceViewerWindow } from './features/spaces/SpaceViewerWindow';
+import { NewLocationWindow } from './features/mattertag/NewLocationWindow';
 
 import { Box, Button, CircularProgress, TextField, Typography } from '@mui/material';
 
@@ -182,6 +183,8 @@ const AuthenticatedContent = () => {
             <SpacesWindow />
 
             <SpaceViewerWindow />
+
+            <NewLocationWindow />
           </MatterportLayout>
         </Layout>
       </TaskProvider>

@@ -98,6 +98,11 @@ interface ModalState {
     modelUrl: string | null;
     jobId: number | null;
   };
+  newLocationWindowModal: {
+    isOpen: boolean;
+    position: { x: number; y: number; z: number } | null;
+    floorId: string | null;
+  };
 }
 
 const initialState: ModalState = {
@@ -174,6 +179,11 @@ const initialState: ModalState = {
     spaceName: null,
     modelUrl: null,
     jobId: null,
+  },
+  newLocationWindowModal: {
+    isOpen: false,
+    position: null,
+    floorId: null,
   },
 };
 
@@ -408,6 +418,19 @@ const modalSlice = createSlice({
       state.spaceViewerWindowModal.modelUrl = null;
       state.spaceViewerWindowModal.jobId = null;
     },
+    openNewLocationWindow: (
+      state,
+      action: PayloadAction<{ position: { x: number; y: number; z: number }; floorId: string }>
+    ) => {
+      state.newLocationWindowModal.isOpen = true;
+      state.newLocationWindowModal.position = action.payload.position;
+      state.newLocationWindowModal.floorId = action.payload.floorId;
+    },
+    closeNewLocationWindow: state => {
+      state.newLocationWindowModal.isOpen = false;
+      state.newLocationWindowModal.position = null;
+      state.newLocationWindowModal.floorId = null;
+    },
     closeAllModals: state => {
       state.matterTagWindowModal.isOpen = false;
       state.matterTagWindowModal.selectedTag = null;
@@ -446,6 +469,9 @@ const modalSlice = createSlice({
       state.spaceViewerWindowModal.spaceName = null;
       state.spaceViewerWindowModal.modelUrl = null;
       state.spaceViewerWindowModal.jobId = null;
+      state.newLocationWindowModal.isOpen = false;
+      state.newLocationWindowModal.position = null;
+      state.newLocationWindowModal.floorId = null;
     },
   },
 });
@@ -486,6 +512,8 @@ export const {
   closeSpacesWindow,
   openSpaceViewerWindow,
   closeSpaceViewerWindow,
+  openNewLocationWindow,
+  closeNewLocationWindow,
   closeAllModals,
 } = modalSlice.actions;
 

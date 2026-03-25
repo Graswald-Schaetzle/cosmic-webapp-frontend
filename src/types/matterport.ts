@@ -31,6 +31,13 @@ export interface TagData {
   };
 }
 
+export interface DwellIndicator {
+  screenX: number;
+  screenY: number;
+  worldPos: { x: number; y: number; z: number };
+  floorId: string;
+}
+
 export interface MatterportContextType {
   sdk: any | null;
   pose: any | null;
@@ -48,4 +55,6 @@ export interface MatterportContextType {
   setSelectedTag: (tag: MatterTag | null) => void;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
+  dwellIndicator: DwellIndicator | null;
+  clearDwellIndicator: () => void;
 }

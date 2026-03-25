@@ -205,6 +205,26 @@ export const locationApi = createApi({
         method: 'GET',
       }),
     }),
+
+    createLocation: builder.mutation<
+      { data: LocationDetailResponse[] | null; error: string | null },
+      {
+        location_name: string;
+        description?: string;
+        color?: string;
+        x: number;
+        y: number;
+        z: number;
+        floorId?: string;
+      }
+    >({
+      query: body => ({
+        url: '/locations',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: [{ type: 'Locations' }],
+    }),
   }),
 });
 
@@ -217,4 +237,5 @@ export const {
   useGetLocationByIdQuery,
   useGetFloorsQuery,
   useGetRoomsQuery,
+  useCreateLocationMutation,
 } = locationApi;

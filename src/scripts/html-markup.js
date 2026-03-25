@@ -7,11 +7,6 @@ const commonElements = {
     tagControlContainerBg: document.querySelector('.tag-control-container .bg'),
 }
 
-const clerk = {
-    signInModal: document.querySelector('#clerk-sign-in-modal'),
-    userButton: document.querySelector('#clerk-user-button'),
-}
-
 const matterportUI = {
     background: '#mattertag-container #screen-bg',
     mattartagPopUp: '#mattertag-popup',
@@ -53,6 +48,5 @@ async function loadHTMLMarkup() {
 export const htmlMarkup = {
     loadHTMLMarkup,
     commonElements,
-    clerk,
     matterportUI,
 }

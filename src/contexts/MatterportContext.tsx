@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import {
   createMatterTag,
   editMatterTag,
@@ -7,7 +7,7 @@ import {
   injectHTML,
   createFrameHTML,
 } from '../app/matterport';
-import { MatterportContextType, MatterTag, TagData } from '../types/matterport';
+import { DwellIndicator, MatterportContextType, MatterTag, TagData } from '../types/matterport';
 
 // Declare the global connect function
 declare global {
@@ -31,6 +31,10 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
   const [showCreateTaskButton, setShowCreateTaskButton] = useState(false);
   const [selectedTag, setSelectedTag] = useState<MatterTag | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [dwellIndicator, setDwellIndicator] = useState<DwellIndicator | null>(null);
+
+  const dwellTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastIntersectionRef = useRef<any | null>(null);
 
   useEffect(() => {
     if (!sdk) return;
@@ -48,6 +52,39 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
         // Subscribe to pointer intersection updates
         sdk.Pointer.intersection.subscribe((newIntersection: any) => {
           setIntersection(newIntersection);
+
+          if (!newIntersection?.position) return;
+
+          const prev = lastIntersectionRef.current;
+          const pos = newIntersection.position;
+
+          // Check if position changed significantly (threshold: 0.05 units)
+          const moved =
+            !prev ||
+            Math.abs(pos.x - prev.x) > 0.05 ||
+            Math.abs(pos.y - prev.y) > 0.05 ||
+            Math.abs(pos.z - prev.z) > 0.05;
+
+          if (moved) {
+            lastIntersectionRef.current = pos;
+            setDwellIndicator(null);
+            if (dwellTimerRef.current) {
+              clearTimeout(dwellTimerRef.current);
+            }
+            dwellTimerRef.current = setTimeout(async () => {
+              try {
+                const screenPos = await sdk.Conversion.worldToScreen(pos);
+                setDwellIndicator({
+                  screenX: screenPos.x,
+                  screenY: screenPos.y,
+                  worldPos: pos,
+                  floorId: newIntersection.floorId || '',
+                });
+              } catch {
+                // worldToScreen may fail if position is off-screen
+              }
+            }, 3000);
+          }
         });
 
         // Get initial mattertags
@@ -157,6 +194,14 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
     }
   };
 
+  const clearDwellIndicator = () => {
+    setDwellIndicator(null);
+    if (dwellTimerRef.current) {
+      clearTimeout(dwellTimerRef.current);
+      dwellTimerRef.current = null;
+    }
+  };
+
   const deleteTag = async (id: string) => {
     if (!sdk) throw new Error('Matterport SDK not initialized');
 
@@ -190,6 +235,8 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
     setSelectedTag,
     isLoading,
     setIsLoading,
+    dwellIndicator,
+    clearDwellIndicator,
   };
 
   return <MatterportContext.Provider value={value}>{children}</MatterportContext.Provider>;

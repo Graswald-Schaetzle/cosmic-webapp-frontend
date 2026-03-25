@@ -8,7 +8,7 @@ interface AuthResponse {
     created_at: string;
     username: string;
     email: string;
-    clerk_id: string;
+    supabase_id: string;
     first_name: string;
     last_name: string;
     role: string;
@@ -62,27 +62,43 @@ export const api = createApi({
   tagTypes: ['Tasks', 'Documents', 'Notifications', 'UserMenu', 'Lists', 'Locations', 'Users'],
 });
 
+const SUPABASE_URL =
+  import.meta.env.VITE_SUPABASE_URL || 'https://haaaayxcejprzqjainzp.supabase.co';
+const SUPABASE_ANON_KEY =
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhYWFheXhjZWpwcnpxamFpbnpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ5MDE0NzIsImV4cCI6MjA3MDQ3NzQ3Mn0.5ehbB4SCgeiDIBNtXBESOeAXsPuG5wBvmvfp_MiuHhc';
+
 interface UserInput {
   email: string;
-  first_name: string;
-  last_name: string;
+  password: string;
+}
+
+async function supabaseSignIn(email: string, password: string): Promise<string> {
+  const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify({ email, password }),
+  });
+
+  if (!response.ok) {
+    throw new Error('E-Mail oder Passwort ist falsch.');
+  }
+
+  const data = await response.json();
+  return data.user.id as string;
 }
 
 export async function authorizeUser(userInput: UserInput): Promise<AuthResponse['user']> {
-  const user = {
-    first_name: userInput.first_name,
-    last_name: userInput.last_name,
-    email: userInput.email,
-    clerk_id: userInput.email,
-    role: 'user',
-    username: `${userInput.first_name}${userInput.last_name}`.replace(/\s/g, ''),
-  };
+  const supabaseUserId = await supabaseSignIn(userInput.email, userInput.password);
 
   try {
     const response = await axiosInstance({
       url: '/auth/login',
       method: 'POST',
-      data: user,
+      data: { supabase_id: supabaseUserId },
     });
 
     const data: AuthResponse = response.data;

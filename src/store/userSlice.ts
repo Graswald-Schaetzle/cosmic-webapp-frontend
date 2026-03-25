@@ -5,7 +5,7 @@ interface CurrentUser {
   created_at: string;
   username: string;
   email: string;
-  clerk_id: string;
+  supabase_id: string;
   first_name: string;
   last_name: string;
   role: string;

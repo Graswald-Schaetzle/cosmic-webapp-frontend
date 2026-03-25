@@ -2,17 +2,33 @@ import React, { useEffect, useRef } from 'react';
 import { useMatterport } from '../../../contexts/MatterportContext.tsx';
 import { MatterTag } from '../../../types/matterport.ts';
 import { useDispatch } from 'react-redux';
-import { openMatterTagWindow, closeMatterTagWindow } from '../../../store/modalSlice.ts';
+import {
+  openMatterTagWindow,
+  closeMatterTagWindow,
+  openNewLocationWindow,
+} from '../../../store/modalSlice.ts';
 
 interface MatterportProps {
   children?: React.ReactNode;
 }
 
 export default function Matterport({ children }: MatterportProps) {
-  const { setMattertags, error, setSdk, setIsLoading } = useMatterport();
+  const { setMattertags, error, setSdk, setIsLoading, dwellIndicator, clearDwellIndicator } =
+    useMatterport();
 
   const dispatch = useDispatch();
   const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const handleOverlayClick = () => {
+    if (!dwellIndicator) return;
+    dispatch(
+      openNewLocationWindow({
+        position: dwellIndicator.worldPos,
+        floorId: dwellIndicator.floorId,
+      })
+    );
+    clearDwellIndicator();
+  };
 
   useEffect(() => {
     const initMatterport = async () => {
@@ -137,6 +153,81 @@ export default function Matterport({ children }: MatterportProps) {
         src={`https://my.matterport.com/show/?m=${import.meta.env.VITE_MATTERPORT_MODEL_ID}&applicationKey=${import.meta.env.VITE_MATTERPORT_KEY}&search=0&title=0&play=1&qs=0&brand=0&dh=0&views=0&mls=2&tagNav=0`}
         allow="camera; microphone; fullscreen; display-capture"
       />
+
+      {/* Dwell indicator overlay – only captures clicks when indicator is shown */}
+      {dwellIndicator && (
+        <div
+          onClick={handleOverlayClick}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 10,
+            cursor: 'crosshair',
+          }}
+        >
+          {/* Animated "+" pin at the dwell position */}
+          <div
+            style={{
+              position: 'absolute',
+              left: dwellIndicator.screenX,
+              top: dwellIndicator.screenY,
+              transform: 'translate(-50%, -50%)',
+              pointerEvents: 'none',
+            }}
+          >
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: '50%',
+                background: 'rgba(255, 255, 255, 0.2)',
+                backdropFilter: 'blur(8px)',
+                border: '2px solid rgba(255, 255, 255, 0.8)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                animation: 'dwellPulse 1.2s ease-in-out infinite',
+                boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
+              }}
+            >
+              <span
+                style={{
+                  color: 'white',
+                  fontSize: 24,
+                  lineHeight: 1,
+                  fontWeight: 300,
+                  userSelect: 'none',
+                }}
+              >
+                +
+              </span>
+            </div>
+            <div
+              style={{
+                marginTop: 6,
+                background: 'rgba(46, 46, 46, 0.75)',
+                backdropFilter: 'blur(8px)',
+                borderRadius: 8,
+                padding: '4px 8px',
+                color: 'white',
+                fontSize: 11,
+                whiteSpace: 'nowrap',
+                textAlign: 'center',
+              }}
+            >
+              Tag hier setzen
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes dwellPulse {
+          0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+          50% { transform: translate(-50%, -50%) scale(1.15); opacity: 0.7; }
+        }
+      `}</style>
+
       {children}
     </div>
   );
