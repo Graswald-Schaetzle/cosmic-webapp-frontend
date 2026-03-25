@@ -89,38 +89,6 @@ export default function Matterport({ children }: MatterportProps) {
           },
         });
 
-        // Disable all UI elements and overlays
-        await mpSdk.App.registerCss(`
-          .overlay-ui,
-          .annotation-preview,
-          .annotation-preview-down,
-          .tag-preview,
-          .matterport-ui,
-          .matterport-ui *,
-          #react-render-root,
-          .plugin-ui-overlay,
-          .plugin-ui-overlay *,
-          .plugin-ui-data,
-          .plugin-ui-data *,
-          .showcase-ui,
-          .showcase-ui *,
-          .mattertag-tooltip,
-          .mattertag-tooltip *,
-          .mattertag-hover,
-          .mattertag-hover *,
-          .mattertag-preview,
-          .mattertag-preview *,
-          .mattertag-billboard,
-          .mattertag-billboard *,
-          .mattertag-label,
-          .mattertag-label * { 
-            display: none !important; 
-            opacity: 0 !important;
-            visibility: hidden !important;
-            pointer-events: none !important;
-          }
-        `);
-
         setSdk(mpSdk);
         setIsLoading(false);
       } catch (err) {

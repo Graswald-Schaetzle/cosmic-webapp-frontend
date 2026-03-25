@@ -35,6 +35,7 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
 
   const dwellTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastIntersectionRef = useRef<any | null>(null);
+  const poseRef = useRef<any | null>(null);
 
   useEffect(() => {
     if (!sdk) return;
@@ -47,6 +48,7 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
         // Subscribe to camera pose updates
         sdk.Camera.pose.subscribe((newPose: any) => {
           setPose(newPose);
+          poseRef.current = newPose;
         });
 
         // Subscribe to pointer intersection updates
@@ -71,31 +73,30 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
             if (dwellTimerRef.current) {
               clearTimeout(dwellTimerRef.current);
             }
-            dwellTimerRef.current = setTimeout(async () => {
+            dwellTimerRef.current = setTimeout(() => {
+              const iframe = document.querySelector('iframe');
+              const w = iframe?.clientWidth || window.innerWidth;
+              const h = iframe?.clientHeight || window.innerHeight;
+              const floorId = newIntersection.floorId ?? newIntersection.floorIndex ?? '';
               try {
-                // worldToScreen returns normalized [0,1] coordinates
-                // multiply by renderer size to get pixel coordinates
-                const screenPos = sdk.Conversion.worldToScreen(pos);
-                const size = sdk.Renderer.getSize();
-                const x = screenPos.x * size.width;
-                const y = screenPos.y * size.height;
-                // Only show if on-screen (coordinates within viewport)
-                if (x > 0 && y > 0 && x < size.width && y < size.height) {
-                  setDwellIndicator({
-                    screenX: x,
-                    screenY: y,
-                    worldPos: pos,
-                    floorId: newIntersection.floorId || '',
-                  });
+                // worldToScreen requires (worldPos, cameraPose, windowSize)
+                // and returns pixel coordinates directly
+                const screenPos = sdk.Conversion.worldToScreen(
+                  pos,
+                  poseRef.current,
+                  { w, h }
+                );
+                const x = screenPos.x;
+                const y = screenPos.y;
+                if (x > 0 && y > 0 && x < w && y < h) {
+                  setDwellIndicator({ screenX: x, screenY: y, worldPos: pos, floorId: String(floorId) });
+                } else {
+                  // Position off-screen — show at viewport center
+                  setDwellIndicator({ screenX: w / 2, screenY: h / 2, worldPos: pos, floorId: String(floorId) });
                 }
               } catch {
-                // worldToScreen may fail if position is off-screen; show at center as fallback
-                setDwellIndicator({
-                  screenX: -9999,
-                  screenY: -9999,
-                  worldPos: pos,
-                  floorId: newIntersection.floorId || '',
-                });
+                // Fallback: show at viewport center
+                setDwellIndicator({ screenX: w / 2, screenY: h / 2, worldPos: pos, floorId: String(floorId) });
               }
             }, 3000);
           }
