@@ -176,40 +176,7 @@ const OtherElementsPaper = styled(Paper)(({ theme }) => ({
   },
 }));
 
-const TooltipBox = styled(Box)({
-  width: '100%',
-  borderRadius: '16px',
-  padding: '8px 16px 8px 12px',
-  background: 'var(--Back, #2E2E2E59)',
-  backdropFilter: 'blur(100px)',
-  WebkitBackdropFilter: 'blur(100px)',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '6px',
-  transition: 'all 0.3s ease',
-  boxShadow: 'none',
-  '&.hidden': {
-    opacity: 0,
-    pointerEvents: 'none',
-    transform: 'scaleX(0)',
-  },
-});
 
-const TooltipTitle = styled(Typography)({
-  fontWeight: 510,
-  fontSize: '10px',
-  lineHeight: '14px',
-  color: 'white',
-});
-
-const TooltipDescription = styled(Typography)({
-  fontWeight: 510,
-  fontSize: '12px',
-  lineHeight: '14px',
-  color: 'white',
-  whiteSpace: 'normal',
-  wordWrap: 'break-word',
-});
 
 const Icon = styled('img')({
   width: 24,
@@ -962,10 +929,6 @@ export function Menu() {
             zIndex: 10000,
           }}
         >
-          <TooltipBox data-tooltip="true" className={showOtherElements ? '' : 'hidden'}>
-            <TooltipTitle>Tooltip:</TooltipTitle>
-            <TooltipDescription>Drag &amp; Drop elements with your mouse</TooltipDescription>
-          </TooltipBox>
 
           <OtherElementsPaper className={showOtherElements ? '' : 'hidden'}>
             <Box sx={{ position: 'relative', width: '100%' }}>

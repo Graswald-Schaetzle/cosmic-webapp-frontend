@@ -7,14 +7,17 @@ import {
   closeMatterTagWindow,
   openNewLocationWindow,
 } from '../../../store/modalSlice.ts';
+import { useGetAllLocationsQuery } from '../../../api/locationApi/locationApi.ts';
 
 interface MatterportProps {
   children?: React.ReactNode;
 }
 
 export default function Matterport({ children }: MatterportProps) {
-  const { setMattertags, error, setSdk, setIsLoading, dwellIndicator, clearDwellIndicator } =
+  const { sdk, setMattertags, error, setSdk, setIsLoading, dwellIndicator, clearDwellIndicator } =
     useMatterport();
+  const { data: allLocations } = useGetAllLocationsQuery();
+  const loadedLocationIds = useRef<Set<string>>(new Set());
 
   const dispatch = useDispatch();
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -29,6 +32,40 @@ export default function Matterport({ children }: MatterportProps) {
     );
     clearDwellIndicator();
   };
+
+  // Re-inject backend locations as ephemeral Matterport tags whenever SDK is ready or locations change
+  useEffect(() => {
+    if (!sdk || !allLocations?.length) return;
+
+    const newLocations = allLocations.filter(l => !loadedLocationIds.current.has(l.location_id));
+    if (!newLocations.length) return;
+
+    (async () => {
+      for (const location of newLocations) {
+        const hex = (location.color || '#ff0000').replace('#', '');
+        const r = parseInt(hex.slice(0, 2), 16) / 255;
+        const g = parseInt(hex.slice(2, 4), 16) / 255;
+        const b = parseInt(hex.slice(4, 6), 16) / 255;
+
+        try {
+          await sdk.Tag.add([{
+            label: location.location_name,
+            description: location.description || '',
+            anchorPosition: { x: location.x, y: location.y, z: location.z },
+            stemVector: { x: 0, y: 0, z: 0 },
+            color: { r, g, b },
+          }]);
+          loadedLocationIds.current.add(location.location_id);
+        } catch {
+          // continue with other locations
+        }
+      }
+      try {
+        const updatedTags = await sdk.Tag.data.getData();
+        setMattertags(updatedTags);
+      } catch { /* non-critical */ }
+    })();
+  }, [sdk, allLocations, setMattertags]);
 
   useEffect(() => {
     const initMatterport = async () => {
@@ -47,7 +84,7 @@ export default function Matterport({ children }: MatterportProps) {
         const mpSdk = await window.connect(iframeRef.current);
 
         // Get initial mattertags
-        const tags = await mpSdk.Mattertag.getData();
+        const tags = await mpSdk.Tag.data.getData();
         setMattertags(tags);
 
         // Disable default tag behaviors for all tags
@@ -159,21 +196,6 @@ export default function Matterport({ children }: MatterportProps) {
               >
                 +
               </span>
-            </div>
-            <div
-              style={{
-                marginTop: 6,
-                background: 'rgba(46, 46, 46, 0.75)',
-                backdropFilter: 'blur(8px)',
-                borderRadius: 8,
-                padding: '4px 8px',
-                color: 'white',
-                fontSize: 11,
-                whiteSpace: 'nowrap',
-                textAlign: 'center',
-              }}
-            >
-              Tag hier setzen
             </div>
           </div>
         </div>

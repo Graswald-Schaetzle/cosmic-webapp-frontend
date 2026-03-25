@@ -11,21 +11,31 @@ declare module '@matterport/sdk' {
       };
     };
     Conversion: {
-      worldToScreen: (position: Position) => ScreenPosition;
+      worldToScreen: (position: Position, pose: Pose, size: { w: number; h: number }) => ScreenPosition;
     };
     Renderer: {
       getSize: () => Size;
     };
-    Mattertag: {
-      add: (tags: MatterTag[]) => Promise<string[]>;
-      editBillboard: (tagId: string, updates: Partial<MatterTag>) => Promise<void>;
-      getData: () => Promise<MatterTag[]>;
-      injectHTML: (tagId: string, html: string) => Promise<void>;
-    };
     Tag: {
+      add: (tags: MatterTag[]) => Promise<string[]>;
       remove: (tagId: string) => Promise<void>;
+      editBillboard: (tagId: string, updates: Partial<MatterTag>) => Promise<void>;
       editColor: (tagId: string, color: { r: number; g: number; b: number }) => Promise<void>;
-      data: MatterTag[];
+      injectHTML: (tagId: string, html: string) => Promise<void>;
+      allowAction: (tagId: string, actions: { opening?: boolean; navigating?: boolean }) => Promise<void>;
+      data: {
+        subscribe: (callback: (tags: MatterTag[]) => void) => void;
+        getData: () => Promise<MatterTag[]>;
+      };
+      openTags: {
+        subscribe: (observer: any) => void;
+      };
+      click: {
+        subscribe: (callback: (tagId: string) => void) => void;
+      };
+      toggleNavControls: (show: boolean) => Promise<void>;
+      toggleDocking: (show: boolean) => Promise<void>;
+      toggleSharing: (show: boolean) => Promise<void>;
     };
   }
 

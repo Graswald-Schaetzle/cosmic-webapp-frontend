@@ -15,8 +15,7 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
-    "@matterport/sdk": "^1.4.24",
-    "@mkkellogg/gaussian-splats-3d": "^0.4.7",
+"@mkkellogg/gaussian-splats-3d": "^0.4.7",
     "@mui/icons-material": "^7.1.0",
     "@mui/material": "^7.1.0",
     "@radix-ui/react-popover": "^1.1.14",

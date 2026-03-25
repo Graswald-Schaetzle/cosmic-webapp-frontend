@@ -5,7 +5,6 @@ import { Dialog } from '../../components/Dialog';
 import { RootState } from '../../store/store';
 import { closeNewLocationWindow } from '../../store/modalSlice';
 import { useCreateLocationMutation } from '../../api/locationApi/locationApi';
-import { useMatterport } from '../../contexts/MatterportContext';
 
 export function NewLocationWindow() {
   const dispatch = useDispatch();
@@ -13,7 +12,6 @@ export function NewLocationWindow() {
     (state: RootState) => state.modal.newLocationWindowModal
   );
   const [createLocation, { isLoading }] = useCreateLocationMutation();
-  const { sdk, setMattertags } = useMatterport();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -43,22 +41,6 @@ export function NewLocationWindow() {
         z: position.z,
         floorId: floorId || undefined,
       }).unwrap();
-
-      // Refresh tags in the Matterport viewer
-      if (sdk) {
-        try {
-          const updatedTags = await sdk.Mattertag.getData();
-          setMattertags(updatedTags);
-          // Disable default behaviors for all tags including the new one
-          for (const tag of updatedTags) {
-            if (tag.sid) {
-              await sdk.Tag.allowAction(tag.sid, { opening: false, navigating: false });
-            }
-          }
-        } catch {
-          // Non-critical: viewer will show tag after next reload
-        }
-      }
 
       handleClose();
     } catch {

@@ -1,11 +1,11 @@
 import { MatterTag } from '../types/matterport';
 
 export function createMatterTag(sdk: any, tag: MatterTag): Promise<string[]> {
-  return sdk.Mattertag.add([tag]);
+  return sdk.Tag.add([tag]);
 }
 
 export function editMatterTag(sdk: any, tagId: string, updates: Partial<MatterTag>): Promise<void> {
-  return sdk.Mattertag.editBillboard(tagId, updates);
+  return sdk.Tag.editBillboard(tagId, updates);
 }
 
 export function deleteMatterTag(sdk: any, tagId: string): Promise<void> {
@@ -13,11 +13,11 @@ export function deleteMatterTag(sdk: any, tagId: string): Promise<void> {
 }
 
 export function getMatterTags(sdk: any): Promise<MatterTag[]> {
-  return sdk.Mattertag.getData();
+  return sdk.Tag.data.getData();
 }
 
 export function injectHTML(sdk: any, tagId: string, html: string): Promise<void> {
-  return sdk.Mattertag.injectHTML(tagId, html);
+  return sdk.Tag.injectHTML(tagId, html);
 }
 
 export function createFrameHTML(tagId: string, option: string): string {
