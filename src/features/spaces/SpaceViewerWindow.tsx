@@ -30,7 +30,6 @@ declare global {
 function UsdzViewer({ src, name }: { src: string; name: string }) {
   return (
     <Box sx={{ width: '100%', height: '100%', position: 'relative' }}>
-      {/* @ts-expect-error model-viewer is a custom element loaded via CDN */}
       <model-viewer
         src={src}
         alt={name}

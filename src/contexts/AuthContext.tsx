@@ -15,7 +15,7 @@ interface CurrentUser {
   created_at: string;
   username: string;
   email: string;
-  clerk_id: string;
+  supabase_id: string;
   first_name: string;
   last_name: string;
   role: string;
@@ -28,7 +28,7 @@ interface AuthContextType {
   isLoading: boolean;
   error: string | null;
   currentUser: CurrentUser | null;
-  login: (email: string, firstName: string, lastName: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -37,7 +37,7 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: false,
   error: null,
   currentUser: null,
-  login: async () => {},
+  login: async (_email: string, _password: string) => {},
   logout: () => {},
 });
 
@@ -92,11 +92,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }, [locationsData, locationsLoading, locationsError, dispatch]);
 
-  const login = async (email: string, firstName: string, lastName: string) => {
+  const login = async (email: string, password: string) => {
     setIsLoading(true);
     setError(null);
     try {
-      const userData = await authorizeUser({ email, first_name: firstName, last_name: lastName });
+      const userData = await authorizeUser({ email, password });
       localStorage.setItem('access_token', userData.access_token);
       localStorage.setItem('current_user', JSON.stringify(userData));
       setCurrentUserState(userData);
