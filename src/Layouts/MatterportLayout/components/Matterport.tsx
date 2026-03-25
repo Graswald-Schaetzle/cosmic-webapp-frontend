@@ -60,34 +60,24 @@ export default function Matterport({ children }: MatterportProps) {
           }
         });
 
-        // Subscribe to tag state changes
-        mpSdk.Tag.openTags.subscribe({
-          prevState: {
-            hovered: null,
-            docked: null,
-            selected: null,
-          },
-          onChanged(newState: any) {
-            // Handle tag selection
-            const [selected = null] = newState.selected;
-            if (selected !== this.prevState.selected) {
-              if (selected) {
-                const tag = tags.find((t: MatterTag) => t.sid === selected);
-                if (tag) {
-                  dispatch(openMatterTagWindow(tag));
+        // Optional: subscribe to tag state changes (dispatch window open/close)
+        try {
+          mpSdk.Tag.openTags.subscribe({
+            prevState: { hovered: null, docked: null, selected: null },
+            onChanged(newState: any) {
+              const [selected = null] = newState.selected;
+              if (selected !== this.prevState.selected) {
+                if (selected) {
+                  const tag = tags.find((t: MatterTag) => t.sid === selected);
+                  if (tag) dispatch(openMatterTagWindow(tag));
+                } else {
+                  dispatch(closeMatterTagWindow());
                 }
-              } else {
-                dispatch(closeMatterTagWindow());
               }
-            }
-
-            // Store the new state
-            this.prevState = {
-              ...newState,
-              selected,
-            };
-          },
-        });
+              this.prevState = { ...newState, selected };
+            },
+          });
+        } catch { /* Tag.openTags not available in this SDK version */ }
 
         setSdk(mpSdk);
         setIsLoading(false);

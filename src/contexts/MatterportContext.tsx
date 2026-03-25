@@ -42,16 +42,18 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
 
     const initMatterport = async () => {
       try {
-        await sdk.Tag.toggleNavControls(false);
-        await sdk.Tag.toggleDocking(false);
-        await sdk.Tag.toggleSharing(false);
-        // Subscribe to camera pose updates
+        // Optional Tag UI controls — may not exist in all SDK versions
+        try { await sdk.Tag.toggleNavControls(false); } catch { /* not available */ }
+        try { await sdk.Tag.toggleDocking(false); } catch { /* not available */ }
+        try { await sdk.Tag.toggleSharing(false); } catch { /* not available */ }
+
+        // Subscribe to camera pose updates (required for worldToScreen)
         sdk.Camera.pose.subscribe((newPose: any) => {
           setPose(newPose);
           poseRef.current = newPose;
         });
 
-        // Subscribe to pointer intersection updates
+        // Subscribe to pointer intersection updates (required for dwell detection)
         sdk.Pointer.intersection.subscribe((newIntersection: any) => {
           setIntersection(newIntersection);
 
@@ -91,11 +93,9 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
                 if (x > 0 && y > 0 && x < w && y < h) {
                   setDwellIndicator({ screenX: x, screenY: y, worldPos: pos, floorId: String(floorId) });
                 } else {
-                  // Position off-screen — show at viewport center
                   setDwellIndicator({ screenX: w / 2, screenY: h / 2, worldPos: pos, floorId: String(floorId) });
                 }
               } catch {
-                // Fallback: show at viewport center
                 setDwellIndicator({ screenX: w / 2, screenY: h / 2, worldPos: pos, floorId: String(floorId) });
               }
             }, 3000);
@@ -106,47 +106,43 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
         const tags = await getMatterTags(sdk);
         setMattertags(tags);
 
-        // Subscribe to tag state changes
-        sdk.Tag.openTags.subscribe({
-          prevState: {
-            hovered: null,
-            docked: null,
-            selected: null,
-          },
-          onChanged(newState: any) {
-            if (newState.selected) {
-              const tag = mattertags.find(t => t.sid === newState.selected);
-              if (tag) {
-                setSelectedTag(tag);
+        // Optional: subscribe to tag state changes
+        try {
+          sdk.Tag.openTags.subscribe({
+            prevState: { hovered: null, docked: null, selected: null },
+            onChanged(newState: any) {
+              if (newState.selected) {
+                const tag = mattertags.find(t => t.sid === newState.selected);
+                if (tag) setSelectedTag(tag);
+              } else {
+                setSelectedTag(null);
               }
-            } else {
-              setSelectedTag(null);
+            },
+          });
+        } catch { /* Tag.openTags not available */ }
+
+        // Optional: subscribe to tag data changes
+        try {
+          sdk.Tag.data.subscribe(async (tags: MatterTag[]) => {
+            setMattertags(tags);
+            for (const tag of tags) {
+              if (tag.sid) {
+                try {
+                  await sdk.Tag.allowAction(tag.sid, { opening: false, navigating: false });
+                } catch { /* allowAction not available */ }
+              }
             }
-          },
-        });
+          });
+        } catch { /* Tag.data not available */ }
 
-        // Subscribe to tag data changes
-        sdk.Tag.data.subscribe(async (tags: MatterTag[]) => {
-          setMattertags(tags);
+        // Optional: subscribe to tag clicks
+        try {
+          sdk.Tag.click.subscribe((tagId: string) => {
+            const tag = mattertags.find(t => t.sid === tagId);
+            if (tag) setSelectedTag(tag);
+          });
+        } catch { /* Tag.click not available */ }
 
-          // Disable default tag behaviors for all tags
-          for (const tag of tags) {
-            if (tag.sid) {
-              await sdk.Tag.allowAction(tag.sid, {
-                opening: false,
-                navigating: false,
-              });
-            }
-          }
-        });
-
-        // Subscribe to tag clicks
-        sdk.Tag.click.subscribe((tagId: string) => {
-          const tag = mattertags.find(t => t.sid === tagId);
-          if (tag) {
-            setSelectedTag(tag);
-          }
-        });
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : 'Failed to initialize Matterport SDK';
