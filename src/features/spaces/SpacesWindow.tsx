@@ -37,7 +37,7 @@ function SpaceCard({ space, onClick }: { space: Space; onClick: () => void }) {
     (space.latest_job?.output_splat_path || space.latest_job?.output_spz_path);
 
   const hasModel = Boolean(space.model_url);
-  const date = new Date(space.created_at).toLocaleDateString('de-DE', {
+  const date = new Date(space.created_at).toLocaleDateString('en-US', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -152,7 +152,7 @@ export const SpacesWindow = () => {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <HomeWorkIcon sx={{ color: '#fff', fontSize: 22 }} />
           <Typography sx={{ color: '#fff', fontSize: '18px', fontWeight: 700 }}>
-            Meine Räume
+            My Spaces
           </Typography>
         </Box>
         <IconButton
@@ -177,7 +177,7 @@ export const SpacesWindow = () => {
       {error && (
         <Box sx={{ textAlign: 'center', py: '48px' }}>
           <Typography sx={{ color: '#ff6b6b', fontSize: '14px' }}>
-            Fehler beim Laden der Räume
+            Error loading spaces
           </Typography>
         </Box>
       )}
@@ -186,10 +186,10 @@ export const SpacesWindow = () => {
         <Box sx={{ textAlign: 'center', py: '48px' }}>
           <HomeWorkIcon sx={{ color: 'rgba(255,255,255,0.2)', fontSize: 64, mb: 2 }} />
           <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px' }}>
-            Noch keine Räume erfasst
+            No spaces added yet
           </Typography>
           <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', mt: 1 }}>
-            Scanne einen Raum mit der iOS App, um ihn hier zu sehen
+            Scan a space with the iOS app to see it here
           </Typography>
         </Box>
       )}

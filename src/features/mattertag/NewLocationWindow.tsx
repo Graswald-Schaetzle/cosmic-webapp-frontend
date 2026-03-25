@@ -28,7 +28,7 @@ export function NewLocationWindow() {
 
   const handleSubmit = async () => {
     if (!name.trim()) {
-      setError('Name ist erforderlich');
+      setError('Name is required');
       return;
     }
     if (!position) return;
@@ -62,7 +62,7 @@ export function NewLocationWindow() {
 
       handleClose();
     } catch {
-      setError('Tag konnte nicht erstellt werden. Bitte erneut versuchen.');
+      setError('Could not create tag. Please try again.');
     }
   };
 
@@ -90,14 +90,14 @@ export function NewLocationWindow() {
         <Typography
           sx={{ fontWeight: 700, fontSize: '16px', color: '#FFFFFF', flex: 1, textAlign: 'center' }}
         >
-          Neuen Tag erstellen
+          Create new tag
         </Typography>
         <IconButton
           onClick={handleClose}
           size="small"
           sx={{ color: 'white', opacity: 0.7, '&:hover': { opacity: 1 } }}
         >
-          <img src="/icons/mattertag/cross.svg" alt="Schließen" width={16} height={16} />
+          <img src="/icons/mattertag/cross.svg" alt="Close" width={16} height={16} />
         </IconButton>
       </Box>
 
@@ -126,7 +126,7 @@ export function NewLocationWindow() {
         />
 
         <TextField
-          label="Beschreibung (optional)"
+          label="Description (optional)"
           value={description}
           onChange={e => setDescription(e.target.value)}
           fullWidth
@@ -172,7 +172,7 @@ export function NewLocationWindow() {
           '&:disabled': { color: 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.05)' },
         }}
       >
-        {isLoading ? <CircularProgress size={20} sx={{ color: 'white' }} /> : 'Tag setzen'}
+        {isLoading ? <CircularProgress size={20} sx={{ color: 'white' }} /> : 'Set tag'}
       </Button>
     </Dialog>
   );

@@ -61,8 +61,8 @@ const defaultMenuItems: MenuItem[] = [
   { id: 'food-delivery', icon: '', muiIcon: TakeoutDiningIcon, label: 'Food Delivery', section: 'other', order: 1, name: 'Food Delivery' },
   { id: 'insurance', icon: '', muiIcon: HealthAndSafetyIcon, label: 'Insurance', section: 'other', order: 2, name: 'Insurance' },
   { id: 'games', icon: '', muiIcon: SportsEsportsIcon, label: 'Games', section: 'other', order: 3, name: 'Games' },
-  { id: 'reconstruction', icon: '/icons/menu/white/3d-reconstruction.svg', label: '3D-Rekonstruktion', section: 'other', order: 4, name: '3D-Rekonstruktion' },
-  { id: 'spaces', icon: '', muiIcon: HomeWorkIcon, label: 'Meine Räume', section: 'other', order: 5, name: 'Meine Räume' },
+  { id: 'reconstruction', icon: '/icons/menu/white/3d-reconstruction.svg', label: '3D Reconstruction', section: 'other', order: 4, name: '3D Reconstruction' },
+  { id: 'spaces', icon: '', muiIcon: HomeWorkIcon, label: 'My Spaces', section: 'other', order: 5, name: 'My Spaces' },
 ];
 
 // --- Styled Components ---
@@ -821,6 +821,7 @@ export function Menu() {
 
   const handleMenuItemClick = (itemId: string) => {
     dispatch(closeAllModals());
+    setShowOtherElements(false);
     switch (itemId) {
       case 'dashboard': dispatch(openDashboardWindow()); break;
       case 'objects': dispatch(openObjectManagerWindow()); break;

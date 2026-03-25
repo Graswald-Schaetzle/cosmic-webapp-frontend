@@ -74,7 +74,7 @@ export const ReconstructionWindow = () => {
     (file: File) => {
       const maxSize = 2 * 1024 * 1024 * 1024; // 2GB
       if (file.size > maxSize) {
-        setError('Datei darf maximal 2GB gross sein');
+        setError('File must not exceed 2 GB');
         return;
       }
 
@@ -85,8 +85,8 @@ export const ReconstructionWindow = () => {
       if (!allowed.includes(file.type)) {
         setError(
           inputType === 'video'
-            ? 'Bitte eine Videodatei (MP4, MOV, AVI) auswählen'
-            : 'Bitte ein ZIP-Archiv mit Bildern auswählen',
+            ? 'Please select a video file (MP4, MOV, AVI)'
+            : 'Please select a ZIP archive with images',
         );
         return;
       }
@@ -133,7 +133,7 @@ export const ReconstructionWindow = () => {
 
   const handleSubmit = useCallback(async () => {
     if (!selectedFile || !title.trim() || !spaceId) {
-      setError('Bitte alle Felder ausfüllen');
+      setError('Please fill in all fields');
       return;
     }
 
@@ -149,7 +149,7 @@ export const ReconstructionWindow = () => {
       }).unwrap();
 
       const job = result.data;
-      if (!job.upload_url) throw new Error('Kein Upload-URL erhalten');
+      if (!job.upload_url) throw new Error('No upload URL received');
 
       // Step 2: Upload file directly to GCS
       setUploadProgress(5);
@@ -164,9 +164,9 @@ export const ReconstructionWindow = () => {
         });
         xhr.addEventListener('load', () => {
           if (xhr.status >= 200 && xhr.status < 300) resolve();
-          else reject(new Error(`Upload fehlgeschlagen: HTTP ${xhr.status}`));
+          else reject(new Error(`Upload failed: HTTP ${xhr.status}`));
         });
-        xhr.addEventListener('error', () => reject(new Error('Upload fehlgeschlagen')));
+        xhr.addEventListener('error', () => reject(new Error('Upload failed')));
 
         xhr.open('PUT', job.upload_url!);
         xhr.setRequestHeader('Content-Type', 'application/octet-stream');
@@ -185,7 +185,7 @@ export const ReconstructionWindow = () => {
       resetForm();
       refetchJobs();
     } catch (err: any) {
-      setError(err.message || 'Fehler beim Erstellen des Jobs');
+      setError(err.message || 'Error creating job');
       setIsUploading(false);
     }
   }, [selectedFile, title, spaceId, inputType, createJob, startJob, refetchJobs]);
@@ -242,9 +242,9 @@ export const ReconstructionWindow = () => {
         <Box display="flex" alignItems="center" flex={1} justifyContent="center">
           <Typography sx={{ fontSize: '20px', fontWeight: 700, color: '#FFFFFF' }}>
             {view === 'list'
-              ? '3D Rekonstruktion'
+              ? '3D Reconstruction'
               : view === 'create'
-                ? 'Neuer Scan'
+                ? 'New Scan'
                 : 'Job Details'}
           </Typography>
         </Box>
@@ -267,7 +267,7 @@ export const ReconstructionWindow = () => {
               '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.4)' },
             }}
           >
-            + Neuen Scan starten
+            + Start new scan
           </Button>
 
           {jobs && jobs.length > 0 ? (
@@ -278,7 +278,7 @@ export const ReconstructionWindow = () => {
           ) : (
             <Box sx={{ textAlign: 'center', py: 4 }}>
               <Typography sx={{ color: '#FFFFFF80', fontSize: '14px' }}>
-                Noch keine 3D-Scans vorhanden
+                No 3D scans yet
               </Typography>
             </Box>
           )}
@@ -306,7 +306,7 @@ export const ReconstructionWindow = () => {
           <TextField
             value={title}
             onChange={e => setTitle(e.target.value)}
-            placeholder="Titel des Scans"
+            placeholder="Scan title"
             variant="outlined"
             size="small"
             fullWidth
@@ -361,7 +361,7 @@ export const ReconstructionWindow = () => {
                 '&:hover': { backgroundColor: '#FFFFFF20' },
               }}
             >
-              Bilder (ZIP)
+              Images (ZIP)
             </Button>
           </Box>
 
@@ -391,8 +391,8 @@ export const ReconstructionWindow = () => {
             >
               <Typography sx={{ color: '#FFFFFF', fontWeight: 600, fontSize: '14px', textAlign: 'center' }}>
                 {inputType === 'video'
-                  ? 'Video hier ablegen (.mp4, .mov, .avi)'
-                  : 'ZIP-Archiv mit Bildern hier ablegen'}
+                  ? 'Drop video here (.mp4, .mov, .avi)'
+                  : 'Drop ZIP archive with images here'}
               </Typography>
               <Box
                 sx={{
@@ -408,7 +408,7 @@ export const ReconstructionWindow = () => {
                 }}
               >
                 <Typography sx={{ color: '#FFFFFF', fontWeight: 600, fontSize: '14px' }}>
-                  Durchsuchen
+                  Browse
                 </Typography>
               </Box>
             </Box>
@@ -474,7 +474,7 @@ export const ReconstructionWindow = () => {
                 '&.Mui-disabled': { opacity: 0.5, color: '#FFFFFF' },
               }}
             >
-              Abbrechen
+              Cancel
             </Button>
             <Button
               onClick={handleSubmit}
@@ -492,7 +492,7 @@ export const ReconstructionWindow = () => {
                 '&.Mui-disabled': { opacity: 0.5, color: '#FFFFFF' },
               }}
             >
-              {isUploading ? `Hochladen... ${uploadProgress}%` : 'Scan starten'}
+              {isUploading ? `Uploading... ${uploadProgress}%` : 'Start scan'}
             </Button>
           </Box>
         </Box>
@@ -578,7 +578,7 @@ const JobListItem = ({ job, onClick }: { job: ReconstructionJob; onClick: () => 
         />
       )}
       <Typography sx={{ color: '#FFFFFF60', fontSize: '11px' }}>
-        {new Date(job.created_at).toLocaleDateString('de-DE', {
+        {new Date(job.created_at).toLocaleDateString('en-US', {
           day: '2-digit',
           month: '2-digit',
           year: 'numeric',
@@ -612,7 +612,7 @@ const JobDetail = ({
   if (isLoading || !job) {
     return (
       <Box sx={{ textAlign: 'center', py: 4 }}>
-        <Typography sx={{ color: '#FFFFFF80' }}>Laden...</Typography>
+        <Typography sx={{ color: '#FFFFFF80' }}>Loading...</Typography>
       </Box>
     );
   }
@@ -692,26 +692,26 @@ const JobDetail = ({
           gap: '8px',
         }}
       >
-        <DetailRow label="Typ" value={job.input_type === 'video' ? 'Video' : 'Bilder'} />
+        <DetailRow label="Type" value={job.input_type === 'video' ? 'Video' : 'Images'} />
         {job.input_frame_count && (
           <DetailRow label="Frames" value={String(job.input_frame_count)} />
         )}
         {job.colmap_point_count && (
-          <DetailRow label="COLMAP Punkte" value={job.colmap_point_count.toLocaleString('de-DE')} />
+          <DetailRow label="COLMAP Points" value={job.colmap_point_count.toLocaleString('en-US')} />
         )}
         {job.point_count && (
-          <DetailRow label="Gaussian Splats" value={job.point_count.toLocaleString('de-DE')} />
+          <DetailRow label="Gaussian Splats" value={job.point_count.toLocaleString('en-US')} />
         )}
         {job.worker_started_at && (
           <DetailRow
-            label="Gestartet"
-            value={new Date(job.worker_started_at).toLocaleString('de-DE')}
+            label="Started"
+            value={new Date(job.worker_started_at).toLocaleString('en-US')}
           />
         )}
         {job.worker_finished_at && (
           <DetailRow
-            label="Fertig"
-            value={new Date(job.worker_finished_at).toLocaleString('de-DE')}
+            label="Finished"
+            value={new Date(job.worker_finished_at).toLocaleString('en-US')}
           />
         )}
       </Box>
@@ -732,13 +732,13 @@ const JobDetail = ({
             Downloads
           </Typography>
           {output.ply_url && (
-            <DownloadButton label="PLY Datei" url={output.ply_url} />
+            <DownloadButton label="PLY File" url={output.ply_url} />
           )}
           {output.splat_url && (
-            <DownloadButton label="Splat Datei" url={output.splat_url} />
+            <DownloadButton label="Splat File" url={output.splat_url} />
           )}
           {output.spz_url && (
-            <DownloadButton label="SPZ Datei" url={output.spz_url} />
+            <DownloadButton label="SPZ File" url={output.spz_url} />
           )}
         </Box>
       )}
@@ -760,7 +760,7 @@ const JobDetail = ({
             '&:hover': { backgroundColor: 'rgba(33, 150, 243, 0.25)' },
           }}
         >
-          3D ansehen
+          View 3D
         </Button>
       )}
 
@@ -788,7 +788,7 @@ const JobDetail = ({
             '&:hover': { backgroundColor: 'rgba(255, 107, 107, 0.25)' },
           }}
         >
-          Abbrechen
+          Cancel
         </Button>
       )}
     </Box>
@@ -824,6 +824,6 @@ const DownloadButton = ({ label, url }: { label: string; url: string }) => (
     }}
   >
     <Typography sx={{ fontSize: '13px', fontWeight: 500 }}>{label}</Typography>
-    <Typography sx={{ fontSize: '12px', color: '#FFFFFF60' }}>Herunterladen</Typography>
+    <Typography sx={{ fontSize: '12px', color: '#FFFFFF60' }}>Download</Typography>
   </Box>
 );

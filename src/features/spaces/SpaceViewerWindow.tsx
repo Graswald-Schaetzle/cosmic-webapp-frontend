@@ -56,7 +56,7 @@ function NoModelPlaceholder({ name }: { name: string }) {
       <HomeWorkIcon sx={{ color: 'rgba(255,255,255,0.2)', fontSize: 80 }} />
       <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '16px' }}>{name}</Typography>
       <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontSize: '13px' }}>
-        Kein 3D-Modell verfügbar
+        No 3D model available
       </Typography>
     </Box>
   );
@@ -159,7 +159,7 @@ export const SpaceViewerWindow = () => {
           <ArrowBackIcon fontSize="small" />
         </IconButton>
         <Typography sx={{ color: '#fff', fontSize: '15px', fontWeight: 600, flex: 1 }}>
-          {spaceName ?? 'Raum'}
+          {spaceName ?? 'Space'}
         </Typography>
         <IconButton
           onClick={handleClose}
@@ -186,11 +186,11 @@ export const SpaceViewerWindow = () => {
         )}
 
         {!outputLoading && showUsdz && (
-          <UsdzViewer src={modelUrl!} name={spaceName ?? 'Raum'} />
+          <UsdzViewer src={modelUrl!} name={spaceName ?? 'Space'} />
         )}
 
         {!outputLoading && !showSplat && !showUsdz && (
-          <NoModelPlaceholder name={spaceName ?? 'Raum'} />
+          <NoModelPlaceholder name={spaceName ?? 'Space'} />
         )}
       </Box>
     </Box>
