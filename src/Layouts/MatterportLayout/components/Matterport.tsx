@@ -201,6 +201,13 @@ export default function Matterport({ children }: MatterportProps) {
         </div>
       )}
 
+      {/* DEBUG PANEL */}
+      <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 100, background: 'rgba(0,0,0,0.7)', color: 'lime', padding: 10, fontFamily: 'monospace', fontSize: 12, pointerEvents: 'none' }}>
+        <div>Matterport SDK loaded: {sdk ? 'Yes' : 'No'}</div>
+        <div>Tags loaded: {mattertags?.length || 0}</div>
+        <div>Dwell Indicator Set: {dwellIndicator ? 'YES' : 'NO'}</div>
+      </div>
+
       <style>{`
         @keyframes dwellPulse {
           0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }

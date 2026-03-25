@@ -53,50 +53,64 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
           poseRef.current = newPose;
         });
 
+        // Helper to get window size efficiently
+        const getWindowSize = () => {
+          const iframe = document.querySelector('iframe');
+          return {
+            w: iframe?.clientWidth || window.innerWidth,
+            h: iframe?.clientHeight || window.innerHeight,
+          };
+        };
+
         // Subscribe to pointer intersection updates (required for dwell detection)
         sdk.Pointer.intersection.subscribe((newIntersection: any) => {
           setIntersection(newIntersection);
 
-          if (!newIntersection?.position) return;
+          if (!newIntersection?.position || !poseRef.current) return;
 
-          const prev = lastIntersectionRef.current;
           const pos = newIntersection.position;
+          const { w, h } = getWindowSize();
+          
+          let screenPos;
+          try {
+            screenPos = sdk.Conversion.worldToScreen(pos, poseRef.current, { w, h });
+          } catch (e) {
+            return; // Cannot compute screen pos
+          }
 
-          // Check if position changed significantly (threshold: 0.05 units)
+          const currentScreenPos = { x: screenPos.x, y: screenPos.y };
+          const prevScreenPos = lastIntersectionRef.current?.screenPos;
+
+          // Check if position changed significantly IN SCREEN PIXELS (threshold: 15 pixels)
+          const pxThreshold = 15;
           const moved =
-            !prev ||
-            Math.abs(pos.x - prev.x) > 0.05 ||
-            Math.abs(pos.y - prev.y) > 0.05 ||
-            Math.abs(pos.z - prev.z) > 0.05;
+            !prevScreenPos ||
+            Math.abs(currentScreenPos.x - prevScreenPos.x) > pxThreshold ||
+            Math.abs(currentScreenPos.y - prevScreenPos.y) > pxThreshold;
 
+          // If moved, reset the dwell timer
           if (moved) {
-            lastIntersectionRef.current = pos;
-            setDwellIndicator(null);
+            lastIntersectionRef.current = { worldPos: pos, screenPos: currentScreenPos, floorId: newIntersection.floorId ?? newIntersection.floorIndex ?? '' };
+            
             if (dwellTimerRef.current) {
               clearTimeout(dwellTimerRef.current);
             }
+            
+            setDwellIndicator(null);
+
             dwellTimerRef.current = setTimeout(() => {
-              const iframe = document.querySelector('iframe');
-              const w = iframe?.clientWidth || window.innerWidth;
-              const h = iframe?.clientHeight || window.innerHeight;
-              const floorId = newIntersection.floorId ?? newIntersection.floorIndex ?? '';
-              try {
-                // worldToScreen requires (worldPos, cameraPose, windowSize)
-                // and returns pixel coordinates directly
-                const screenPos = sdk.Conversion.worldToScreen(
-                  pos,
-                  poseRef.current,
-                  { w, h }
-                );
-                const x = screenPos.x;
-                const y = screenPos.y;
-                if (x > 0 && y > 0 && x < w && y < h) {
-                  setDwellIndicator({ screenX: x, screenY: y, worldPos: pos, floorId: String(floorId) });
-                } else {
-                  setDwellIndicator({ screenX: w / 2, screenY: h / 2, worldPos: pos, floorId: String(floorId) });
-                }
-              } catch {
-                setDwellIndicator({ screenX: w / 2, screenY: h / 2, worldPos: pos, floorId: String(floorId) });
+              const saved = lastIntersectionRef.current;
+              if (!saved) return;
+              
+              const x = saved.screenPos.x;
+              const y = saved.screenPos.y;
+              console.log('[MatterportContext] Dwell timer fired. Coordinates:', saved.worldPos, 'Screen:', x, y);
+              
+              if (x > 0 && y > 0 && x < w && y < h) {
+                setDwellIndicator({ screenX: x, screenY: y, worldPos: saved.worldPos, floorId: String(saved.floorId) });
+              } else {
+                console.log('[MatterportContext] Screen coordinates out of bounds, using center fallback', {w, h});
+                setDwellIndicator({ screenX: w / 2, screenY: h / 2, worldPos: saved.worldPos, floorId: String(saved.floorId) });
               }
             }, 3000);
           }
