@@ -133,7 +133,7 @@ export const locationApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: `${import.meta.env.VITE_API_BASE_URL}`,
     prepareHeaders: headers => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('access_token');
       if (token) {
         headers.set('Authorization', `Bearer ${token}`);
       }
