@@ -4,6 +4,34 @@ export function createMatterTag(sdk: any, tag: MatterTag): Promise<string[]> {
   return sdk.Tag.add([tag]);
 }
 
+/**
+ * Add a tag to the current Matterport session (ephemeral — survives page load if
+ * also stored in Supabase and re-injected on every SDK init via this function).
+ * Tries the new Tag.add() API first, falls back to the old Mattertag.addTag().
+ */
+export async function addTagToSession(
+  sdk: any,
+  opts: { label: string; description?: string; x: number; y: number; z: number }
+): Promise<void> {
+  const tagData = {
+    label: opts.label,
+    description: opts.description || '',
+    anchorPosition: { x: opts.x, y: opts.y, z: opts.z },
+    stemVector: { x: 0, y: 0.3, z: 0 }, // points upward so the pin is visible
+    color: { r: 1, g: 1, b: 1 },
+  };
+  try {
+    await sdk.Tag.add([tagData]);
+  } catch {
+    try {
+      await sdk.Mattertag.addTag({
+        ...tagData,
+        floorIndex: 0,
+      });
+    } catch { /* both APIs unavailable */ }
+  }
+}
+
 export function editMatterTag(sdk: any, tagId: string, updates: Partial<MatterTag>): Promise<void> {
   return sdk.Tag.editBillboard(tagId, updates);
 }

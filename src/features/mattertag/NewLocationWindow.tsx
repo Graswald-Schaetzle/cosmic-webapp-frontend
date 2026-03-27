@@ -5,6 +5,8 @@ import { Dialog } from '../../components/Dialog';
 import { RootState } from '../../store/store';
 import { closeNewLocationWindow } from '../../store/modalSlice';
 import { useCreateLocationMutation } from '../../api/locationApi/locationApi';
+import { useMatterport } from '../../contexts/MatterportContext';
+import { addTagToSession } from '../../app/matterport';
 
 export function NewLocationWindow() {
   const dispatch = useDispatch();
@@ -12,6 +14,7 @@ export function NewLocationWindow() {
     (state: RootState) => state.modal.newLocationWindowModal
   );
   const [createLocation, { isLoading }] = useCreateLocationMutation();
+  const { sdk } = useMatterport();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -33,7 +36,7 @@ export function NewLocationWindow() {
 
     setError(null);
     try {
-      await createLocation({
+      const result = await createLocation({
         location_name: name.trim(),
         description: description.trim() || undefined,
         x: position.x,
@@ -41,6 +44,23 @@ export function NewLocationWindow() {
         z: position.z,
         floorId: floorId || undefined,
       }).unwrap();
+
+      if (result.error) {
+        setError('Could not save tag. Please try again.');
+        return;
+      }
+
+      // Immediately inject the tag into the current Matterport session
+      // (also re-injected on every page load via Matterport.tsx)
+      if (sdk) {
+        await addTagToSession(sdk, {
+          label: name.trim(),
+          description: description.trim(),
+          x: position.x,
+          y: position.y,
+          z: position.z,
+        });
+      }
 
       handleClose();
     } catch {

@@ -8,14 +8,14 @@ import {
   openNewLocationWindow,
 } from '../../../store/modalSlice.ts';
 import { useGetAllLocationsQuery } from '../../../api/locationApi/locationApi.ts';
-import { getMatterTags } from '../../../app/matterport.ts';
+import { getMatterTags, addTagToSession } from '../../../app/matterport.ts';
 
 interface MatterportProps {
   children?: React.ReactNode;
 }
 
 export default function Matterport({ children }: MatterportProps) {
-  const { sdk, mattertags, setMattertags, error, setSdk, setIsLoading, dwellIndicator, clearDwellIndicator } =
+  const { sdk, setMattertags, error, setSdk, setIsLoading, dwellIndicator, clearDwellIndicator } =
     useMatterport();
   const { data: allLocations } = useGetAllLocationsQuery();
   const loadedLocationIds = useRef<Set<string>>(new Set());
@@ -43,26 +43,18 @@ export default function Matterport({ children }: MatterportProps) {
 
     (async () => {
       for (const location of newLocations) {
-        const hex = (location.color || '#ff0000').replace('#', '');
-        const r = parseInt(hex.slice(0, 2), 16) / 255;
-        const g = parseInt(hex.slice(2, 4), 16) / 255;
-        const b = parseInt(hex.slice(4, 6), 16) / 255;
-
-        try {
-          await sdk.Tag.add([{
-            label: location.location_name,
-            description: location.description || '',
-            anchorPosition: { x: location.x, y: location.y, z: location.z },
-            stemVector: { x: 0, y: 0, z: 0 },
-            color: { r, g, b },
-          }]);
-          loadedLocationIds.current.add(location.location_id);
-        } catch {
-          // continue with other locations
-        }
+        await addTagToSession(sdk, {
+          label: location.location_name,
+          description: location.description || '',
+          x: location.x,
+          y: location.y,
+          z: location.z,
+        });
+        loadedLocationIds.current.add(location.location_id);
       }
+      // Refresh mattertag list so the context has up-to-date tag IDs
       try {
-        const updatedTags = await sdk.Tag.data.getData();
+        const updatedTags = await getMatterTags(sdk);
         setMattertags(updatedTags);
       } catch { /* non-critical */ }
     })();
@@ -201,13 +193,6 @@ export default function Matterport({ children }: MatterportProps) {
           </div>
         </div>
       )}
-
-      {/* DEBUG PANEL */}
-      <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 100, background: 'rgba(0,0,0,0.7)', color: 'lime', padding: 10, fontFamily: 'monospace', fontSize: 12, pointerEvents: 'none' }}>
-        <div>Matterport SDK loaded: {sdk ? 'Yes' : 'No'}</div>
-        <div>Tags loaded: {mattertags?.length || 0}</div>
-        <div>Dwell Indicator Set: {dwellIndicator ? 'YES' : 'NO'}</div>
-      </div>
 
       <style>{`
         @keyframes dwellPulse {
