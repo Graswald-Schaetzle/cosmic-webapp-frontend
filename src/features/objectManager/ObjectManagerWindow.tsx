@@ -58,10 +58,10 @@ export function ObjectManagerWindow() {
     const floorMap = new Map<string, Floor>();
 
     locations.forEach(location => {
-      const floorId = location.floor_id.toString();
-      const roomId = location.room_id.toString();
-      const floorName = location.floor_name || `Floor ${location.floor_id}`;
-      const roomName = location.room_name || `Room ${location.room_id}`;
+      const floorId = location.floor_id != null ? location.floor_id.toString() : 'unassigned';
+      const roomId = location.room_id != null ? location.room_id.toString() : 'unassigned';
+      const floorName = location.floor_name || (location.floor_id != null ? `Floor ${location.floor_id}` : 'Unassigned');
+      const roomName = location.room_name || (location.room_id != null ? `Room ${location.room_id}` : 'Unassigned');
 
       // Create or get floor
       if (!floorMap.has(floorId)) {
