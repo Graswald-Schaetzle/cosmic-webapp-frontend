@@ -14,7 +14,7 @@ interface MatterportProps {
 }
 
 export default function Matterport({ children }: MatterportProps) {
-  const { sdk, setMattertags, error, setSdk, setIsLoading, dwellIndicator, clearDwellIndicator } =
+  const { sdk, mattertags, setMattertags, error, setSdk, setIsLoading, dwellIndicator, clearDwellIndicator } =
     useMatterport();
   const { data: allLocations } = useGetAllLocationsQuery();
   const loadedLocationIds = useRef<Set<string>>(new Set());
@@ -83,8 +83,13 @@ export default function Matterport({ children }: MatterportProps) {
 
         const mpSdk = await window.connect(iframeRef.current);
 
-        // Get initial mattertags
-        const tags = await mpSdk.Tag.data.getData();
+        // Get initial mattertags (Tag.data.getData preferred, fallback to Mattertag.getData)
+        let tags: MatterTag[] = [];
+        try {
+          tags = await mpSdk.Tag.data.getData();
+        } catch {
+          try { tags = await mpSdk.Mattertag.getData(); } catch { /* no tags */ }
+        }
         setMattertags(tags);
 
         // Disable default tag behaviors for all tags
