@@ -8,6 +8,7 @@ import {
   openNewLocationWindow,
 } from '../../../store/modalSlice.ts';
 import { useGetAllLocationsQuery } from '../../../api/locationApi/locationApi.ts';
+import { getMatterTags } from '../../../app/matterport.ts';
 
 interface MatterportProps {
   children?: React.ReactNode;
@@ -83,13 +84,8 @@ export default function Matterport({ children }: MatterportProps) {
 
         const mpSdk = await window.connect(iframeRef.current);
 
-        // Get initial mattertags (Tag.data.getData preferred, fallback to Mattertag.getData)
-        let tags: MatterTag[] = [];
-        try {
-          tags = await mpSdk.Tag.data.getData();
-        } catch {
-          try { tags = await mpSdk.Mattertag.getData(); } catch { /* no tags */ }
-        }
+        // Mattertag.getData() is the correct call; Tag.data is an IObservable without getData()
+        const tags = await getMatterTags(mpSdk);
         setMattertags(tags);
 
         // Disable default tag behaviors for all tags

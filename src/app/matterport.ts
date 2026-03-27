@@ -12,8 +12,14 @@ export function deleteMatterTag(sdk: any, tagId: string): Promise<void> {
   return sdk.Tag.remove(tagId);
 }
 
-export function getMatterTags(sdk: any): Promise<MatterTag[]> {
-  return sdk.Tag.data.getData();
+export async function getMatterTags(sdk: any): Promise<MatterTag[]> {
+  // Tag.data is an IObservable — it has .subscribe() but NOT .getData().
+  // Mattertag.getData() is the correct call for this SDK version.
+  try {
+    return await sdk.Mattertag.getData();
+  } catch {
+    try { return await sdk.Tag.data.getData(); } catch { return []; }
+  }
 }
 
 export function injectHTML(sdk: any, tagId: string, html: string): Promise<void> {
