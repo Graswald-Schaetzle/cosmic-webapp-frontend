@@ -5,6 +5,7 @@ import { Dialog } from '../../components/Dialog';
 import { RootState } from '../../store/store';
 import { closeNewLocationWindow } from '../../store/modalSlice';
 import { useCreateLocationMutation } from '../../api/locationApi/locationApi';
+import { useGetMySpacesQuery } from '../../api/spaces/spacesApi';
 import { useMatterport } from '../../contexts/MatterportContext';
 import { addTagToSession } from '../../app/matterport';
 
@@ -13,7 +14,8 @@ export function NewLocationWindow() {
   const { isOpen, position, floorId } = useSelector(
     (state: RootState) => state.modal.newLocationWindowModal
   );
-  const spaceId = useSelector((state: RootState) => state.modal.spaceViewerWindowModal.spaceId);
+  const { data: spaces } = useGetMySpacesQuery();
+  const spaceId = spaces?.[0]?.space_id ?? null;
   const [createLocation, { isLoading }] = useCreateLocationMutation();
   const { sdk } = useMatterport();
 
