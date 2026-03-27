@@ -13,6 +13,7 @@ export function NewLocationWindow() {
   const { isOpen, position, floorId } = useSelector(
     (state: RootState) => state.modal.newLocationWindowModal
   );
+  const spaceId = useSelector((state: RootState) => state.modal.spaceViewerWindowModal.spaceId);
   const [createLocation, { isLoading }] = useCreateLocationMutation();
   const { sdk } = useMatterport();
 
@@ -43,6 +44,7 @@ export function NewLocationWindow() {
         y: position.y,
         z: position.z,
         floorId: floorId || undefined,
+        spaceId: spaceId,
       }).unwrap();
 
       if (result.error) {

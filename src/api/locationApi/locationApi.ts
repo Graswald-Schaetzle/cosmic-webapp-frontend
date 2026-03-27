@@ -216,6 +216,7 @@ export const locationApi = createApi({
         y: number;
         z: number;
         floorId?: string;
+        spaceId?: number | null;
       }
     >({
       query: body => ({
