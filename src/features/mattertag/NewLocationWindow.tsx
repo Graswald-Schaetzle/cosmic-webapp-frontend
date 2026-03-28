@@ -36,10 +36,6 @@ export function NewLocationWindow() {
       return;
     }
     if (!position) return;
-    if (!spaceId) {
-      setError('No space available. Please create a space first.');
-      return;
-    }
 
     setError(null);
     try {
