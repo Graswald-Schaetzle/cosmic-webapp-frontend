@@ -1,13 +1,16 @@
 import { MatterTag } from '../types/matterport';
 
 export function createMatterTag(sdk: any, tag: MatterTag): Promise<string[]> {
-  return sdk.Tag.add([tag]);
+  return sdk.Tag.add(tag);
 }
 
 /**
  * Add a tag to the current Matterport session (ephemeral — survives page load if
  * also stored in Supabase and re-injected on every SDK init via this function).
- * Tries the new Tag.add() API first, falls back to the old Mattertag.addTag().
+ * Tries the new Tag.add() API first, falls back to the deprecated Mattertag.add().
+ *
+ * Tag.add() signature: Tag.add(...tags: Tag.Descriptor[]): Promise<string[]>
+ * Each descriptor is a spread argument, NOT wrapped in an array.
  */
 export async function addTagToSession(
   sdk: any,
@@ -17,21 +20,23 @@ export async function addTagToSession(
     label: opts.label,
     description: opts.description || '',
     anchorPosition: { x: opts.x, y: opts.y, z: opts.z },
-    stemVector: { x: 0, y: 0.3, z: 0 }, // points upward so the pin is visible
-    color: { r: 1, g: 1, b: 1 },
+    stemVector: { x: 0, y: 0.3, z: 0 },
+    color: { r: 0.2, g: 0.5, b: 1 },
   };
-  console.log('[addTagToSession] Adding tag with data:', tagData);
+  console.log('[addTagToSession] Adding tag:', tagData);
   try {
-    const result = await sdk.Tag.add([tagData]);
+    // Tag.add(...descriptors) — pass as spread arg, not wrapped in array
+    const result = await sdk.Tag.add(tagData);
     console.log('[addTagToSession] Tag.add succeeded:', result);
+    return;
   } catch (err1: unknown) {
     console.warn('[addTagToSession] Tag.add failed:', err1);
-    try {
-      const result = await sdk.Mattertag.add(tagData);
-      console.log('[addTagToSession] Mattertag.add succeeded:', result);
-    } catch (err2: unknown) {
-      console.error('[addTagToSession] Both Tag.add and Mattertag.add failed:', err2);
-    }
+  }
+  try {
+    const result = await sdk.Mattertag.add(tagData);
+    console.log('[addTagToSession] Mattertag.add succeeded:', result);
+  } catch (err2: unknown) {
+    console.error('[addTagToSession] Both Tag.add and Mattertag.add failed:', err2);
   }
 }
 

@@ -36,9 +36,11 @@ export default function Matterport({ children }: MatterportProps) {
 
   // Re-inject backend locations as ephemeral Matterport tags whenever SDK is ready or locations change
   useEffect(() => {
+    console.log('[Matterport] Re-inject effect — sdk:', !!sdk, 'allLocations:', allLocations?.length ?? 0);
     if (!sdk || !allLocations?.length) return;
 
-    const newLocations = allLocations.filter(l => !loadedLocationIds.current.has(l.location_id));
+    const newLocations = allLocations.filter(l => !loadedLocationIds.current.has(String(l.location_id)));
+    console.log('[Matterport] New locations to inject:', newLocations.length);
     if (!newLocations.length) return;
 
     (async () => {
@@ -50,7 +52,7 @@ export default function Matterport({ children }: MatterportProps) {
           y: location.y,
           z: location.z,
         });
-        loadedLocationIds.current.add(location.location_id);
+        loadedLocationIds.current.add(String(location.location_id));
       }
       // Refresh mattertag list so the context has up-to-date tag IDs
       try {
