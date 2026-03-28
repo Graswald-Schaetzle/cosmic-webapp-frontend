@@ -20,15 +20,18 @@ export async function addTagToSession(
     stemVector: { x: 0, y: 0.3, z: 0 }, // points upward so the pin is visible
     color: { r: 1, g: 1, b: 1 },
   };
+  console.log('[addTagToSession] Adding tag with data:', tagData);
   try {
-    await sdk.Tag.add([tagData]);
-  } catch {
+    const result = await sdk.Tag.add([tagData]);
+    console.log('[addTagToSession] Tag.add succeeded:', result);
+  } catch (err1: unknown) {
+    console.warn('[addTagToSession] Tag.add failed:', err1);
     try {
-      await sdk.Mattertag.addTag({
-        ...tagData,
-        floorIndex: 0,
-      });
-    } catch { /* both APIs unavailable */ }
+      const result = await sdk.Mattertag.add(tagData);
+      console.log('[addTagToSession] Mattertag.add succeeded:', result);
+    } catch (err2: unknown) {
+      console.error('[addTagToSession] Both Tag.add and Mattertag.add failed:', err2);
+    }
   }
 }
 
