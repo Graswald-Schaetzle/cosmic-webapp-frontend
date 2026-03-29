@@ -26,15 +26,22 @@ export async function addTagToSession(
   console.log('[addTagToSession] Adding tag:', tagData);
   try {
     // Tag.add(...descriptors) — pass as spread arg, not wrapped in array
-    const result = await sdk.Tag.add(tagData);
+    const result: string[] = await sdk.Tag.add(tagData);
     console.log('[addTagToSession] Tag.add succeeded:', result);
+    // Immediately suppress native Matterport tag UI for the new tag
+    for (const sid of result) {
+      try { await sdk.Tag.allowAction(sid, { opening: false, navigating: false }); } catch { /* not critical */ }
+    }
     return;
   } catch (err1: unknown) {
     console.warn('[addTagToSession] Tag.add failed:', err1);
   }
   try {
-    const result = await sdk.Mattertag.add(tagData);
+    const result: string[] = await sdk.Mattertag.add(tagData);
     console.log('[addTagToSession] Mattertag.add succeeded:', result);
+    for (const sid of result) {
+      try { await sdk.Tag.allowAction(sid, { opening: false, navigating: false }); } catch { /* not critical */ }
+    }
   } catch (err2: unknown) {
     console.error('[addTagToSession] Both Tag.add and Mattertag.add failed:', err2);
   }
