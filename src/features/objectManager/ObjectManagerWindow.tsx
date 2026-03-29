@@ -21,7 +21,7 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 import { useLocations } from '../../hooks/useLocations';
 import { LocationItem, LocationDetailResponse } from '../../api/locationApi/locationApi';
 
-interface Object {
+interface ObjectItem {
   id: string;
   name: string;
   location: LocationItem;
@@ -30,7 +30,7 @@ interface Object {
 interface Room {
   id: string;
   name: string;
-  objects: Object[];
+  objects: ObjectItem[];
 }
 
 interface Floor {
@@ -60,8 +60,12 @@ export function ObjectManagerWindow() {
     locations.forEach(location => {
       const floorId = location.floor_id != null ? location.floor_id.toString() : 'unassigned';
       const roomId = location.room_id != null ? location.room_id.toString() : 'unassigned';
-      const floorName = location.floor_name || (location.floor_id != null ? `Floor ${location.floor_id}` : 'Unassigned');
-      const roomName = location.room_name || (location.room_id != null ? `Room ${location.room_id}` : 'Unassigned');
+      const floorName =
+        location.floor_name ||
+        (location.floor_id != null ? `Floor ${location.floor_id}` : 'Unassigned');
+      const roomName =
+        location.room_name ||
+        (location.room_id != null ? `Room ${location.room_id}` : 'Unassigned');
 
       // Create or get floor
       if (!floorMap.has(floorId)) {
@@ -152,12 +156,14 @@ export function ObjectManagerWindow() {
   // Function to get display name for filter
   const getFilterDisplayName = (filter: { type: FilterType; value: string }) => {
     switch (filter.type) {
-      case 'Floor':
+      case 'Floor': {
         const floor = floors.find(f => f.id === filter.value);
         return floor ? `Floor: ${floor.name}` : filter.value;
-      case 'Room':
+      }
+      case 'Room': {
         const room = floors.flatMap(f => f.rooms).find(r => r.id === filter.value);
         return room ? `Room: ${room.name}` : filter.value;
+      }
       default:
         return filter.value;
     }

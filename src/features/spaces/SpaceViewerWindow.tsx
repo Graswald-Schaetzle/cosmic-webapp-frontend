@@ -1,3 +1,4 @@
+import { createElement, CSSProperties, HTMLAttributes, DetailedHTMLProps } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import { closeSpaceViewerWindow } from '../../store/modalSlice';
@@ -8,35 +9,25 @@ import CloseIcon from '@mui/icons-material/Close';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import HomeWorkIcon from '@mui/icons-material/HomeWork';
 
-// Declare model-viewer as a custom HTML element
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'model-viewer': React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement> & {
-          src?: string;
-          alt?: string;
-          'camera-controls'?: boolean | string;
-          'auto-rotate'?: boolean | string;
-          ar?: boolean | string;
-          style?: React.CSSProperties;
-        },
-        HTMLElement
-      >;
-    }
-  }
-}
+type ModelViewerProps = DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> & {
+  src?: string;
+  alt?: string;
+  'camera-controls'?: boolean | string;
+  'auto-rotate'?: boolean | string;
+  ar?: boolean | string;
+  style?: CSSProperties;
+};
 
 function UsdzViewer({ src, name }: { src: string; name: string }) {
   return (
     <Box sx={{ width: '100%', height: '100%', position: 'relative' }}>
-      <model-viewer
-        src={src}
-        alt={name}
-        camera-controls
-        auto-rotate
-        style={{ width: '100%', height: '100%', background: 'transparent' }}
-      />
+      {createElement('model-viewer', {
+        src,
+        alt: name,
+        'camera-controls': true,
+        'auto-rotate': true,
+        style: { width: '100%', height: '100%', background: 'transparent' },
+      } as ModelViewerProps)}
     </Box>
   );
 }
@@ -185,9 +176,7 @@ export const SpaceViewerWindow = () => {
           </Box>
         )}
 
-        {!outputLoading && showUsdz && (
-          <UsdzViewer src={modelUrl!} name={spaceName ?? 'Space'} />
-        )}
+        {!outputLoading && showUsdz && <UsdzViewer src={modelUrl!} name={spaceName ?? 'Space'} />}
 
         {!outputLoading && !showSplat && !showUsdz && (
           <NoModelPlaceholder name={spaceName ?? 'Space'} />

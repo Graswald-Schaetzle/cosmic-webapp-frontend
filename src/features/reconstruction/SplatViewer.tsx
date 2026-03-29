@@ -57,20 +57,17 @@ export const SplatViewer = ({ splatUrl, onClose }: SplatViewerProps) => {
 
         viewerRef.current = viewer;
 
-        await viewer
-          .addSplatScene(splatUrl, {
-            showLoadingUI: false,
-            progressiveLoad: true,
-          })
-          .promise;
+        await viewer.addSplatScene(splatUrl, {
+          showLoadingUI: false,
+          progressiveLoad: true,
+        }).promise;
 
         if (cancelled) return;
 
         setIsLoading(false);
       } catch (err) {
         if (cancelled) return;
-        const message =
-          err instanceof Error ? err.message : 'Fehler beim Laden der 3D-Szene';
+        const message = err instanceof Error ? err.message : 'Fehler beim Laden der 3D-Szene';
         setError(message);
         setIsLoading(false);
       }

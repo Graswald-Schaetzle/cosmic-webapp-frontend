@@ -97,7 +97,7 @@ async function supabaseSignUp(
   email: string,
   password: string,
   firstName: string,
-  lastName: string,
+  lastName: string
 ): Promise<string> {
   const response = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
     method: 'POST',
@@ -119,9 +119,7 @@ async function supabaseSignUp(
 
   const data = await response.json();
   if (!data.user?.id) {
-    throw new Error(
-      'Registrierung fehlgeschlagen. Bitte überprüfe deine E-Mail-Adresse.',
-    );
+    throw new Error('Registrierung fehlgeschlagen. Bitte überprüfe deine E-Mail-Adresse.');
   }
   return data.user.id as string;
 }
@@ -131,7 +129,7 @@ export async function registerUser(userInput: UserInput): Promise<AuthResponse['
     userInput.email,
     userInput.password,
     userInput.firstName!,
-    userInput.lastName!,
+    userInput.lastName!
   );
 
   try {
@@ -153,7 +151,9 @@ export async function registerUser(userInput: UserInput): Promise<AuthResponse['
     return data.user;
   } catch (error: any) {
     console.error('Registration error:', error);
-    throw new Error(error.response?.data?.message || error.message || 'Registrierung fehlgeschlagen');
+    throw new Error(
+      error.response?.data?.message || error.message || 'Registrierung fehlgeschlagen'
+    );
   }
 }
 

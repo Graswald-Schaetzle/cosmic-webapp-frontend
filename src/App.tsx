@@ -74,9 +74,7 @@ function LoginForm() {
           {isSignUp ? 'Konto erstellen' : 'Anmelden'}
         </Typography>
 
-        {error && (
-          <Typography sx={{ color: '#ff6b6b', fontSize: 14 }}>{error}</Typography>
-        )}
+        {error && <Typography sx={{ color: '#ff6b6b', fontSize: 14 }}>{error}</Typography>}
 
         {isSignUp && (
           <>
@@ -84,7 +82,7 @@ function LoginForm() {
               label="Vorname"
               type="text"
               value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
+              onChange={e => setFirstName(e.target.value)}
               required
               variant="outlined"
               size="small"
@@ -94,7 +92,7 @@ function LoginForm() {
               label="Nachname"
               type="text"
               value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
+              onChange={e => setLastName(e.target.value)}
               required
               variant="outlined"
               size="small"
@@ -107,7 +105,7 @@ function LoginForm() {
           label="E-Mail"
           type="email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={e => setEmail(e.target.value)}
           required
           variant="outlined"
           size="small"
@@ -117,19 +115,14 @@ function LoginForm() {
           label="Passwort"
           type="password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={e => setPassword(e.target.value)}
           required
           variant="outlined"
           size="small"
           sx={fieldSx}
         />
 
-        <Button
-          type="submit"
-          variant="contained"
-          disabled={isLoading}
-          sx={{ mt: 1 }}
-        >
+        <Button type="submit" variant="contained" disabled={isLoading} sx={{ mt: 1 }}>
           {isLoading ? (
             <CircularProgress size={20} sx={{ color: '#fff' }} />
           ) : isSignUp ? (

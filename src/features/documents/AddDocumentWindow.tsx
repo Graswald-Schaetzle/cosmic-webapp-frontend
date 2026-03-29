@@ -47,9 +47,9 @@ export const AddDocumentWindow = () => {
     }
   }, [isOpen, preSelectedLocation]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     dispatch(closeAddDocumentWindow());
-  };
+  }, [dispatch]);
 
   const handleBack = () => {
     setSelectedFile(null);
@@ -237,7 +237,16 @@ export const AddDocumentWindow = () => {
       console.error('Failed to upload document:', error);
       setError('Failed to add document');
     }
-  }, [selectedFile, selectedObject, documentName, uploadDocument]);
+  }, [
+    createNotification,
+    dispatch,
+    documentName,
+    handleClose,
+    redirectBack,
+    selectedFile,
+    selectedObject,
+    uploadDocument,
+  ]);
 
   const handleCancel = useCallback(() => {
     setSelectedFile(null);

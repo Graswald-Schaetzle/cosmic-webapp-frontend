@@ -11,7 +11,11 @@ declare module '@matterport/sdk' {
       };
     };
     Conversion: {
-      worldToScreen: (position: Position, pose: Pose, size: { w: number; h: number }) => ScreenPosition;
+      worldToScreen: (
+        position: Position,
+        pose: Pose,
+        size: { w: number; h: number }
+      ) => ScreenPosition;
     };
     Renderer: {
       getSize: () => Size;
@@ -22,7 +26,10 @@ declare module '@matterport/sdk' {
       editBillboard: (tagId: string, updates: Partial<MatterTag>) => Promise<void>;
       editColor: (tagId: string, color: { r: number; g: number; b: number }) => Promise<void>;
       injectHTML: (tagId: string, html: string) => Promise<void>;
-      allowAction: (tagId: string, actions: { opening?: boolean; navigating?: boolean }) => Promise<void>;
+      allowAction: (
+        tagId: string,
+        actions: { opening?: boolean; navigating?: boolean }
+      ) => Promise<void>;
       data: {
         subscribe: (callback: (tags: MatterTag[]) => void) => void;
         getData: () => Promise<MatterTag[]>;

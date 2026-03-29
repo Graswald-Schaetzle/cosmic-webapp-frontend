@@ -72,13 +72,9 @@ export function getStatusLabel(status: ReconstructionStatus): string {
 
 // Helper to check if status is a processing state
 export function isProcessing(status: ReconstructionStatus): boolean {
-  return [
-    'queued',
-    'extracting_frames',
-    'running_colmap',
-    'training_splat',
-    'exporting',
-  ].includes(status);
+  return ['queued', 'extracting_frames', 'running_colmap', 'training_splat', 'exporting'].includes(
+    status
+  );
 }
 
 // Helper to get progress percentage (approximate)
@@ -113,10 +109,7 @@ export const reconstructionApi = createApi({
   tagTypes: ['ReconstructionJobs'],
   endpoints: builder => ({
     // Create a new reconstruction job (returns upload URL)
-    createJob: builder.mutation<
-      { data: ReconstructionJob },
-      CreateJobRequest
-    >({
+    createJob: builder.mutation<{ data: ReconstructionJob }, CreateJobRequest>({
       query: body => ({
         url: '/reconstruction-jobs',
         method: 'POST',
@@ -140,11 +133,8 @@ export const reconstructionApi = createApi({
         url: `/reconstruction-jobs/${jobId}`,
         method: 'GET',
       }),
-      transformResponse: (response: { data: ReconstructionJob }) =>
-        response.data,
-      providesTags: (_result, _error, jobId) => [
-        { type: 'ReconstructionJobs', id: jobId },
-      ],
+      transformResponse: (response: { data: ReconstructionJob }) => response.data,
+      providesTags: (_result, _error, jobId) => [{ type: 'ReconstructionJobs', id: jobId }],
     }),
 
     // List jobs for a space
@@ -154,8 +144,7 @@ export const reconstructionApi = createApi({
         method: 'GET',
         params: spaceId ? { space_id: spaceId } : undefined,
       }),
-      transformResponse: (response: { data: ReconstructionJob[] }) =>
-        response.data,
+      transformResponse: (response: { data: ReconstructionJob[] }) => response.data,
       providesTags: ['ReconstructionJobs'],
     }),
 
@@ -165,8 +154,7 @@ export const reconstructionApi = createApi({
         url: `/reconstruction-jobs/${jobId}/output`,
         method: 'GET',
       }),
-      transformResponse: (response: { data: JobOutputResponse }) =>
-        response.data,
+      transformResponse: (response: { data: JobOutputResponse }) => response.data,
     }),
 
     // Cancel a job

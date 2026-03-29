@@ -43,9 +43,21 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
     const initMatterport = async () => {
       try {
         // Optional Tag UI controls — may not exist in all SDK versions
-        try { await sdk.Tag.toggleNavControls(false); } catch { /* not available */ }
-        try { await sdk.Tag.toggleDocking(false); } catch { /* not available */ }
-        try { await sdk.Tag.toggleSharing(false); } catch { /* not available */ }
+        try {
+          await sdk.Tag.toggleNavControls(false);
+        } catch {
+          /* not available */
+        }
+        try {
+          await sdk.Tag.toggleDocking(false);
+        } catch {
+          /* not available */
+        }
+        try {
+          await sdk.Tag.toggleSharing(false);
+        } catch {
+          /* not available */
+        }
 
         // Subscribe to camera pose updates (required for worldToScreen)
         sdk.Camera.pose.subscribe((newPose: any) => {
@@ -70,7 +82,7 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
 
           const pos = newIntersection.position;
           const { w, h } = getWindowSize();
-          
+
           let screenPos;
           try {
             screenPos = sdk.Conversion.worldToScreen(pos, poseRef.current, { w, h });
@@ -90,27 +102,50 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
 
           // If moved, reset the dwell timer
           if (moved) {
-            lastIntersectionRef.current = { worldPos: pos, screenPos: currentScreenPos, floorId: newIntersection.floorId ?? newIntersection.floorIndex ?? '' };
-            
+            lastIntersectionRef.current = {
+              worldPos: pos,
+              screenPos: currentScreenPos,
+              floorId: newIntersection.floorId ?? newIntersection.floorIndex ?? '',
+            };
+
             if (dwellTimerRef.current) {
               clearTimeout(dwellTimerRef.current);
             }
-            
+
             setDwellIndicator(null);
 
             dwellTimerRef.current = setTimeout(() => {
               const saved = lastIntersectionRef.current;
               if (!saved) return;
-              
+
               const x = saved.screenPos.x;
               const y = saved.screenPos.y;
-              console.log('[MatterportContext] Dwell timer fired. Coordinates:', saved.worldPos, 'Screen:', x, y);
-              
+              console.log(
+                '[MatterportContext] Dwell timer fired. Coordinates:',
+                saved.worldPos,
+                'Screen:',
+                x,
+                y
+              );
+
               if (x > 0 && y > 0 && x < w && y < h) {
-                setDwellIndicator({ screenX: x, screenY: y, worldPos: saved.worldPos, floorId: String(saved.floorId) });
+                setDwellIndicator({
+                  screenX: x,
+                  screenY: y,
+                  worldPos: saved.worldPos,
+                  floorId: String(saved.floorId),
+                });
               } else {
-                console.log('[MatterportContext] Screen coordinates out of bounds, using center fallback', {w, h});
-                setDwellIndicator({ screenX: w / 2, screenY: h / 2, worldPos: saved.worldPos, floorId: String(saved.floorId) });
+                console.log(
+                  '[MatterportContext] Screen coordinates out of bounds, using center fallback',
+                  { w, h }
+                );
+                setDwellIndicator({
+                  screenX: w / 2,
+                  screenY: h / 2,
+                  worldPos: saved.worldPos,
+                  floorId: String(saved.floorId),
+                });
               }
             }, 3000);
           }
@@ -133,7 +168,9 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
               }
             },
           });
-        } catch { /* Tag.openTags not available */ }
+        } catch {
+          /* Tag.openTags not available */
+        }
 
         // Optional: subscribe to tag data changes
         try {
@@ -143,11 +180,15 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
               if (tag.sid) {
                 try {
                   await sdk.Tag.allowAction(tag.sid, { opening: false, navigating: false });
-                } catch { /* allowAction not available */ }
+                } catch {
+                  /* allowAction not available */
+                }
               }
             }
           });
-        } catch { /* Tag.data not available */ }
+        } catch {
+          /* Tag.data not available */
+        }
 
         // Optional: subscribe to tag clicks
         try {
@@ -155,8 +196,9 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
             const tag = mattertags.find(t => t.sid === tagId);
             if (tag) setSelectedTag(tag);
           });
-        } catch { /* Tag.click not available */ }
-
+        } catch {
+          /* Tag.click not available */
+        }
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : 'Failed to initialize Matterport SDK';
@@ -168,7 +210,7 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
     };
 
     initMatterport();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sdk]);
 
   const createTag = async (data: TagData) => {

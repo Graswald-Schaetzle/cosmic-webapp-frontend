@@ -1,5 +1,14 @@
 import { Dialog } from '../../components/Dialog';
-import { Box, Typography, IconButton, Tabs, Tab, Paper, CircularProgress, Chip } from '@mui/material';
+import {
+  Box,
+  Typography,
+  IconButton,
+  Tabs,
+  Tab,
+  Paper,
+  CircularProgress,
+  Chip,
+} from '@mui/material';
 import { ObjectInfoTab } from './components/ObjectInfoTab';
 import { RoomInfoTab } from './components/RoomInfoTab';
 import { DocumentTab } from './components/DocumentTab.tsx';

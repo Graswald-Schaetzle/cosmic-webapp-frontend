@@ -96,8 +96,8 @@ export interface DocumentListResponse {
 
 // Delete response type
 export interface DocumentDeleteResponse {
-  data: {};
-  error: {};
+  data: Record<string, never>;
+  error: Record<string, never> | null;
 }
 
 // RTK Query endpoints

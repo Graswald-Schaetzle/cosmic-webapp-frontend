@@ -37,6 +37,19 @@ export interface UserMenuResponse {
   error: string | null;
 }
 
+export interface MenuCatalogItem {
+  id: string;
+  label: string;
+  iconKey: string;
+  defaultSection: 'main' | 'other';
+  defaultOrder: number;
+}
+
+export interface MenuCatalogResponse {
+  data: MenuCatalogItem[];
+  error: string | null;
+}
+
 // RTK Query endpoints
 export const userMenuApi = api.injectEndpoints({
   endpoints: builder => ({
@@ -51,6 +64,14 @@ export const userMenuApi = api.injectEndpoints({
     getUserMenu: builder.query<UserMenuResponse, void>({
       query: () => ({
         url: '/user-menu',
+        method: 'GET',
+      }),
+      providesTags: ['UserMenu'],
+    }),
+
+    getMenuCatalog: builder.query<MenuCatalogResponse, void>({
+      query: () => ({
+        url: '/menu-catalog',
         method: 'GET',
       }),
       providesTags: ['UserMenu'],
@@ -79,6 +100,7 @@ export const userMenuApi = api.injectEndpoints({
 export const {
   useGetUsersQuery,
   useGetUserMenuQuery,
+  useGetMenuCatalogQuery,
   useCreateUserMenuMutation,
   useUpdateUserMenuMutation,
 } = userMenuApi;

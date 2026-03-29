@@ -15,8 +15,16 @@ interface MatterportProps {
 }
 
 export default function Matterport({ children }: MatterportProps) {
-  const { sdk, setMattertags, mattertags, error, setSdk, setIsLoading, dwellIndicator, clearDwellIndicator } =
-    useMatterport();
+  const {
+    sdk,
+    setMattertags,
+    mattertags,
+    error,
+    setSdk,
+    setIsLoading,
+    dwellIndicator,
+    clearDwellIndicator,
+  } = useMatterport();
   const { data: allLocations } = useGetAllLocationsQuery();
   const loadedLocationIds = useRef<Set<string>>(new Set());
   // Maps Matterport session sid → LocationItem so tag clicks can resolve the correct location_id
@@ -43,10 +51,17 @@ export default function Matterport({ children }: MatterportProps) {
 
   // Re-inject backend locations as ephemeral Matterport tags whenever SDK is ready or locations change
   useEffect(() => {
-    console.log('[Matterport] Re-inject effect — sdk:', !!sdk, 'allLocations:', allLocations?.length ?? 0);
+    console.log(
+      '[Matterport] Re-inject effect — sdk:',
+      !!sdk,
+      'allLocations:',
+      allLocations?.length ?? 0
+    );
     if (!sdk || !allLocations?.length) return;
 
-    const newLocations = allLocations.filter(l => !loadedLocationIds.current.has(String(l.location_id)));
+    const newLocations = allLocations.filter(
+      l => !loadedLocationIds.current.has(String(l.location_id))
+    );
     console.log('[Matterport] New locations to inject:', newLocations.length);
     if (!newLocations.length) return;
 
@@ -70,7 +85,9 @@ export default function Matterport({ children }: MatterportProps) {
       try {
         const updatedTags = await getMatterTags(sdk);
         setMattertags(updatedTags);
-      } catch { /* non-critical */ }
+      } catch {
+        /* non-critical */
+      }
     })();
   }, [sdk, allLocations, setMattertags]);
 
@@ -98,9 +115,23 @@ export default function Matterport({ children }: MatterportProps) {
         for (const tag of tags) {
           if (!tag.sid) continue;
           try {
-            await mpSdk.Tag.allowAction(tag.sid, { opening: false, navigating: false, docking: false, transitioning: false });
+            await mpSdk.Tag.allowAction(tag.sid, {
+              opening: false,
+              navigating: false,
+              docking: false,
+              transitioning: false,
+            });
           } catch {
-            try { await mpSdk.Mattertag.preventAction(tag.sid, { opening: true, navigating: true, docking: true, transitioning: true }); } catch { /* not critical */ }
+            try {
+              await mpSdk.Mattertag.preventAction(tag.sid, {
+                opening: true,
+                navigating: true,
+                docking: true,
+                transitioning: true,
+              });
+            } catch {
+              /* not critical */
+            }
           }
         }
 
@@ -115,26 +146,28 @@ export default function Matterport({ children }: MatterportProps) {
                   // Prefer resolving via the sid→location map so MatterTagWindow gets location_id
                   const location = sidToLocationRef.current.get(selected);
                   if (location) {
-                    dispatch(openMatterTagWindow({
-                      location_id: location.location_id,
-                      location_name: location.location_name,
-                      color: location.color,
-                      description: location.description,
-                      x: location.x,
-                      y: location.y,
-                      z: location.z,
-                      keywords: location.keywords,
-                      floor_id: location.floor_id,
-                      room_id: location.room_id,
-                      floor_name: location.floor_name,
-                      room_name: location.room_name,
-                      tasks: location.tasks,
-                      taskError: location.taskError,
-                      tag_type: location.tag_type,
-                      responsible_user_id: location.responsible_user_id,
-                      responsible_user: location.responsible_user,
-                      created_at: location.created_at,
-                    } as any));
+                    dispatch(
+                      openMatterTagWindow({
+                        location_id: location.location_id,
+                        location_name: location.location_name,
+                        color: location.color,
+                        description: location.description,
+                        x: location.x,
+                        y: location.y,
+                        z: location.z,
+                        keywords: location.keywords,
+                        floor_id: location.floor_id,
+                        room_id: location.room_id,
+                        floor_name: location.floor_name,
+                        room_name: location.room_name,
+                        tasks: location.tasks,
+                        taskError: location.taskError,
+                        tag_type: location.tag_type,
+                        responsible_user_id: location.responsible_user_id,
+                        responsible_user: location.responsible_user,
+                        created_at: location.created_at,
+                      } as any)
+                    );
                   } else {
                     const tag = mattertagsRef.current.find((t: MatterTag) => t.sid === selected);
                     if (tag) dispatch(openMatterTagWindow(tag));
@@ -142,12 +175,13 @@ export default function Matterport({ children }: MatterportProps) {
                 } else {
                   dispatch(closeMatterTagWindow());
                 }
-
               }
               this.prevState = { ...newState, selected };
             },
           });
-        } catch { /* Tag.openTags not available in this SDK version */ }
+        } catch {
+          /* Tag.openTags not available in this SDK version */
+        }
 
         setSdk(mpSdk);
         setIsLoading(false);

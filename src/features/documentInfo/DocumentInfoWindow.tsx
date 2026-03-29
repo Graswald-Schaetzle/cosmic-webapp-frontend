@@ -489,7 +489,7 @@ export const DocumentInfoWindow = () => {
                   try {
                     const iframe = e.target as HTMLIFrameElement;
                     if (iframe.contentWindow) {
-                      // @ts-ignore - PDF.js specific property
+                      // @ts-expect-error - PDF.js injects this property at runtime
                       const numPages = iframe.contentWindow.PDFViewerApplication?.pagesCount;
                       if (numPages) {
                         setTotalPages(numPages);

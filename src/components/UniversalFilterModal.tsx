@@ -1,5 +1,5 @@
 import { Menu, MenuItem, TextField, Box, Typography, CircularProgress } from '@mui/material';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useGetUsersQuery } from '../api/userMenu/userMenuApi';
 import { useLocations } from '../hooks/useLocations';
 import { useGetFloorsQuery, useGetRoomsQuery } from '../api/locationApi/locationApi';
@@ -64,10 +64,10 @@ export const UniversalFilterModal = ({
   const { data: roomsData, isLoading: roomsLoading } = useGetRoomsQuery();
   const { data: tasksData, isLoading: tasksLoading } = useGetTasksQuery();
 
-  const users = usersData?.users || [];
-  const floors = floorsData?.data || [];
-  const rooms = roomsData?.data || [];
-  const tasks = tasksData?.data || [];
+  const users = useMemo(() => usersData?.users ?? [], [usersData?.users]);
+  const floors = useMemo(() => floorsData?.data ?? [], [floorsData?.data]);
+  const rooms = useMemo(() => roomsData?.data ?? [], [roomsData?.data]);
+  const tasks = useMemo(() => tasksData?.data ?? [], [tasksData?.data]);
 
   // Get current filter values for the selected type
   const getCurrentFilterValues = (filterType: FilterType) => {
@@ -108,50 +108,53 @@ export const UniversalFilterModal = ({
   };
 
   // Get options for the selected filter type
-  const getFilterOptions = (filterType: FilterType) => {
-    switch (filterType) {
-      case 'Status':
-        return statusOptions;
-      case 'Task type':
-        return taskTypeOptions.map(option => option.name);
-      case 'Due date':
-        return dueDateOptions;
-      case 'Assignee':
-        return users.map(user => `${user.first_name} ${user.last_name}`);
-      case 'Object':
-        return (
-          locations?.map(location => ({
-            id: location.location_id,
-            name: location.location_name,
-            floor: location.floor_name,
-            room: location.room_name,
-          })) || []
-        );
-      case 'Floor':
-        return (
-          floors.map(floor => ({
-            id: floor.floor_id,
-            name: floor.name,
-          })) || []
-        );
-      case 'Room':
-        return (
-          rooms.map(room => ({
-            id: room.room_id,
-            name: room.name,
-          })) || []
-        );
-      case 'Task':
-        return (
-          tasks.map(task => ({
-            id: task.task_id,
-            name: task.title,
-          })) || []
-        );
-      default:
-        return [];
-    }
-  };
+  const getFilterOptions = useCallback(
+    (filterType: FilterType) => {
+      switch (filterType) {
+        case 'Status':
+          return statusOptions;
+        case 'Task type':
+          return taskTypeOptions.map(option => option.name);
+        case 'Due date':
+          return dueDateOptions;
+        case 'Assignee':
+          return users.map(user => `${user.first_name} ${user.last_name}`);
+        case 'Object':
+          return (
+            locations?.map(location => ({
+              id: location.location_id,
+              name: location.location_name,
+              floor: location.floor_name,
+              room: location.room_name,
+            })) || []
+          );
+        case 'Floor':
+          return (
+            floors.map(floor => ({
+              id: floor.floor_id,
+              name: floor.name,
+            })) || []
+          );
+        case 'Room':
+          return (
+            rooms.map(room => ({
+              id: room.room_id,
+              name: room.name,
+            })) || []
+          );
+        case 'Task':
+          return (
+            tasks.map(task => ({
+              id: task.task_id,
+              name: task.title,
+            })) || []
+          );
+        default:
+          return [];
+      }
+    },
+    [users, locations, floors, rooms, tasks]
+  );
 
   // Filter options based on search query
   const filteredOptions = useMemo(() => {
@@ -165,16 +168,7 @@ export const UniversalFilterModal = ({
         return option.name.toLowerCase().includes(searchQuery.toLowerCase());
       }
     });
-  }, [
-    selectedFilterType,
-    searchQuery,
-    availableFilterTypes,
-    users,
-    locations,
-    floors,
-    rooms,
-    tasks,
-  ]);
+  }, [selectedFilterType, searchQuery, availableFilterTypes, getFilterOptions]);
 
   const handleFilterTypeSelect = (filterType: FilterType) => {
     setSelectedFilterType(filterType);

@@ -51,16 +51,19 @@ export const TasksTab = ({
   // Function to get display name for filter
   const getFilterDisplayName = (filter: { type: FilterType; value: string }) => {
     switch (filter.type) {
-      case 'Floor':
+      case 'Floor': {
         const floor = floors.find(f => f.floor_id.toString() === filter.value);
         return floor ? `Floor: ${floor.name}` : filter.value;
-      case 'Room':
+      }
+      case 'Room': {
         const room = rooms.find(r => r.room_id.toString() === filter.value);
         return room ? `Room: ${room.name}` : filter.value;
-      case 'Object':
+      }
+      case 'Object': {
         // Find the location by location_id in the locations data
         const location = locations?.find(loc => loc.location_id.toString() === filter.value);
         return location ? `Object: ${location.location_name}` : `Object: ${filter.value}`;
+      }
       default:
         return filter.value;
     }
@@ -101,52 +104,55 @@ export const TasksTab = ({
           return filterValues.some(value => task.locations?.room_id?.toString() === value);
         case 'Due date':
           if (!task.due_at) return false;
-          const taskDate = new Date(task.due_at);
-          const today = new Date();
+          {
+            const taskDate = new Date(task.due_at);
+            const today = new Date();
 
-          return filterValues.some(filterValue => {
-            switch (filterValue) {
-              case 'Today':
-                return (
-                  taskDate.getDate() === today.getDate() &&
-                  taskDate.getMonth() === today.getMonth() &&
-                  taskDate.getFullYear() === today.getFullYear()
-                );
-              case 'This Week':
-                // Get Monday of current week
-                const dayOfWeek = today.getDay();
-                const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Sunday = 0, so we need 6 days back
-                const weekStart = new Date(today);
-                weekStart.setDate(today.getDate() - daysToMonday);
-                const weekEnd = new Date(weekStart);
-                weekEnd.setDate(weekStart.getDate() + 6); // End of week (Sunday)
-                return taskDate >= weekStart && taskDate <= weekEnd;
-              case 'Next Week':
-                // Get Monday of next week
-                const currentDayOfWeek = today.getDay();
-                const daysToNextMonday = currentDayOfWeek === 0 ? 7 : 8 - currentDayOfWeek; // Days until next Monday
-                const nextWeekStart = new Date(today);
-                nextWeekStart.setDate(today.getDate() + daysToNextMonday);
-                const nextWeekEnd = new Date(nextWeekStart);
-                nextWeekEnd.setDate(nextWeekStart.getDate() + 6); // End of week (Sunday)
-                return taskDate >= nextWeekStart && taskDate <= nextWeekEnd;
-              case 'This Month':
-                return (
-                  taskDate.getMonth() === today.getMonth() &&
-                  taskDate.getFullYear() === today.getFullYear()
-                );
-              case 'Next Month':
-                const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1);
-                return (
-                  taskDate.getMonth() === nextMonth.getMonth() &&
-                  taskDate.getFullYear() === nextMonth.getFullYear()
-                );
-              case 'Overdue':
-                return taskDate < today;
-              default:
-                return true;
-            }
-          });
+            return filterValues.some(filterValue => {
+              switch (filterValue) {
+                case 'Today':
+                  return (
+                    taskDate.getDate() === today.getDate() &&
+                    taskDate.getMonth() === today.getMonth() &&
+                    taskDate.getFullYear() === today.getFullYear()
+                  );
+                case 'This Week': {
+                  const dayOfWeek = today.getDay();
+                  const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+                  const weekStart = new Date(today);
+                  weekStart.setDate(today.getDate() - daysToMonday);
+                  const weekEnd = new Date(weekStart);
+                  weekEnd.setDate(weekStart.getDate() + 6);
+                  return taskDate >= weekStart && taskDate <= weekEnd;
+                }
+                case 'Next Week': {
+                  const currentDayOfWeek = today.getDay();
+                  const daysToNextMonday = currentDayOfWeek === 0 ? 7 : 8 - currentDayOfWeek;
+                  const nextWeekStart = new Date(today);
+                  nextWeekStart.setDate(today.getDate() + daysToNextMonday);
+                  const nextWeekEnd = new Date(nextWeekStart);
+                  nextWeekEnd.setDate(nextWeekStart.getDate() + 6);
+                  return taskDate >= nextWeekStart && taskDate <= nextWeekEnd;
+                }
+                case 'This Month':
+                  return (
+                    taskDate.getMonth() === today.getMonth() &&
+                    taskDate.getFullYear() === today.getFullYear()
+                  );
+                case 'Next Month': {
+                  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1);
+                  return (
+                    taskDate.getMonth() === nextMonth.getMonth() &&
+                    taskDate.getFullYear() === nextMonth.getFullYear()
+                  );
+                }
+                case 'Overdue':
+                  return taskDate < today;
+                default:
+                  return true;
+              }
+            });
+          }
         default:
           return true;
       }

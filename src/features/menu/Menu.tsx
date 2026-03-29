@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { DndProvider, useDrag, useDrop, DragSourceMonitor } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -33,37 +33,135 @@ import HomeWorkIcon from '@mui/icons-material/HomeWork';
 import type { SvgIconProps } from '@mui/material';
 import {
   useGetUserMenuQuery,
+  useGetMenuCatalogQuery,
+  MenuCatalogItem,
   useUpdateUserMenuMutation,
   UserMenuPayload,
 } from '../../api/userMenu/userMenuApi';
 
 interface MenuItem {
   id: string;
-  icon: string;
+  icon?: string;
+  iconKey: string;
   muiIcon?: React.ComponentType<SvgIconProps>;
   label: string;
   section: 'main' | 'other';
   order: number;
-  name: string;
 }
 
 const DND_TYPE = 'MENU_ITEM';
 
-const defaultMenuItems: MenuItem[] = [
-  { id: 'dashboard', icon: '/icons/menu/white/dashboard.svg', label: 'Dashboard', section: 'main', order: 0, name: 'Dashboard' },
-  { id: 'objects', icon: '/icons/menu/white/objects.svg', label: 'Objects', section: 'main', order: 1, name: 'Objects' },
-  { id: 'tasks', icon: '/icons/menu/white/tasks.svg', label: 'Tasks', section: 'main', order: 2, name: 'Tasks' },
-  { id: 'notifications', icon: '/icons/menu/white/notifications.svg', label: 'Notifications', section: 'main', order: 3, name: 'Notifications' },
-  { id: 'calendar', icon: '/icons/menu/white/calendar.svg', label: 'Calendar', section: 'main', order: 4, name: 'Calendar' },
-  { id: 'documents', icon: '/icons/menu/white/documents.svg', label: 'Documents', section: 'main', order: 5, name: 'Documents' },
-  { id: 'profile', icon: '/icons/menu/white/profile.svg', label: 'Profile', section: 'main', order: 6, name: 'Profile' },
-  { id: 'interior-designer', icon: '', muiIcon: DesignServicesIcon, label: 'Interior Designer', section: 'other', order: 0, name: 'Interior Designer' },
-  { id: 'food-delivery', icon: '', muiIcon: TakeoutDiningIcon, label: 'Food Delivery', section: 'other', order: 1, name: 'Food Delivery' },
-  { id: 'insurance', icon: '', muiIcon: HealthAndSafetyIcon, label: 'Insurance', section: 'other', order: 2, name: 'Insurance' },
-  { id: 'games', icon: '', muiIcon: SportsEsportsIcon, label: 'Games', section: 'other', order: 3, name: 'Games' },
-  { id: 'reconstruction', icon: '/icons/menu/white/3d-reconstruction.svg', label: '3D Reconstruction', section: 'other', order: 4, name: '3D Reconstruction' },
-  { id: 'spaces', icon: '', muiIcon: HomeWorkIcon, label: 'My Spaces', section: 'other', order: 5, name: 'My Spaces' },
+const fallbackMenuCatalog: MenuCatalogItem[] = [
+  {
+    id: 'dashboard',
+    label: 'Dashboard',
+    iconKey: 'dashboard',
+    defaultSection: 'main',
+    defaultOrder: 0,
+  },
+  { id: 'objects', label: 'Objects', iconKey: 'objects', defaultSection: 'main', defaultOrder: 1 },
+  { id: 'tasks', label: 'Tasks', iconKey: 'tasks', defaultSection: 'main', defaultOrder: 2 },
+  {
+    id: 'notifications',
+    label: 'Notifications',
+    iconKey: 'notifications',
+    defaultSection: 'main',
+    defaultOrder: 3,
+  },
+  {
+    id: 'calendar',
+    label: 'Calendar',
+    iconKey: 'calendar',
+    defaultSection: 'main',
+    defaultOrder: 4,
+  },
+  {
+    id: 'documents',
+    label: 'Documents',
+    iconKey: 'documents',
+    defaultSection: 'main',
+    defaultOrder: 5,
+  },
+  { id: 'profile', label: 'Profile', iconKey: 'profile', defaultSection: 'main', defaultOrder: 6 },
+  {
+    id: 'interior-designer',
+    label: 'Interior Designer',
+    iconKey: 'interior-designer',
+    defaultSection: 'other',
+    defaultOrder: 0,
+  },
+  {
+    id: 'food-delivery',
+    label: 'Food Delivery',
+    iconKey: 'food-delivery',
+    defaultSection: 'other',
+    defaultOrder: 1,
+  },
+  {
+    id: 'insurance',
+    label: 'Insurance',
+    iconKey: 'insurance',
+    defaultSection: 'other',
+    defaultOrder: 2,
+  },
+  { id: 'games', label: 'Games', iconKey: 'games', defaultSection: 'other', defaultOrder: 3 },
+  {
+    id: 'reconstruction',
+    label: '3D Reconstruction',
+    iconKey: 'reconstruction',
+    defaultSection: 'other',
+    defaultOrder: 4,
+  },
+  { id: 'spaces', label: 'My Spaces', iconKey: 'spaces', defaultSection: 'other', defaultOrder: 5 },
 ];
+
+const menuIconMetadata: Record<
+  string,
+  { icon?: string; muiIcon?: React.ComponentType<SvgIconProps> }
+> = {
+  dashboard: { icon: '/icons/menu/white/dashboard.svg' },
+  objects: { icon: '/icons/menu/white/objects.svg' },
+  tasks: { icon: '/icons/menu/white/tasks.svg' },
+  notifications: { icon: '/icons/menu/white/notifications.svg' },
+  calendar: { icon: '/icons/menu/white/calendar.svg' },
+  documents: { icon: '/icons/menu/white/documents.svg' },
+  profile: { icon: '/icons/menu/white/profile.svg' },
+  'interior-designer': { muiIcon: DesignServicesIcon },
+  'food-delivery': { muiIcon: TakeoutDiningIcon },
+  insurance: { muiIcon: HealthAndSafetyIcon },
+  games: { muiIcon: SportsEsportsIcon },
+  reconstruction: { icon: '/icons/menu/white/3d-reconstruction.svg' },
+  spaces: { muiIcon: HomeWorkIcon },
+};
+
+const legacyMenuNameToId: Record<string, string> = {
+  Dashboard: 'dashboard',
+  Objects: 'objects',
+  Tasks: 'tasks',
+  Notifications: 'notifications',
+  Calendar: 'calendar',
+  Documents: 'documents',
+  Profile: 'profile',
+  'Interior Designer': 'interior-designer',
+  'Food Delivery': 'food-delivery',
+  Insurance: 'insurance',
+  Games: 'games',
+  '3D Reconstruction': 'reconstruction',
+  'My Spaces': 'spaces',
+  'AI Agent': 'dashboard',
+};
+
+function createMenuItemsFromCatalog(catalog: MenuCatalogItem[]): MenuItem[] {
+  return catalog.map(item => ({
+    id: item.id,
+    iconKey: item.iconKey,
+    icon: menuIconMetadata[item.iconKey]?.icon,
+    muiIcon: menuIconMetadata[item.iconKey]?.muiIcon,
+    label: item.label,
+    section: item.defaultSection,
+    order: item.defaultOrder,
+  }));
+}
 
 // --- Styled Components ---
 
@@ -176,8 +274,6 @@ const OtherElementsPaper = styled(Paper)(({ theme }) => ({
   },
 }));
 
-
-
 const Icon = styled('img')({
   width: 24,
   height: 24,
@@ -238,13 +334,18 @@ interface DragItem {
 interface DropZoneProps {
   targetList: string;
   targetIndex: number;
-  onDrop: (sourceList: string, sourceIndex: number, targetList: string, targetIndex: number) => void;
+  onDrop: (
+    sourceList: string,
+    sourceIndex: number,
+    targetList: string,
+    targetIndex: number
+  ) => void;
 }
 
 function DropZone({ targetList, targetIndex, onDrop }: DropZoneProps) {
   const [{ isOver, canDrop }, drop] = useDrop({
     accept: DND_TYPE,
-    collect: (monitor) => ({
+    collect: monitor => ({
       isOver: monitor.isOver({ shallow: true }),
       canDrop: monitor.canDrop(),
     }),
@@ -263,12 +364,8 @@ function DropZone({ targetList, targetIndex, onDrop }: DropZoneProps) {
       style={{
         height: active ? '16px' : '4px',
         borderRadius: '8px',
-        backgroundColor: active
-          ? 'rgba(255, 255, 255, 0.45)'
-          : 'transparent',
-        boxShadow: active
-          ? '0 0 8px rgba(255, 255, 255, 0.3)'
-          : 'none',
+        backgroundColor: active ? 'rgba(255, 255, 255, 0.45)' : 'transparent',
+        boxShadow: active ? '0 0 8px rgba(255, 255, 255, 0.3)' : 'none',
         transition: 'all 0.2s ease',
         flexShrink: 0,
         margin: active ? '2px 0' : '0',
@@ -461,7 +558,7 @@ function DroppableMoreButton({
 }: DroppableMoreButtonProps) {
   const [{ isOver, canDrop }, drop] = useDrop({
     accept: DND_TYPE,
-    collect: (monitor) => ({
+    collect: monitor => ({
       isOver: monitor.isOver({ shallow: true }),
       canDrop: monitor.canDrop(),
     }),
@@ -480,12 +577,8 @@ function DroppableMoreButton({
         onClick={onClick}
         sx={{
           justifyContent: 'flex-start',
-          backgroundColor: isOver && canDrop
-            ? 'rgba(255, 255, 255, 0.2)'
-            : 'transparent',
-          boxShadow: isOver && canDrop
-            ? '0 0 12px rgba(255, 255, 255, 0.3)'
-            : 'none',
+          backgroundColor: isOver && canDrop ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+          boxShadow: isOver && canDrop ? '0 0 12px rgba(255, 255, 255, 0.3)' : 'none',
           transition: 'all 0.2s ease',
         }}
       >
@@ -511,7 +604,12 @@ interface DroppableListProps {
   isOpen: boolean;
   isObjectsOpen: boolean;
   isWide: boolean;
-  onDrop: (sourceList: string, sourceIndex: number, targetList: string, targetIndex: number) => void;
+  onDrop: (
+    sourceList: string,
+    sourceIndex: number,
+    targetList: string,
+    targetIndex: number
+  ) => void;
   layout?: 'list' | 'grid';
   onHoverMove?: (
     sourceList: string,
@@ -578,11 +676,7 @@ function DroppableList({
           />
         </Box>
       ))}
-      <DropZone
-        targetList={listType}
-        targetIndex={items.length}
-        onDrop={onDrop}
-      />
+      <DropZone targetList={listType} targetIndex={items.length} onDrop={onDrop} />
     </Box>
   );
 }
@@ -598,7 +692,17 @@ export function Menu() {
   const { isLoading: isMatterportLoading } = useMatterport();
 
   const { data: userMenuData, isLoading: isLoadingUserMenu } = useGetUserMenuQuery();
+  const { data: menuCatalogData } = useGetMenuCatalogQuery();
   const [updateUserMenu] = useUpdateUserMenuMutation();
+
+  const baseCatalog = useMemo(
+    () =>
+      menuCatalogData?.data && menuCatalogData.data.length > 0
+        ? menuCatalogData.data
+        : fallbackMenuCatalog,
+    [menuCatalogData]
+  );
+  const defaultMenuItems = useMemo(() => createMenuItemsFromCatalog(baseCatalog), [baseCatalog]);
 
   const [customMenuItems, setCustomMenuItems] = useState<MenuItem[]>(defaultMenuItems);
   const [isWide, setIsWide] = useState(false);
@@ -613,9 +717,7 @@ export function Menu() {
 
   const getSectionItems = useCallback(
     (items: MenuItem[], section: MenuItem['section']) =>
-      items
-        .filter((item) => item.section === section)
-        .sort((a, b) => a.order - b.order),
+      items.filter(item => item.section === section).sort((a, b) => a.order - b.order),
     []
   );
 
@@ -643,12 +745,12 @@ export function Menu() {
       const otherItems = getSectionItems(items, 'other');
       const payload: UserMenuPayload[] = [
         ...mainItems.map((item, index) => ({
-          name: item.name,
+          name: item.id,
           order: index,
           enabled: true,
         })),
         ...otherItems.map((item, index) => ({
-          name: item.name,
+          name: item.id,
           order: index,
           enabled: false,
         })),
@@ -691,7 +793,7 @@ export function Menu() {
         reorderedItems.splice(insertAt, 0, draggedItem);
 
         const nextItems = [
-          ...items.filter((item) => item.section !== sourceSection),
+          ...items.filter(item => item.section !== sourceSection),
           ...reorderedItems.map((item, index) => ({
             ...item,
             section: sourceSection,
@@ -711,7 +813,7 @@ export function Menu() {
       });
 
       const untouchedItems = items.filter(
-        (item) => item.section !== sourceSection && item.section !== targetSection
+        item => item.section !== sourceSection && item.section !== targetSection
       );
 
       return normalizeMenuItems([
@@ -757,25 +859,26 @@ export function Menu() {
     if (isUpdatingUserMenu.current) return;
 
     if (userMenuData?.data && userMenuData.data.length > 0) {
-      const defaultItemMap = new Map(defaultMenuItems.map((item) => [item.name, item]));
+      const defaultItemMap = new Map(defaultMenuItems.map(item => [item.id, item]));
       const configuredNames = new Set<string>();
       const configuredItems = [...userMenuData.data]
         .sort((a, b) => a.order - b.order)
-        .map((item) => {
-          const defaultItem = defaultItemMap.get(item.name);
+        .map(item => {
+          const resolvedItemId = legacyMenuNameToId[item.name] ?? item.name;
+          const defaultItem = defaultItemMap.get(resolvedItemId);
           if (!defaultItem) return null;
-          configuredNames.add(item.name);
+          configuredNames.add(defaultItem.id);
           return {
             ...defaultItem,
-            section: item.enabled ? 'main' as const : 'other' as const,
+            section: item.enabled ? ('main' as const) : ('other' as const),
             order: item.order,
           };
         })
         .filter(Boolean) as MenuItem[];
 
       const missingItems = defaultMenuItems
-        .filter((item) => !configuredNames.has(item.name))
-        .map((item) => ({
+        .filter(item => !configuredNames.has(item.id))
+        .map(item => ({
           ...item,
           section: 'other' as const,
         }));
@@ -784,20 +887,36 @@ export function Menu() {
     } else if (userMenuData && (!userMenuData.data || userMenuData.data.length === 0)) {
       setCustomMenuItems(normalizeMenuItems(defaultMenuItems));
     }
-  }, [normalizeMenuItems, userMenuData]);
+  }, [defaultMenuItems, normalizeMenuItems, userMenuData]);
 
   const handleMenuItemClick = (itemId: string) => {
     dispatch(closeAllModals());
     setShowOtherElements(false);
     switch (itemId) {
-      case 'dashboard': dispatch(openDashboardWindow()); break;
-      case 'objects': dispatch(openObjectManagerWindow()); break;
-      case 'tasks': dispatch(openTasksWindow()); break;
-      case 'notifications': dispatch(openNotificationWindow()); break;
-      case 'documents': dispatch(openDocumentsWindow()); break;
-      case 'calendar': dispatch(openCalendarWindow()); break;
-      case 'reconstruction': dispatch(openReconstructionWindow({ spaceId: 1 })); break;
-      case 'spaces': dispatch(openSpacesWindow()); break;
+      case 'dashboard':
+        dispatch(openDashboardWindow());
+        break;
+      case 'objects':
+        dispatch(openObjectManagerWindow());
+        break;
+      case 'tasks':
+        dispatch(openTasksWindow());
+        break;
+      case 'notifications':
+        dispatch(openNotificationWindow());
+        break;
+      case 'documents':
+        dispatch(openDocumentsWindow());
+        break;
+      case 'calendar':
+        dispatch(openCalendarWindow());
+        break;
+      case 'reconstruction':
+        dispatch(openReconstructionWindow({ spaceId: 1 }));
+        break;
+      case 'spaces':
+        dispatch(openSpacesWindow());
+        break;
     }
   };
 
@@ -929,7 +1048,6 @@ export function Menu() {
             zIndex: 10000,
           }}
         >
-
           <OtherElementsPaper className={showOtherElements ? '' : 'hidden'}>
             <Box sx={{ position: 'relative', width: '100%' }}>
               <Box

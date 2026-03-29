@@ -14,11 +14,16 @@ export function createMatterTag(sdk: any, tag: MatterTag): Promise<string[]> {
  */
 export async function addTagToSession(
   sdk: any,
-  opts: { label: string; description?: string; x: number; y: number; z: number; tag_type?: 'room' | 'object' }
+  opts: {
+    label: string;
+    description?: string;
+    x: number;
+    y: number;
+    z: number;
+    tag_type?: 'room' | 'object';
+  }
 ): Promise<string[]> {
-  const color = opts.tag_type === 'room'
-    ? { r: 1, g: 0.65, b: 0 }
-    : { r: 0.2, g: 0.5, b: 1 };
+  const color = opts.tag_type === 'room' ? { r: 1, g: 0.65, b: 0 } : { r: 0.2, g: 0.5, b: 1 };
   const tagData = {
     // Empty label so Matterport shows no native hover tooltip — our UI uses DB data for the name
     label: '',
@@ -30,7 +35,12 @@ export async function addTagToSession(
   const suppressTag = async (sdk: any, sid: string) => {
     // Try Tag.allowAction (newer SDK)
     try {
-      await sdk.Tag.allowAction(sid, { opening: false, navigating: false, docking: false, transitioning: false });
+      await sdk.Tag.allowAction(sid, {
+        opening: false,
+        navigating: false,
+        docking: false,
+        transitioning: false,
+      });
     } catch (e) {
       console.warn('[addTagToSession] Tag.allowAction failed, trying Mattertag.preventAction:', e);
       // Fallback to Mattertag.preventAction (older SDK — true means "prevent this action")
@@ -81,7 +91,11 @@ export async function getMatterTags(sdk: any): Promise<MatterTag[]> {
   try {
     return await sdk.Mattertag.getData();
   } catch {
-    try { return await sdk.Tag.data.getData(); } catch { return []; }
+    try {
+      return await sdk.Tag.data.getData();
+    } catch {
+      return [];
+    }
   }
 }
 

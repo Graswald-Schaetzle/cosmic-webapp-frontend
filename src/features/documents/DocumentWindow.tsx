@@ -63,19 +63,23 @@ export function DocumentsWindow() {
   // Function to get display name for filter
   const getFilterDisplayName = (filter: { type: FilterType; value: string }) => {
     switch (filter.type) {
-      case 'Floor':
+      case 'Floor': {
         const floor = documentsResponse?.floors.find(f => f.floor_id.toString() === filter.value);
         return floor ? `Floor: ${floor.floor_name}` : filter.value;
-      case 'Room':
+      }
+      case 'Room': {
         const room = roomsResponse?.data?.find(r => r.room_id.toString() === filter.value);
         return room ? `Room: ${room.name}` : filter.value;
-      case 'Task':
+      }
+      case 'Task': {
         const task = tasksResponse?.data?.find(t => t.task_id.toString() === filter.value);
         return task ? task.title : filter.value;
-      case 'Object':
+      }
+      case 'Object': {
         // Find the location by location_id in the locations data
         const location = locations?.find(loc => loc.location_id.toString() === filter.value);
         return location ? `Object: ${location.location_name}` : `Object: ${filter.value}`;
+      }
       default:
         return filter.value;
     }
@@ -148,9 +152,8 @@ export function DocumentsWindow() {
       })
       .filter(Boolean) as Floor[];
 
-    console.log('Filtered floors result:', result);
     return result;
-  }, [filters, documentsResponse, locations]);
+  }, [filters, documentsResponse]);
 
   const handleFloorClick = (floorId: string) => {
     setExpandedFloors(prev => ({
@@ -167,7 +170,6 @@ export function DocumentsWindow() {
   };
 
   const handleFilterSelect = (filterType: FilterType, value: string) => {
-    console.log('Applying filter:', filterType, value);
     setFilters(prev => [...prev, { type: filterType, value }]);
 
     // Auto-expand relevant sections

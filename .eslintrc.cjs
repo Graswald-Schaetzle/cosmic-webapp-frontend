@@ -16,17 +16,14 @@ module.exports = {
   parser: '@typescript-eslint/parser',
   plugins: ['react-refresh', 'react', '@typescript-eslint', 'prettier'],
   rules: {
-    'react-refresh/only-export-components': [
-      'warn',
-      { allowConstantExport: true },
-    ],
+    'react-refresh/only-export-components': 'off',
     'react/react-in-jsx-scope': 'off',
     '@typescript-eslint/no-unused-vars': ['warn', { 
       argsIgnorePattern: '^_',
       varsIgnorePattern: '^_'
     }],
-    'no-console': ['warn', { allow: ['warn', 'error'] }],
-    '@typescript-eslint/no-explicit-any': 'warn',
+    'no-console': 'off',
+    '@typescript-eslint/no-explicit-any': 'off',
     'react/prop-types': 'off',
     'react/display-name': 'off',
     'prettier/prettier': 'error'

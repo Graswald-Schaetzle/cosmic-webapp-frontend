@@ -1,17 +1,8 @@
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
-import {
-  closeSpacesWindow,
-  openSpaceViewerWindow,
-} from '../../store/modalSlice';
+import { closeSpacesWindow, openSpaceViewerWindow } from '../../store/modalSlice';
 import { useGetMySpacesQuery, Space } from '../../api/spaces/spacesApi';
-import {
-  Box,
-  Typography,
-  IconButton,
-  CircularProgress,
-  Chip,
-} from '@mui/material';
+import { Box, Typography, IconButton, CircularProgress, Chip } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import HomeWorkIcon from '@mui/icons-material/HomeWork';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -83,9 +74,7 @@ function SpaceCard({ space, onClick }: { space: Space; onClick: () => void }) {
 
       {/* Date + badge row */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>
-          {date}
-        </Typography>
+        <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>{date}</Typography>
         {hasCompletedSplat ? (
           <Chip
             icon={<CheckCircleIcon sx={{ fontSize: '12px !important' }} />}
@@ -148,7 +137,9 @@ export const SpacesWindow = () => {
       PaperProps={{ sx: paperStyles }}
     >
       {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: '24px' }}>
+      <Box
+        sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: '24px' }}
+      >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <HomeWorkIcon sx={{ color: '#fff', fontSize: 22 }} />
           <Typography sx={{ color: '#fff', fontSize: '18px', fontWeight: 700 }}>
@@ -176,9 +167,7 @@ export const SpacesWindow = () => {
 
       {error && (
         <Box sx={{ textAlign: 'center', py: '48px' }}>
-          <Typography sx={{ color: '#ff6b6b', fontSize: '14px' }}>
-            Error loading spaces
-          </Typography>
+          <Typography sx={{ color: '#ff6b6b', fontSize: '14px' }}>Error loading spaces</Typography>
         </Box>
       )}
 
@@ -206,11 +195,7 @@ export const SpacesWindow = () => {
           }}
         >
           {spaces.map(space => (
-            <SpaceCard
-              key={space.space_id}
-              space={space}
-              onClick={() => handleSpaceClick(space)}
-            />
+            <SpaceCard key={space.space_id} space={space} onClick={() => handleSpaceClick(space)} />
           ))}
         </Box>
       )}

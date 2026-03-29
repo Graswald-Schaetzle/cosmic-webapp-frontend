@@ -2,14 +2,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import { Dialog } from '../../components/Dialog';
 import { closeReconstructionWindow } from '../../store/modalSlice';
-import {
-  Box,
-  Typography,
-  IconButton,
-  Button,
-  TextField,
-  LinearProgress,
-} from '@mui/material';
+import { Box, Typography, IconButton, Button, TextField, LinearProgress } from '@mui/material';
 import ThreeDRotationIcon from '@mui/icons-material/ThreeDRotation';
 import { useCallback, useState } from 'react';
 import { SplatViewer } from './SplatViewer';
@@ -31,7 +24,7 @@ type View = 'list' | 'create' | 'detail';
 export const ReconstructionWindow = () => {
   const dispatch = useDispatch();
   const { isOpen, spaceId } = useSelector(
-    (state: RootState) => state.modal.reconstructionWindowModal,
+    (state: RootState) => state.modal.reconstructionWindowModal
   );
 
   const [view, setView] = useState<View>('list');
@@ -86,7 +79,7 @@ export const ReconstructionWindow = () => {
         setError(
           inputType === 'video'
             ? 'Please select a video file (MP4, MOV, AVI)'
-            : 'Please select a ZIP archive with images',
+            : 'Please select a ZIP archive with images'
         );
         return;
       }
@@ -97,7 +90,7 @@ export const ReconstructionWindow = () => {
         setTitle(file.name.replace(/\.[^/.]+$/, ''));
       }
     },
-    [inputType, title],
+    [inputType, title]
   );
 
   const handleBrowseClick = useCallback(() => {
@@ -128,7 +121,7 @@ export const ReconstructionWindow = () => {
       const file = e.dataTransfer.files[0];
       if (file) handleFileSelect(file);
     },
-    [handleFileSelect],
+    [handleFileSelect]
   );
 
   const handleSubmit = useCallback(async () => {
@@ -241,11 +234,7 @@ export const ReconstructionWindow = () => {
         )}
         <Box display="flex" alignItems="center" flex={1} justifyContent="center">
           <Typography sx={{ fontSize: '20px', fontWeight: 700, color: '#FFFFFF' }}>
-            {view === 'list'
-              ? '3D Reconstruction'
-              : view === 'create'
-                ? 'New Scan'
-                : 'Job Details'}
+            {view === 'list' ? '3D Reconstruction' : view === 'create' ? 'New Scan' : 'Job Details'}
           </Typography>
         </Box>
       </Box>
@@ -271,15 +260,19 @@ export const ReconstructionWindow = () => {
           </Button>
 
           {jobs && jobs.length > 0 ? (
-            jobs.map(job => <JobListItem key={job.job_id} job={job} onClick={() => {
-              setSelectedJobId(job.job_id);
-              setView('detail');
-            }} />)
+            jobs.map(job => (
+              <JobListItem
+                key={job.job_id}
+                job={job}
+                onClick={() => {
+                  setSelectedJobId(job.job_id);
+                  setView('detail');
+                }}
+              />
+            ))
           ) : (
             <Box sx={{ textAlign: 'center', py: 4 }}>
-              <Typography sx={{ color: '#FFFFFF80', fontSize: '14px' }}>
-                No 3D scans yet
-              </Typography>
+              <Typography sx={{ color: '#FFFFFF80', fontSize: '14px' }}>No 3D scans yet</Typography>
             </Box>
           )}
         </Box>
@@ -389,7 +382,9 @@ export const ReconstructionWindow = () => {
                 '&:hover': { background: '#2E2E2E80' },
               }}
             >
-              <Typography sx={{ color: '#FFFFFF', fontWeight: 600, fontSize: '14px', textAlign: 'center' }}>
+              <Typography
+                sx={{ color: '#FFFFFF', fontWeight: 600, fontSize: '14px', textAlign: 'center' }}
+              >
                 {inputType === 'video'
                   ? 'Drop video here (.mp4, .mov, .avi)'
                   : 'Drop ZIP archive with images here'}
@@ -459,7 +454,10 @@ export const ReconstructionWindow = () => {
           {/* Actions */}
           <Box sx={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
             <Button
-              onClick={() => { setView('list'); resetForm(); }}
+              onClick={() => {
+                setView('list');
+                resetForm();
+              }}
               disabled={isUploading}
               sx={{
                 flex: 1,
@@ -500,10 +498,13 @@ export const ReconstructionWindow = () => {
 
       {/* Detail View */}
       {view === 'detail' && selectedJobId && (
-        <JobDetail jobId={selectedJobId} onCancel={async (id) => {
-          await cancelJob(id).unwrap();
-          refetchJobs();
-        }} />
+        <JobDetail
+          jobId={selectedJobId}
+          onCancel={async id => {
+            await cancelJob(id).unwrap();
+            refetchJobs();
+          }}
+        />
       )}
     </Dialog>
   );
@@ -512,15 +513,16 @@ export const ReconstructionWindow = () => {
 // ── Job List Item ────────────────────────────────────────────────────────────
 
 const JobListItem = ({ job, onClick }: { job: ReconstructionJob; onClick: () => void }) => {
-  const statusColor = job.status === 'completed'
-    ? '#4CAF50'
-    : job.status === 'failed'
-      ? '#FF6B6B'
-      : job.status === 'cancelled'
-        ? '#FF9800'
-        : isProcessing(job.status)
-          ? '#2196F3'
-          : '#FFFFFF80';
+  const statusColor =
+    job.status === 'completed'
+      ? '#4CAF50'
+      : job.status === 'failed'
+        ? '#FF6B6B'
+        : job.status === 'cancelled'
+          ? '#FF9800'
+          : isProcessing(job.status)
+            ? '#2196F3'
+            : '#FFFFFF80';
 
   return (
     <Box
@@ -592,13 +594,7 @@ const JobListItem = ({ job, onClick }: { job: ReconstructionJob; onClick: () => 
 
 // ── Job Detail ───────────────────────────────────────────────────────────────
 
-const JobDetail = ({
-  jobId,
-  onCancel,
-}: {
-  jobId: number;
-  onCancel: (id: number) => void;
-}) => {
+const JobDetail = ({ jobId, onCancel }: { jobId: number; onCancel: (id: number) => void }) => {
   const { data: job, isLoading } = useGetJobQuery(jobId, {
     pollingInterval: 5000,
   });
@@ -617,15 +613,16 @@ const JobDetail = ({
     );
   }
 
-  const statusColor = job.status === 'completed'
-    ? '#4CAF50'
-    : job.status === 'failed'
-      ? '#FF6B6B'
-      : job.status === 'cancelled'
-        ? '#FF9800'
-        : isProcessing(job.status)
-          ? '#2196F3'
-          : '#FFFFFF80';
+  const statusColor =
+    job.status === 'completed'
+      ? '#4CAF50'
+      : job.status === 'failed'
+        ? '#FF6B6B'
+        : job.status === 'cancelled'
+          ? '#FF9800'
+          : isProcessing(job.status)
+            ? '#2196F3'
+            : '#FFFFFF80';
 
   const canCancel = !['completed', 'failed', 'cancelled'].includes(job.status);
 
@@ -675,9 +672,7 @@ const JobDetail = ({
         )}
 
         {job.error_message && (
-          <Typography sx={{ color: '#FF6B6B', fontSize: '12px' }}>
-            {job.error_message}
-          </Typography>
+          <Typography sx={{ color: '#FF6B6B', fontSize: '12px' }}>{job.error_message}</Typography>
         )}
       </Box>
 
@@ -731,15 +726,9 @@ const JobDetail = ({
           <Typography sx={{ color: '#FFFFFF', fontWeight: 600, fontSize: '14px', mb: 0.5 }}>
             Downloads
           </Typography>
-          {output.ply_url && (
-            <DownloadButton label="PLY File" url={output.ply_url} />
-          )}
-          {output.splat_url && (
-            <DownloadButton label="Splat File" url={output.splat_url} />
-          )}
-          {output.spz_url && (
-            <DownloadButton label="SPZ File" url={output.spz_url} />
-          )}
+          {output.ply_url && <DownloadButton label="PLY File" url={output.ply_url} />}
+          {output.splat_url && <DownloadButton label="Splat File" url={output.splat_url} />}
+          {output.spz_url && <DownloadButton label="SPZ File" url={output.spz_url} />}
         </Box>
       )}
 
@@ -766,10 +755,7 @@ const JobDetail = ({
 
       {/* Splat Viewer overlay */}
       {splatViewerUrl && (
-        <SplatViewer
-          splatUrl={splatViewerUrl}
-          onClose={() => setSplatViewerUrl(null)}
-        />
+        <SplatViewer splatUrl={splatViewerUrl} onClose={() => setSplatViewerUrl(null)} />
       )}
 
       {/* Cancel button */}

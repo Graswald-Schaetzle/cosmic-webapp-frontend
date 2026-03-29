@@ -20,17 +20,16 @@ export const AssigneeModal = ({
   const { data: usersData, isLoading, error } = useGetUsersQuery();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const users = usersData?.users || [];
-
   // Filter users based on search query
   const filteredUsers = useMemo(() => {
+    const users = usersData?.users ?? [];
     if (!searchQuery.trim()) return users;
 
     return users.filter(user => {
       const fullName = `${user.first_name} ${user.last_name}`.toLowerCase();
       return fullName.includes(searchQuery.toLowerCase());
     });
-  }, [users, searchQuery]);
+  }, [usersData?.users, searchQuery]);
 
   return (
     <Menu

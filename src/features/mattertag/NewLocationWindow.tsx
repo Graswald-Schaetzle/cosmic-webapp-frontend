@@ -86,7 +86,8 @@ export function NewLocationWindow() {
         floorId: floorId || undefined,
         spaceId: spaceId,
         tag_type: tagType,
-        responsible_user_id: tagType === 'room' && responsibleUserId !== '' ? responsibleUserId : null,
+        responsible_user_id:
+          tagType === 'room' && responsibleUserId !== '' ? responsibleUserId : null,
       }).unwrap();
 
       if (result.error) {
@@ -212,7 +213,9 @@ export function NewLocationWindow() {
 
         {tagType === 'room' && (
           <FormControl fullWidth size="small">
-            <InputLabel sx={{ color: 'rgba(255,255,255,0.6)', '&.Mui-focused': { color: 'white' } }}>
+            <InputLabel
+              sx={{ color: 'rgba(255,255,255,0.6)', '&.Mui-focused': { color: 'white' } }}
+            >
               Responsible (optional)
             </InputLabel>
             <Select

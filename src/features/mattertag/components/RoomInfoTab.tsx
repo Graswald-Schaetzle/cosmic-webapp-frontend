@@ -16,7 +16,13 @@ export const RoomInfoTab = ({ locationData }: RoomInfoTabProps) => {
       {locationData.description && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <Typography
-            sx={{ fontSize: '16px', fontWeight: 500, lineHeight: '18px', color: '#FFFFFF', ml: '18px' }}
+            sx={{
+              fontSize: '16px',
+              fontWeight: 500,
+              lineHeight: '18px',
+              color: '#FFFFFF',
+              ml: '18px',
+            }}
           >
             Notes
           </Typography>
@@ -24,7 +30,9 @@ export const RoomInfoTab = ({ locationData }: RoomInfoTabProps) => {
             elevation={0}
             sx={{ bgcolor: 'rgba(0, 0, 0, 0.15)', borderRadius: '20px', p: '14px 18px' }}
           >
-            <Typography sx={{ fontSize: '14px', color: 'rgba(255,255,255,0.85)', lineHeight: '22px' }}>
+            <Typography
+              sx={{ fontSize: '14px', color: 'rgba(255,255,255,0.85)', lineHeight: '22px' }}
+            >
               {locationData.description}
             </Typography>
           </Paper>
@@ -34,7 +42,13 @@ export const RoomInfoTab = ({ locationData }: RoomInfoTabProps) => {
       {/* Responsible */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <Typography
-          sx={{ fontSize: '16px', fontWeight: 500, lineHeight: '18px', color: '#FFFFFF', ml: '18px' }}
+          sx={{
+            fontSize: '16px',
+            fontWeight: 500,
+            lineHeight: '18px',
+            color: '#FFFFFF',
+            ml: '18px',
+          }}
         >
           Responsible
         </Typography>

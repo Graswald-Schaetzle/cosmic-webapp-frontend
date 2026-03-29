@@ -20,16 +20,15 @@ export const ListModal = ({
   const { data: listsData, isLoading, error } = useGetListsQuery();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const lists = listsData?.data || [];
-
   // Filter lists based on search query
   const filteredLists = useMemo(() => {
+    const lists = listsData?.data ?? [];
     if (!searchQuery.trim()) return lists;
 
     return lists.filter(list => {
       return list.name.toLowerCase().includes(searchQuery.toLowerCase());
     });
-  }, [lists, searchQuery]);
+  }, [listsData?.data, searchQuery]);
 
   // Separate selected and unselected lists
   const selectedLists = filteredLists.filter(list =>

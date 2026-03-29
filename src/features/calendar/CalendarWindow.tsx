@@ -10,7 +10,7 @@ import {
   ListItemText,
   CircularProgress,
 } from '@mui/material';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store.ts';
 import { closeCalendarWindow, openNewTaskWindow, openTaskWindow } from '../../store/modalSlice.ts';
@@ -31,7 +31,7 @@ export function CalendarWindow() {
   const [filterAnchorEl, setFilterAnchorEl] = useState<HTMLElement | null>(null);
   const [isMonthYearPickerOpen, setIsMonthYearPickerOpen] = useState(false);
   const [monthYearPickerAnchorEl, setMonthYearPickerAnchorEl] = useState<HTMLElement | null>(null);
-  const today = new Date();
+  const today = useMemo(() => new Date(), []);
   const [selectedDate, setSelectedDate] = useState<Date | null>(today);
   const [currentDate, setCurrentDate] = useState(today);
 
@@ -58,16 +58,19 @@ export function CalendarWindow() {
   // Function to get display value for filters
   const getFilterDisplayValue = (filter: { type: FilterType; value: string }) => {
     switch (filter.type) {
-      case 'Floor':
+      case 'Floor': {
         const floor = floors.find(f => f.floor_id.toString() === filter.value);
         return floor ? `Floor: ${floor.name}` : filter.value;
-      case 'Room':
+      }
+      case 'Room': {
         const room = rooms.find(r => r.room_id.toString() === filter.value);
         return room ? `Room: ${room.name}` : filter.value;
-      case 'Object':
+      }
+      case 'Object': {
         // Find the location by location_id in the locations data
         const location = locations?.find(loc => loc.location_id.toString() === filter.value);
         return location ? `Object: ${location.location_name}` : `Object: ${filter.value}`;
+      }
       default:
         return filter.value;
     }
@@ -83,7 +86,7 @@ export function CalendarWindow() {
       setSelectedDate(today);
       setCurrentDate(today);
     }
-  }, [modalSelectedDate, isOpen]);
+  }, [modalSelectedDate, isOpen, today]);
 
   // Process tasks for calendar display
   const processTasksForCalendar = () => {
@@ -116,7 +119,7 @@ export function CalendarWindow() {
             return task.locations?.floor_id?.toString() === filter.value;
           case 'Room':
             return task.locations?.room_id?.toString() === filter.value;
-          case 'Due date':
+          case 'Due date': {
             // Handle due date filtering based on the specific value
             if (!task.due_at) return false;
             const taskDate = new Date(task.due_at);
@@ -129,32 +132,36 @@ export function CalendarWindow() {
                   taskDate.getMonth() === today.getMonth() &&
                   taskDate.getFullYear() === today.getFullYear()
                 );
-              case 'This week':
+              case 'This week': {
                 const weekStart = new Date(today);
                 weekStart.setDate(today.getDate() - today.getDay());
                 const weekEnd = new Date(weekStart);
                 weekEnd.setDate(weekStart.getDate() + 6);
                 return taskDate >= weekStart && taskDate <= weekEnd;
-              case 'Next week':
+              }
+              case 'Next week': {
                 const nextWeekStart = new Date(today);
                 nextWeekStart.setDate(today.getDate() - today.getDay() + 7);
                 const nextWeekEnd = new Date(nextWeekStart);
                 nextWeekEnd.setDate(nextWeekStart.getDate() + 6);
                 return taskDate >= nextWeekStart && taskDate <= nextWeekEnd;
+              }
               case 'This month':
                 return (
                   taskDate.getMonth() === today.getMonth() &&
                   taskDate.getFullYear() === today.getFullYear()
                 );
-              case 'Next month':
+              case 'Next month': {
                 const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1);
                 return (
                   taskDate.getMonth() === nextMonth.getMonth() &&
                   taskDate.getFullYear() === nextMonth.getFullYear()
                 );
+              }
               default:
                 return true;
             }
+          }
           default:
             return true;
         }
@@ -299,31 +306,31 @@ export function CalendarWindow() {
     switch (dueDateFilter.value) {
       case 'Today':
         return formatDate(today);
-      case 'This Week':
+      case 'This Week': {
         startDate = new Date(today);
-        // Get Monday of current week (if today is Sunday, get last Monday)
         const dayOfWeek = today.getDay();
-        const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Sunday = 0, so we need 6 days back
+        const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
         startDate.setDate(today.getDate() - daysToMonday);
         endDate = new Date(startDate);
-        endDate.setDate(startDate.getDate() + 6); // End of week (Sunday)
+        endDate.setDate(startDate.getDate() + 6);
         break;
-      case 'Next Week':
+      }
+      case 'Next Week': {
         startDate = new Date(today);
-        // Get Monday of next week
         const currentDayOfWeek = today.getDay();
-        const daysToNextMonday = currentDayOfWeek === 0 ? 7 : 8 - currentDayOfWeek; // Days until next Monday
+        const daysToNextMonday = currentDayOfWeek === 0 ? 7 : 8 - currentDayOfWeek;
         startDate.setDate(today.getDate() + daysToNextMonday);
         endDate = new Date(startDate);
-        endDate.setDate(startDate.getDate() + 6); // End of week (Sunday)
+        endDate.setDate(startDate.getDate() + 6);
         break;
+      }
       case 'This Month':
-        startDate = new Date(today.getFullYear(), today.getMonth(), 1); // First day of current month
-        endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0); // Last day of current month
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
         break;
       case 'Next Month':
-        startDate = new Date(today.getFullYear(), today.getMonth() + 1, 1); // First day of next month
-        endDate = new Date(today.getFullYear(), today.getMonth() + 2, 0); // Last day of next month
+        startDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        endDate = new Date(today.getFullYear(), today.getMonth() + 2, 0);
         break;
       default:
         return selectedDate ? formatDate(selectedDate) : 'No date selected';
@@ -345,31 +352,31 @@ export function CalendarWindow() {
     switch (dueDateFilter.value) {
       case 'Today':
         return { startDate: today, endDate: today };
-      case 'This Week':
+      case 'This Week': {
         startDate = new Date(today);
-        // Get Monday of current week (if today is Sunday, get last Monday)
         const dayOfWeek = today.getDay();
-        const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Sunday = 0, so we need 6 days back
+        const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
         startDate.setDate(today.getDate() - daysToMonday);
         endDate = new Date(startDate);
-        endDate.setDate(startDate.getDate() + 6); // End of week (Sunday)
+        endDate.setDate(startDate.getDate() + 6);
         return { startDate, endDate };
-      case 'Next Week':
+      }
+      case 'Next Week': {
         startDate = new Date(today);
-        // Get Monday of next week
         const currentDayOfWeek = today.getDay();
-        const daysToNextMonday = currentDayOfWeek === 0 ? 7 : 8 - currentDayOfWeek; // Days until next Monday
+        const daysToNextMonday = currentDayOfWeek === 0 ? 7 : 8 - currentDayOfWeek;
         startDate.setDate(today.getDate() + daysToNextMonday);
         endDate = new Date(startDate);
-        endDate.setDate(startDate.getDate() + 6); // End of week (Sunday)
+        endDate.setDate(startDate.getDate() + 6);
         return { startDate, endDate };
+      }
       case 'This Month':
-        startDate = new Date(today.getFullYear(), today.getMonth(), 1); // First day of current month
-        endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0); // Last day of current month
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
         return { startDate, endDate };
       case 'Next Month':
-        startDate = new Date(today.getFullYear(), today.getMonth() + 1, 1); // First day of next month
-        endDate = new Date(today.getFullYear(), today.getMonth() + 2, 0); // Last day of next month
+        startDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        endDate = new Date(today.getFullYear(), today.getMonth() + 2, 0);
         return { startDate, endDate };
       default:
         return null;

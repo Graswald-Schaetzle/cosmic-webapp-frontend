@@ -22,7 +22,7 @@ export const store = configureStore({
       api.middleware,
       locationApi.middleware,
       reconstructionApi.middleware,
-      spacesApi.middleware,
+      spacesApi.middleware
     ),
 });
 
