@@ -7,7 +7,7 @@ import {
   closeMatterTagWindow,
   openNewLocationWindow,
 } from '../../../store/modalSlice.ts';
-import { useGetAllLocationsQuery } from '../../../api/locationApi/locationApi.ts';
+import { useGetAllLocationsQuery, LocationItem } from '../../../api/locationApi/locationApi.ts';
 import { getMatterTags, addTagToSession } from '../../../app/matterport.ts';
 
 interface MatterportProps {
@@ -19,6 +19,8 @@ export default function Matterport({ children }: MatterportProps) {
     useMatterport();
   const { data: allLocations } = useGetAllLocationsQuery();
   const loadedLocationIds = useRef<Set<string>>(new Set());
+  // Maps Matterport session sid → LocationItem so tag clicks can resolve the correct location_id
+  const sidToLocationRef = useRef<Map<string, LocationItem>>(new Map());
   // Always holds the latest mattertags list so SDK callbacks don't use a stale closure
   const mattertagsRef = useRef<MatterTag[]>([]);
   useEffect(() => {
@@ -50,13 +52,18 @@ export default function Matterport({ children }: MatterportProps) {
 
     (async () => {
       for (const location of newLocations) {
-        await addTagToSession(sdk, {
+        const sids = await addTagToSession(sdk, {
           label: location.location_name,
           description: location.description || '',
           x: location.x,
           y: location.y,
           z: location.z,
+          tag_type: location.tag_type,
         });
+        // Map each returned session sid to this location so tag clicks can resolve location_id
+        for (const sid of sids) {
+          sidToLocationRef.current.set(sid, location);
+        }
         loadedLocationIds.current.add(String(location.location_id));
       }
       // Refresh mattertag list so the context has up-to-date tag IDs
@@ -105,11 +112,37 @@ export default function Matterport({ children }: MatterportProps) {
               const [selected = null] = newState.selected;
               if (selected !== this.prevState.selected) {
                 if (selected) {
-                  const tag = mattertagsRef.current.find((t: MatterTag) => t.sid === selected);
-                  if (tag) dispatch(openMatterTagWindow(tag));
+                  // Prefer resolving via the sid→location map so MatterTagWindow gets location_id
+                  const location = sidToLocationRef.current.get(selected);
+                  if (location) {
+                    dispatch(openMatterTagWindow({
+                      location_id: location.location_id,
+                      location_name: location.location_name,
+                      color: location.color,
+                      description: location.description,
+                      x: location.x,
+                      y: location.y,
+                      z: location.z,
+                      keywords: location.keywords,
+                      floor_id: location.floor_id,
+                      room_id: location.room_id,
+                      floor_name: location.floor_name,
+                      room_name: location.room_name,
+                      tasks: location.tasks,
+                      taskError: location.taskError,
+                      tag_type: location.tag_type,
+                      responsible_user_id: location.responsible_user_id,
+                      responsible_user: location.responsible_user,
+                      created_at: location.created_at,
+                    } as any));
+                  } else {
+                    const tag = mattertagsRef.current.find((t: MatterTag) => t.sid === selected);
+                    if (tag) dispatch(openMatterTagWindow(tag));
+                  }
                 } else {
                   dispatch(closeMatterTagWindow());
                 }
+
               }
               this.prevState = { ...newState, selected };
             },

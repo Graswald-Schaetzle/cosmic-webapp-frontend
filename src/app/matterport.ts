@@ -15,27 +15,26 @@ export function createMatterTag(sdk: any, tag: MatterTag): Promise<string[]> {
 export async function addTagToSession(
   sdk: any,
   opts: { label: string; description?: string; x: number; y: number; z: number; tag_type?: 'room' | 'object' }
-): Promise<void> {
+): Promise<string[]> {
   const color = opts.tag_type === 'room'
     ? { r: 1, g: 0.65, b: 0 }
     : { r: 0.2, g: 0.5, b: 1 };
   const tagData = {
-    label: opts.label,
-    description: opts.description || '',
+    // Empty label so Matterport shows no native hover tooltip — our UI uses DB data for the name
+    label: '',
+    description: '',
     anchorPosition: { x: opts.x, y: opts.y, z: opts.z },
     stemVector: { x: 0, y: 0.3, z: 0 },
     color,
   };
-  console.log('[addTagToSession] Adding tag:', tagData);
+  console.log('[addTagToSession] Adding tag:', opts.label);
   try {
-    // Tag.add(...descriptors) — pass as spread arg, not wrapped in array
     const result: string[] = await sdk.Tag.add(tagData);
     console.log('[addTagToSession] Tag.add succeeded:', result);
-    // Immediately suppress native Matterport tag UI for the new tag
     for (const sid of result) {
-      try { await sdk.Tag.allowAction(sid, { opening: false, navigating: false }); } catch { /* not critical */ }
+      try { await sdk.Tag.allowAction(sid, { opening: false, navigating: false, docking: false }); } catch { /* not critical */ }
     }
-    return;
+    return result;
   } catch (err1: unknown) {
     console.warn('[addTagToSession] Tag.add failed:', err1);
   }
@@ -43,11 +42,13 @@ export async function addTagToSession(
     const result: string[] = await sdk.Mattertag.add(tagData);
     console.log('[addTagToSession] Mattertag.add succeeded:', result);
     for (const sid of result) {
-      try { await sdk.Tag.allowAction(sid, { opening: false, navigating: false }); } catch { /* not critical */ }
+      try { await sdk.Tag.allowAction(sid, { opening: false, navigating: false, docking: false }); } catch { /* not critical */ }
     }
+    return result;
   } catch (err2: unknown) {
     console.error('[addTagToSession] Both Tag.add and Mattertag.add failed:', err2);
   }
+  return [];
 }
 
 export function editMatterTag(sdk: any, tagId: string, updates: Partial<MatterTag>): Promise<void> {
