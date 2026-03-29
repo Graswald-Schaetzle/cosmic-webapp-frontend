@@ -24,9 +24,10 @@ export interface Space {
   latest_job: SpaceLatestJob | null;
 }
 
-const API_BASE_URL =
+const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL ||
-  'https://cosmic-backend-701520654148.europe-west4.run.app';
+  'https://cosmic-backend-701520654148.europe-west4.run.app'
+).trim();
 
 export const spacesApi = createApi({
   reducerPath: 'spacesApi',
