@@ -19,7 +19,7 @@ import { Dialog } from '../../components/Dialog';
 import { RootState } from '../../store/store';
 import { closeNewLocationWindow } from '../../store/modalSlice';
 import { useCreateLocationMutation } from '../../api/locationApi/locationApi';
-import { useGetMySpacesQuery } from '../../api/spaces/spacesApi';
+import { useSpace } from '../../contexts/SpaceContext';
 import { useGetUsersQuery } from '../../api/userMenu/userMenuApi';
 
 const textFieldSx = {
@@ -48,8 +48,7 @@ export function NewLocationWindow() {
   const { isOpen, position, floorId } = useSelector(
     (state: RootState) => state.modal.newLocationWindowModal
   );
-  const { data: spaces } = useGetMySpacesQuery();
-  const spaceId = spaces?.[0]?.space_id ?? null;
+  const { activeSpaceId } = useSpace();
   const [createLocation, { isLoading }] = useCreateLocationMutation();
   const { data: usersData } = useGetUsersQuery();
 
@@ -84,7 +83,8 @@ export function NewLocationWindow() {
         y: position.y,
         z: position.z,
         floorId: floorId || undefined,
-        spaceId: spaceId,
+        // Save the location into the currently selected space, not the first space in the list.
+        spaceId: activeSpaceId,
         tag_type: tagType,
         responsible_user_id:
           tagType === 'room' && responsibleUserId !== '' ? responsibleUserId : null,
