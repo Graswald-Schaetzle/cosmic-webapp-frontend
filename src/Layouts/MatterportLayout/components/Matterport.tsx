@@ -15,10 +15,15 @@ interface MatterportProps {
 }
 
 export default function Matterport({ children }: MatterportProps) {
-  const { sdk, setMattertags, error, setSdk, setIsLoading, dwellIndicator, clearDwellIndicator } =
+  const { sdk, setMattertags, mattertags, error, setSdk, setIsLoading, dwellIndicator, clearDwellIndicator } =
     useMatterport();
   const { data: allLocations } = useGetAllLocationsQuery();
   const loadedLocationIds = useRef<Set<string>>(new Set());
+  // Always holds the latest mattertags list so SDK callbacks don't use a stale closure
+  const mattertagsRef = useRef<MatterTag[]>([]);
+  useEffect(() => {
+    mattertagsRef.current = mattertags;
+  }, [mattertags]);
 
   const dispatch = useDispatch();
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -100,7 +105,7 @@ export default function Matterport({ children }: MatterportProps) {
               const [selected = null] = newState.selected;
               if (selected !== this.prevState.selected) {
                 if (selected) {
-                  const tag = tags.find((t: MatterTag) => t.sid === selected);
+                  const tag = mattertagsRef.current.find((t: MatterTag) => t.sid === selected);
                   if (tag) dispatch(openMatterTagWindow(tag));
                 } else {
                   dispatch(closeMatterTagWindow());
