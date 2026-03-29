@@ -15,6 +15,8 @@ interface MatterportProps {
   children?: React.ReactNode;
 }
 
+const LOCATION_CREATED_EVENT = 'cosmic:location-created';
+
 export default function Matterport({ children }: MatterportProps) {
   const {
     sdk,
@@ -48,6 +50,43 @@ export default function Matterport({ children }: MatterportProps) {
 
   const dispatch = useDispatch();
   const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const refreshMattertags = async (sdkInstance: any) => {
+    try {
+      const updatedTags = await getMatterTags(sdkInstance);
+      setMattertags(updatedTags);
+    } catch {
+      /* non-critical */
+    }
+  };
+
+  const injectLocationIntoSession = async (sdkInstance: any, location: LocationItem) => {
+    const locationId = String(location.location_id);
+    if (loadedLocationIds.current.has(locationId)) return false;
+
+    // Mark as pending immediately so a refetch cannot inject the same location twice.
+    loadedLocationIds.current.add(locationId);
+
+    const sids = await addTagToSession(sdkInstance, {
+      label: location.location_name,
+      description: location.description || '',
+      x: location.x,
+      y: location.y,
+      z: location.z,
+      tag_type: location.tag_type,
+    });
+
+    if (!sids.length) {
+      loadedLocationIds.current.delete(locationId);
+      return false;
+    }
+
+    for (const sid of sids) {
+      sidToLocationRef.current.set(sid, location);
+    }
+
+    return true;
+  };
 
   const handleOverlayClick = () => {
     if (!dwellIndicator) return;
@@ -83,30 +122,32 @@ export default function Matterport({ children }: MatterportProps) {
     if (!newLocations.length) return;
 
     (async () => {
+      let didInject = false;
       for (const location of newLocations) {
-        const sids = await addTagToSession(sdk, {
-          label: location.location_name,
-          description: location.description || '',
-          x: location.x,
-          y: location.y,
-          z: location.z,
-          tag_type: location.tag_type,
-        });
-        // Map each returned session sid to this location so tag clicks can resolve location_id
-        for (const sid of sids) {
-          sidToLocationRef.current.set(sid, location);
-        }
-        loadedLocationIds.current.add(String(location.location_id));
+        const injected = await injectLocationIntoSession(sdk, location);
+        didInject = didInject || injected;
       }
-      // Refresh mattertag list so the context has up-to-date tag IDs
-      try {
-        const updatedTags = await getMatterTags(sdk);
-        setMattertags(updatedTags);
-      } catch {
-        /* non-critical */
-      }
+      if (didInject) await refreshMattertags(sdk);
     })();
   }, [sdk, allLocations, setMattertags]);
+
+  useEffect(() => {
+    if (!sdk) return;
+
+    const handleLocationCreated = async (event: Event) => {
+      const customEvent = event as CustomEvent<LocationItem>;
+      const location = customEvent.detail;
+      if (!location?.location_id) return;
+
+      const injected = await injectLocationIntoSession(sdk, location);
+      if (injected) await refreshMattertags(sdk);
+    };
+
+    window.addEventListener(LOCATION_CREATED_EVENT, handleLocationCreated as EventListener);
+    return () => {
+      window.removeEventListener(LOCATION_CREATED_EVENT, handleLocationCreated as EventListener);
+    };
+  }, [sdk, setMattertags]);
 
   useEffect(() => {
     if (!matterportModelId || !applicationKey) return;
@@ -227,7 +268,10 @@ export default function Matterport({ children }: MatterportProps) {
 
   if (!matterportModelId) {
     return (
-      <div className="w-full h-full flex items-center justify-center" style={{ background: '#1a1a2e' }}>
+      <div
+        className="w-full h-full flex items-center justify-center"
+        style={{ background: '#1a1a2e' }}
+      >
         <div className="text-center" style={{ color: '#fff' }}>
           <p style={{ fontSize: 18, marginBottom: 8 }}>No 3D model available</p>
           <p style={{ fontSize: 14, color: '#aaa' }}>

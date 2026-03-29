@@ -22,6 +22,8 @@ import { useCreateLocationMutation } from '../../api/locationApi/locationApi';
 import { useSpace } from '../../contexts/SpaceContext';
 import { useGetUsersQuery } from '../../api/userMenu/userMenuApi';
 
+const LOCATION_CREATED_EVENT = 'cosmic:location-created';
+
 const textFieldSx = {
   '& .MuiOutlinedInput-root': {
     color: 'white',
@@ -95,9 +97,28 @@ export function NewLocationWindow() {
         return;
       }
 
-      // Tag injection is handled by Matterport.tsx re-injection effect,
-      // which runs automatically when getAllLocations refetches after cache invalidation.
-      // This ensures the sid→location mapping is built correctly for the detail window.
+      const createdLocation = result.data?.[0];
+      if (createdLocation) {
+        const responsibleUser =
+          createdLocation.responsible_user_id != null
+            ? usersData?.users?.find(
+                user => user.user_id === createdLocation.responsible_user_id
+              ) || null
+            : null;
+
+        window.dispatchEvent(
+          new CustomEvent(LOCATION_CREATED_EVENT, {
+            detail: {
+              ...createdLocation,
+              floor_name: null,
+              room_name: null,
+              tasks: [],
+              taskError: null,
+              responsible_user: responsibleUser,
+            },
+          })
+        );
+      }
 
       handleClose();
     } catch {
