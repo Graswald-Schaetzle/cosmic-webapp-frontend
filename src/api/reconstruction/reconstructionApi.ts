@@ -94,10 +94,14 @@ export function getProgressPercent(status: ReconstructionStatus): number {
   return progress[status] || 0;
 }
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  'https://cosmic-backend-701520654148.europe-west4.run.app';
+
 export const reconstructionApi = createApi({
   reducerPath: 'reconstructionApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: `${import.meta.env.VITE_API_BASE_URL}`,
+    baseUrl: API_BASE_URL,
     prepareHeaders: headers => {
       const token = localStorage.getItem('access_token');
       if (token) {

@@ -140,10 +140,14 @@ export interface RoomResponse {
 }
 
 // Create the API slice
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  'https://cosmic-backend-701520654148.europe-west4.run.app';
+
 export const locationApi = createApi({
   reducerPath: 'locationApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: `${import.meta.env.VITE_API_BASE_URL}`,
+    baseUrl: API_BASE_URL,
     prepareHeaders: headers => {
       const token = localStorage.getItem('access_token');
       if (token) {
