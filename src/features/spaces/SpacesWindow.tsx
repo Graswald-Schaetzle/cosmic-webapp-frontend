@@ -263,6 +263,9 @@ export const SpacesWindow = () => {
       {error && (
         <Box sx={{ textAlign: 'center', py: '48px' }}>
           <Typography sx={{ color: '#ff6b6b', fontSize: '14px' }}>Error loading spaces</Typography>
+          <Typography sx={{ color: '#ff6b6b', fontSize: '11px', mt: 1, opacity: 0.7, wordBreak: 'break-all' }}>
+            {'status' in error ? `${error.status}: ${JSON.stringify(error.data)}` : error.message}
+          </Typography>
         </Box>
       )}
 
