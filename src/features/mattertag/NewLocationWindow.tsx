@@ -20,8 +20,6 @@ import { RootState } from '../../store/store';
 import { closeNewLocationWindow } from '../../store/modalSlice';
 import { useCreateLocationMutation } from '../../api/locationApi/locationApi';
 import { useGetMySpacesQuery } from '../../api/spaces/spacesApi';
-import { useMatterport } from '../../contexts/MatterportContext';
-import { addTagToSession } from '../../app/matterport';
 import { useGetUsersQuery } from '../../api/userMenu/userMenuApi';
 
 const textFieldSx = {
@@ -53,7 +51,6 @@ export function NewLocationWindow() {
   const { data: spaces } = useGetMySpacesQuery();
   const spaceId = spaces?.[0]?.space_id ?? null;
   const [createLocation, { isLoading }] = useCreateLocationMutation();
-  const { sdk } = useMatterport();
   const { data: usersData } = useGetUsersQuery();
 
   const [tagType, setTagType] = useState<'object' | 'room'>('object');
@@ -97,16 +94,9 @@ export function NewLocationWindow() {
         return;
       }
 
-      if (sdk) {
-        await addTagToSession(sdk, {
-          label: name.trim(),
-          description: description.trim(),
-          x: position.x,
-          y: position.y,
-          z: position.z,
-          tag_type: tagType,
-        });
-      }
+      // Tag injection is handled by Matterport.tsx re-injection effect,
+      // which runs automatically when getAllLocations refetches after cache invalidation.
+      // This ensures the sid→location mapping is built correctly for the detail window.
 
       handleClose();
     } catch {
