@@ -25,9 +25,11 @@ import { useGetAllDocumentsQuery, Floor } from '../../api/documents/documentApi'
 import { useGetTasksQuery } from '../../api/tasks/taskApi';
 import { useGetRoomsQuery } from '../../api/locationApi/locationApi';
 import { useLocations } from '../../hooks/useLocations';
+import { useSpace } from '../../contexts/SpaceContext';
 
 export function DocumentsWindow() {
   const dispatch = useDispatch();
+  const { activeSpaceId } = useSpace();
   const { isOpen } = useSelector((state: RootState) => state.modal.documentsWindowModal);
   const [filters, setFilters] = useState<Array<{ type: FilterType; value: string }>>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -35,22 +37,23 @@ export function DocumentsWindow() {
   const [expandedFloors, setExpandedFloors] = useState<{ [key: string]: boolean }>({});
   const [expandedRooms, setExpandedRooms] = useState<{ [key: string]: boolean }>({});
 
-  // Fetch documents from API
+  // Fetch documents from API, scoped to active space
   const {
     data: documentsResponse,
     isLoading,
     error,
   } = useGetAllDocumentsQuery(
-    {},
+    activeSpaceId ? { space_id: activeSpaceId } : {},
     {
       skip: !isOpen,
     }
   );
 
   // Fetch tasks from API
-  const { data: tasksResponse } = useGetTasksQuery(undefined, {
-    skip: !isOpen,
-  });
+  const { data: tasksResponse } = useGetTasksQuery(
+    activeSpaceId ? { space_id: activeSpaceId } : undefined,
+    { skip: !isOpen }
+  );
 
   // Fetch rooms from API
   const { data: roomsResponse } = useGetRoomsQuery(undefined, {

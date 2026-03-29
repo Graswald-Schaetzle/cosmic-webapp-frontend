@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import { MatterportProvider } from './contexts/MatterportContext';
 import { TaskProvider } from './contexts/TaskContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { SpaceProvider } from './contexts/SpaceContext';
 import { Layout } from './Layouts/Layout/Layout.tsx';
 import { MatterportLayout } from './Layouts/MatterportLayout/MatterportLayout.tsx';
 import { Menu } from './features/menu/Menu.tsx';
@@ -188,10 +189,11 @@ const AuthenticatedContent = () => {
   }
 
   return (
-    <MatterportProvider>
-      <TaskProvider>
-        <Layout>
-          <MatterportLayout>
+    <SpaceProvider>
+      <MatterportProvider>
+        <TaskProvider>
+          <Layout>
+            <MatterportLayout>
             <Menu />
 
             <DashboardWindow />
@@ -231,6 +233,7 @@ const AuthenticatedContent = () => {
         </Layout>
       </TaskProvider>
     </MatterportProvider>
+    </SpaceProvider>
   );
 };
 

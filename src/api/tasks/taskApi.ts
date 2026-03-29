@@ -125,19 +125,23 @@ export interface TaskDetailResponse {
 // RTK Query endpoints
 export const taskApi = api.injectEndpoints({
   endpoints: builder => ({
-    getTasks: builder.query<TaskListResponse, void>({
-      query: () => ({
+    getTasks: builder.query<TaskListResponse, { space_id?: number } | void>({
+      query: (params) => ({
         url: '/task',
         method: 'GET',
+        params: params && 'space_id' in params ? { space_id: params.space_id } : {},
       }),
       providesTags: ['Tasks'],
     }),
 
-    getTasksByLocation: builder.query<TaskListResponse, string | undefined>({
-      query: locationId => ({
+    getTasksByLocation: builder.query<TaskListResponse, { location_id?: string; space_id?: number }>({
+      query: (params) => ({
         url: '/task',
         method: 'GET',
-        params: locationId ? { location_id: locationId } : {},
+        params: {
+          ...(params.location_id ? { location_id: params.location_id } : {}),
+          ...(params.space_id ? { space_id: params.space_id } : {}),
+        },
       }),
       providesTags: ['Tasks'],
     }),

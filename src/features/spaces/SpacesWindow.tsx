@@ -2,10 +2,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import { closeSpacesWindow, openSpaceViewerWindow } from '../../store/modalSlice';
 import { useGetMySpacesQuery, Space } from '../../api/spaces/spacesApi';
+import { useSpace } from '../../contexts/SpaceContext';
 import { Box, Typography, IconButton, CircularProgress, Chip } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import HomeWorkIcon from '@mui/icons-material/HomeWork';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ViewInArIcon from '@mui/icons-material/ViewInAr';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import Dialog from '@mui/material/Dialog';
 
 const paperStyles = {
@@ -22,12 +25,23 @@ const paperStyles = {
   border: '1px solid rgba(255,255,255,0.08)',
 };
 
-function SpaceCard({ space, onClick }: { space: Space; onClick: () => void }) {
+function SpaceCard({
+  space,
+  isActive,
+  onSelect,
+  onViewReconstruction,
+}: {
+  space: Space;
+  isActive: boolean;
+  onSelect: () => void;
+  onViewReconstruction: () => void;
+}) {
   const hasCompletedSplat =
     space.latest_job?.status === 'completed' &&
     (space.latest_job?.output_splat_path || space.latest_job?.output_spz_path);
 
   const hasModel = Boolean(space.model_url);
+  const hasMatterport = Boolean(space.matterport_model_id);
   const date = new Date(space.created_at).toLocaleDateString('en-US', {
     day: '2-digit',
     month: 'short',
@@ -36,23 +50,44 @@ function SpaceCard({ space, onClick }: { space: Space; onClick: () => void }) {
 
   return (
     <Box
-      onClick={onClick}
+      onClick={onSelect}
       sx={{
         borderRadius: '20px',
-        background: 'rgba(255,255,255,0.06)',
-        border: '1px solid rgba(255,255,255,0.1)',
+        background: isActive ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.06)',
+        border: isActive
+          ? '2px solid rgba(255,255,255,0.5)'
+          : '1px solid rgba(255,255,255,0.1)',
         padding: '16px',
         cursor: 'pointer',
         transition: 'all 0.2s ease',
         display: 'flex',
         flexDirection: 'column',
         gap: '8px',
+        position: 'relative',
         '&:hover': {
-          background: 'rgba(255,255,255,0.12)',
-          border: '1px solid rgba(255,255,255,0.2)',
+          background: isActive ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.12)',
+          border: isActive
+            ? '2px solid rgba(255,255,255,0.6)'
+            : '1px solid rgba(255,255,255,0.2)',
         },
       }}
     >
+      {/* Active indicator */}
+      {isActive && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            width: 10,
+            height: 10,
+            borderRadius: '50%',
+            background: '#4CAF50',
+            boxShadow: '0 0 6px rgba(76,175,80,0.6)',
+          }}
+        />
+      )}
+
       {/* Model preview area */}
       <Box
         sx={{
@@ -73,9 +108,26 @@ function SpaceCard({ space, onClick }: { space: Space; onClick: () => void }) {
       </Typography>
 
       {/* Date + badge row */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>{date}</Typography>
-        {hasCompletedSplat ? (
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+        <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', mr: 'auto' }}>
+          {date}
+        </Typography>
+        {hasMatterport && (
+          <Chip
+            icon={<ViewInArIcon sx={{ fontSize: '12px !important' }} />}
+            label="Matterport"
+            size="small"
+            sx={{
+              height: 20,
+              fontSize: '10px',
+              backgroundColor: 'rgba(156,39,176,0.25)',
+              color: '#ce93d8',
+              border: '1px solid rgba(156,39,176,0.4)',
+              '& .MuiChip-icon': { color: '#ce93d8' },
+            }}
+          />
+        )}
+        {hasCompletedSplat && (
           <Chip
             icon={<CheckCircleIcon sx={{ fontSize: '12px !important' }} />}
             label="3D Splat"
@@ -89,7 +141,8 @@ function SpaceCard({ space, onClick }: { space: Space; onClick: () => void }) {
               '& .MuiChip-icon': { color: '#81c784' },
             }}
           />
-        ) : hasModel ? (
+        )}
+        {!hasCompletedSplat && hasModel && (
           <Chip
             label="USDZ"
             size="small"
@@ -101,8 +154,31 @@ function SpaceCard({ space, onClick }: { space: Space; onClick: () => void }) {
               border: '1px solid rgba(33,150,243,0.4)',
             }}
           />
-        ) : null}
+        )}
       </Box>
+
+      {/* View reconstruction button (only if splat/usdz available) */}
+      {(hasCompletedSplat || hasModel) && (
+        <Box
+          onClick={e => {
+            e.stopPropagation();
+            onViewReconstruction();
+          }}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            cursor: 'pointer',
+            color: 'rgba(255,255,255,0.5)',
+            fontSize: '11px',
+            mt: '2px',
+            '&:hover': { color: '#fff' },
+          }}
+        >
+          <VisibilityIcon sx={{ fontSize: 14 }} />
+          <Typography sx={{ fontSize: '11px' }}>View 3D Reconstruction</Typography>
+        </Box>
+      )}
     </Box>
   );
 }
@@ -111,10 +187,16 @@ export const SpacesWindow = () => {
   const dispatch = useDispatch();
   const { isOpen } = useSelector((state: RootState) => state.modal.spacesWindowModal);
   const { data: spaces, isLoading, error } = useGetMySpacesQuery(undefined, { skip: !isOpen });
+  const { activeSpaceId, switchSpace } = useSpace();
 
   const handleClose = () => dispatch(closeSpacesWindow());
 
-  const handleSpaceClick = (space: Space) => {
+  const handleSpaceSelect = async (space: Space) => {
+    await switchSpace(space.space_id);
+    handleClose();
+  };
+
+  const handleViewReconstruction = (space: Space) => {
     const jobId =
       space.latest_job?.status === 'completed' ? (space.latest_job?.job_id ?? null) : null;
 
@@ -145,6 +227,19 @@ export const SpacesWindow = () => {
           <Typography sx={{ color: '#fff', fontSize: '18px', fontWeight: 700 }}>
             My Spaces
           </Typography>
+          {activeSpaceId && spaces && (
+            <Chip
+              label={spaces.find(s => s.space_id === activeSpaceId)?.name || ''}
+              size="small"
+              sx={{
+                height: 22,
+                fontSize: '11px',
+                backgroundColor: 'rgba(76,175,80,0.2)',
+                color: '#81c784',
+                border: '1px solid rgba(76,175,80,0.3)',
+              }}
+            />
+          )}
         </Box>
         <IconButton
           onClick={handleClose}
@@ -195,7 +290,13 @@ export const SpacesWindow = () => {
           }}
         >
           {spaces.map(space => (
-            <SpaceCard key={space.space_id} space={space} onClick={() => handleSpaceClick(space)} />
+            <SpaceCard
+              key={space.space_id}
+              space={space}
+              isActive={space.space_id === activeSpaceId}
+              onSelect={() => handleSpaceSelect(space)}
+              onViewReconstruction={() => handleViewReconstruction(space)}
+            />
           ))}
         </Box>
       )}

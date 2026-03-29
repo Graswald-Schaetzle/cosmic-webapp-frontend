@@ -8,9 +8,11 @@ import { RootState } from '@/store/store.ts';
 import { closeTasksWindow } from '../../store/modalSlice.ts';
 import { UniversalFilterModal, FilterType } from '../../components/UniversalFilterModal';
 import { useGetTasksQuery } from '../../api/tasks/taskApi';
+import { useSpace } from '../../contexts/SpaceContext';
 
 export function TasksWindow() {
   const dispatch = useDispatch();
+  const { activeSpaceId } = useSpace();
   const { isOpen, activeTab: initialActiveTab } = useSelector(
     (state: RootState) => state.modal.tasksWindowModal
   );
@@ -18,9 +20,10 @@ export function TasksWindow() {
     data: tasksResponse,
     isLoading,
     error,
-  } = useGetTasksQuery(undefined, {
-    skip: !isOpen,
-  });
+  } = useGetTasksQuery(
+    activeSpaceId ? { space_id: activeSpaceId } : undefined,
+    { skip: !isOpen }
+  );
 
   const [filters, setFilters] = useState<Array<{ type: FilterType; value: string }>>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);

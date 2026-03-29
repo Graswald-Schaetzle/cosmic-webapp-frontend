@@ -161,9 +161,9 @@ export const locationApi = createApi({
       }),
     }),
 
-    getAllLocations: builder.query<LocationItem[], void>({
-      query: () => ({
-        url: '/locations',
+    getAllLocations: builder.query<LocationItem[], { space_id: number } | undefined>({
+      query: (params) => ({
+        url: params?.space_id ? `/locations?space_id=${params.space_id}` : '/locations',
         method: 'GET',
       }),
       providesTags: [{ type: 'Locations' }],

@@ -19,6 +19,7 @@ import { FilterType } from '../../../components/UniversalFilterModal';
 import { useGetFloorsQuery, useGetRoomsQuery } from '../../../api/locationApi/locationApi';
 import { useLocations } from '../../../hooks/useLocations';
 import { UniversalFilterModal } from '../../../components/UniversalFilterModal';
+import { useSpace } from '../../../contexts/SpaceContext';
 
 interface AddTaskToListModalProps {
   isOpen: boolean;
@@ -33,13 +34,16 @@ export const AddTaskToListModal = ({
   onTaskSelect,
   existingTaskIds,
 }: AddTaskToListModalProps) => {
+  const { activeSpaceId } = useSpace();
   const [filters, setFilters] = useState<Array<{ type: FilterType; value: string }>>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filterAnchorEl, setFilterAnchorEl] = useState<HTMLElement | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   // API hooks
-  const { data: tasksResponse, isLoading, error } = useGetTasksQuery();
+  const { data: tasksResponse, isLoading, error } = useGetTasksQuery(
+    activeSpaceId ? { space_id: activeSpaceId } : undefined
+  );
   const { data: floorsData } = useGetFloorsQuery();
   const { data: roomsData } = useGetRoomsQuery();
   const { locations } = useLocations();

@@ -15,6 +15,7 @@ import {
 } from '../../store/modalSlice.ts';
 import { RootState } from '../../store/store';
 import { useMatterport } from '../../contexts/MatterportContext';
+import { useSpace } from '../../contexts/SpaceContext';
 import {
   Box,
   Paper,
@@ -112,7 +113,7 @@ const fallbackMenuCatalog: MenuCatalogItem[] = [
     defaultSection: 'other',
     defaultOrder: 4,
   },
-  { id: 'spaces', label: 'My Spaces', iconKey: 'spaces', defaultSection: 'other', defaultOrder: 5 },
+  { id: 'spaces', label: 'My Spaces', iconKey: 'spaces', defaultSection: 'main', defaultOrder: 7 },
 ];
 
 const menuIconMetadata: Record<
@@ -423,8 +424,10 @@ function DraggableMenuItem({
     }),
   });
 
+  const { activeSpace } = useSpace();
   const isSelected =
     (item.id === 'dashboard' && isOpen) || (item.id === 'objects' && isObjectsOpen);
+  const subtitle = item.id === 'spaces' && activeSpace ? activeSpace.name : undefined;
 
   const [, drop] = useDrop({
     accept: DND_TYPE,
@@ -507,6 +510,22 @@ function DraggableMenuItem({
           >
             {item.label}
           </Typography>
+          {subtitle && (
+            <Typography
+              sx={{
+                color: 'rgba(255,255,255,0.45)',
+                fontSize: 8,
+                lineHeight: '10px',
+                textAlign: 'center',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxWidth: 56,
+              }}
+            >
+              {subtitle}
+            </Typography>
+          )}
         </Box>
       </Box>
     );
@@ -685,6 +704,7 @@ function DroppableList({
 
 export function Menu() {
   const dispatch = useDispatch();
+  const { activeSpaceId } = useSpace();
   const { isOpen } = useSelector((state: RootState) => state.modal.dashboardWindowModal);
   const { isOpen: isObjectsOpen } = useSelector(
     (state: RootState) => state.modal.objectManagerWindowModal
@@ -912,7 +932,7 @@ export function Menu() {
         dispatch(openCalendarWindow());
         break;
       case 'reconstruction':
-        dispatch(openReconstructionWindow({ spaceId: 1 }));
+        dispatch(openReconstructionWindow({ spaceId: activeSpaceId ?? 1 }));
         break;
       case 'spaces':
         dispatch(openSpacesWindow());

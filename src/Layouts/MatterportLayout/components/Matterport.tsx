@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { useMatterport } from '../../../contexts/MatterportContext.tsx';
+import { useSpace } from '../../../contexts/SpaceContext.tsx';
 import { MatterTag } from '../../../types/matterport.ts';
 import { useDispatch } from 'react-redux';
 import {
@@ -25,7 +26,17 @@ export default function Matterport({ children }: MatterportProps) {
     dwellIndicator,
     clearDwellIndicator,
   } = useMatterport();
-  const { data: allLocations } = useGetAllLocationsQuery();
+  const { activeSpace, activeSpaceId } = useSpace();
+
+  // Resolve the model ID: active space's Matterport model → fallback to env var
+  const matterportModelId =
+    activeSpace?.matterport_model_id || import.meta.env.VITE_MATTERPORT_MODEL_ID;
+  const applicationKey = import.meta.env.VITE_MATTERPORT_KEY;
+
+  const { data: allLocations } = useGetAllLocationsQuery(
+    activeSpaceId ? { space_id: activeSpaceId } : undefined,
+    { skip: !activeSpaceId }
+  );
   const loadedLocationIds = useRef<Set<string>>(new Set());
   // Maps Matterport session sid → LocationItem so tag clicks can resolve the correct location_id
   const sidToLocationRef = useRef<Map<string, LocationItem>>(new Map());
@@ -48,6 +59,12 @@ export default function Matterport({ children }: MatterportProps) {
     );
     clearDwellIndicator();
   };
+
+  // Reset loaded location tracking when active space changes
+  useEffect(() => {
+    loadedLocationIds.current.clear();
+    sidToLocationRef.current.clear();
+  }, [activeSpaceId]);
 
   // Re-inject backend locations as ephemeral Matterport tags whenever SDK is ready or locations change
   useEffect(() => {
@@ -92,17 +109,12 @@ export default function Matterport({ children }: MatterportProps) {
   }, [sdk, allLocations, setMattertags]);
 
   useEffect(() => {
+    if (!matterportModelId || !applicationKey) return;
+
     const initMatterport = async () => {
       try {
         if (!iframeRef.current) {
           throw new Error('Matterport iframe not found');
-        }
-
-        const modelId = import.meta.env.VITE_MATTERPORT_MODEL_ID;
-        const applicationKey = import.meta.env.VITE_MATTERPORT_KEY;
-
-        if (!modelId || !applicationKey) {
-          throw new Error('Matterport configuration is missing. Please check your .env file.');
         }
 
         const mpSdk = await window.connect(iframeRef.current);
@@ -191,8 +203,14 @@ export default function Matterport({ children }: MatterportProps) {
       }
     };
 
+    // Reset SDK state before re-init (important when model changes)
+    setSdk(null);
+    setIsLoading(true);
+    setMattertags([]);
+
     initMatterport();
-  }, [setSdk, setMattertags, dispatch, setIsLoading]);
+    // Re-run when matterportModelId changes (space switch)
+  }, [matterportModelId, setSdk, setMattertags, dispatch, setIsLoading]);
 
   if (error) {
     return (
@@ -207,12 +225,26 @@ export default function Matterport({ children }: MatterportProps) {
     );
   }
 
+  if (!matterportModelId) {
+    return (
+      <div className="w-full h-full flex items-center justify-center" style={{ background: '#1a1a2e' }}>
+        <div className="text-center" style={{ color: '#fff' }}>
+          <p style={{ fontSize: 18, marginBottom: 8 }}>No 3D model available</p>
+          <p style={{ fontSize: 14, color: '#aaa' }}>
+            Select a space with a Matterport model or scan a space with the iOS app.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full h-full">
       <iframe
+        key={matterportModelId}
         ref={iframeRef}
         className="absolute inset-0 w-full h-full border-0"
-        src={`https://my.matterport.com/show/?m=${import.meta.env.VITE_MATTERPORT_MODEL_ID}&applicationKey=${import.meta.env.VITE_MATTERPORT_KEY}&search=0&title=0&play=1&qs=0&brand=0&dh=0&views=0&mls=2&tagNav=0`}
+        src={`https://my.matterport.com/show/?m=${matterportModelId}&applicationKey=${applicationKey}&search=0&title=0&play=1&qs=0&brand=0&dh=0&views=0&mls=2&tagNav=0`}
         allow="camera; microphone; fullscreen; display-capture"
       />
 

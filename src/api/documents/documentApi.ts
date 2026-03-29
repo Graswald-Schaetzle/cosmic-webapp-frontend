@@ -106,7 +106,7 @@ export const documentApi = api.injectEndpoints({
     // Get all documents with floor/room structure
     getAllDocuments: builder.query<
       AllDocumentsResponse,
-      { floor_id?: number; room_id?: number; location_id?: string }
+      { floor_id?: number; room_id?: number; location_id?: string; space_id?: number }
     >({
       query: params => ({
         url: '/all_documents',
@@ -117,10 +117,11 @@ export const documentApi = api.injectEndpoints({
     }),
 
     // Get documents list
-    getDocuments: builder.query<DocumentListResponse, void>({
-      query: () => ({
+    getDocuments: builder.query<DocumentListResponse, { space_id?: number } | void>({
+      query: (params) => ({
         url: '/documents',
         method: 'GET',
+        params: params && 'space_id' in params ? { space_id: params.space_id } : {},
       }),
       providesTags: ['Documents'],
     }),

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { authorizeUser, registerUser } from '../app/api';
 import { useGetAllLocationsQuery } from '../api/locationApi/locationApi';
 import {
@@ -9,6 +9,7 @@ import {
   clearLocations,
 } from '../store/locationsSlice';
 import { setCurrentUser, clearCurrentUser } from '../store/userSlice';
+import { RootState } from '../store/store';
 
 interface CurrentUser {
   user_id: number;
@@ -55,15 +56,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentUser, setCurrentUserState] = useState<CurrentUser | null>(null);
+  const activeSpaceId = useSelector((state: RootState) => state.space.activeSpaceId);
 
-  // Fetch locations after authentication
+  // Fetch locations after authentication, scoped to active space
   const {
     data: locationsData,
     isLoading: locationsLoading,
     error: locationsError,
-  } = useGetAllLocationsQuery(undefined, {
-    skip: !isAuthenticated,
-  });
+  } = useGetAllLocationsQuery(
+    activeSpaceId ? { space_id: activeSpaceId } : undefined,
+    { skip: !isAuthenticated || !activeSpaceId }
+  );
 
   // Restore session from localStorage on mount
   useEffect(() => {
@@ -82,6 +85,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
     setIsLoading(false);
   }, [dispatch]);
+
+  // Clear locations when active space changes, then load new ones
+  useEffect(() => {
+    dispatch(clearLocations());
+  }, [activeSpaceId, dispatch]);
 
   // Update locations state when data is fetched
   useEffect(() => {

@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import modalReducer from './modalSlice';
 import locationsReducer from './locationsSlice';
 import userReducer from './userSlice';
+import spaceReducer from './spaceSlice';
 import { api } from '../app/api';
 import { locationApi } from '../api/locationApi/locationApi';
 import { reconstructionApi } from '../api/reconstruction/reconstructionApi';
@@ -12,6 +13,7 @@ export const store = configureStore({
     modal: modalReducer,
     locations: locationsReducer,
     user: userReducer,
+    space: spaceReducer,
     [api.reducerPath]: api.reducer,
     [locationApi.reducerPath]: locationApi.reducer,
     [reconstructionApi.reducerPath]: reconstructionApi.reducer,

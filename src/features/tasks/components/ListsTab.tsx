@@ -11,6 +11,7 @@ import {
 import { openNewListWindow, openListWindow } from '../../../store/modalSlice.ts';
 import { useDispatch } from 'react-redux';
 import { useGetListsQuery } from '../../../api/lists/listsApi';
+import { useSpace } from '../../../contexts/SpaceContext';
 
 interface ListsTabProps {
   handleClose: () => void;
@@ -18,9 +19,12 @@ interface ListsTabProps {
 
 export const ListsTab = ({ handleClose }: ListsTabProps) => {
   const dispatch = useDispatch();
+  const { activeSpaceId } = useSpace();
 
-  // Fetch lists from API
-  const { data: listsData, isLoading, error } = useGetListsQuery();
+  // Fetch lists from API, scoped to active space
+  const { data: listsData, isLoading, error } = useGetListsQuery(
+    activeSpaceId ? { space_id: activeSpaceId } : undefined
+  );
 
   const handleListClick = (listId: number) => {
     handleClose();

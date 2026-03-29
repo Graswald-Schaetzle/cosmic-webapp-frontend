@@ -58,10 +58,11 @@ export interface UpdateListPayload {
 // RTK Query endpoints
 export const listsApi = api.injectEndpoints({
   endpoints: builder => ({
-    getLists: builder.query<ListsResponse, void>({
-      query: () => ({
+    getLists: builder.query<ListsResponse, { space_id?: number } | void>({
+      query: (params) => ({
         url: '/lists',
         method: 'GET',
+        params: params && 'space_id' in params ? { space_id: params.space_id } : {},
       }),
       providesTags: ['Lists'],
     }),

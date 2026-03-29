@@ -20,9 +20,11 @@ import { useGetTasksQuery } from '../../api/tasks/taskApi';
 import { useGetFloorsQuery, useGetRoomsQuery } from '../../api/locationApi/locationApi';
 import { useLocations } from '../../hooks/useLocations';
 import { MonthYearPickerModal } from './components/MonthYearPickerModal';
+import { useSpace } from '../../contexts/SpaceContext';
 
 export function CalendarWindow() {
   const dispatch = useDispatch();
+  const { activeSpaceId } = useSpace();
   const { isOpen, selectedDate: modalSelectedDate } = useSelector(
     (state: RootState) => state.modal.calendarWindowModal
   );
@@ -35,8 +37,10 @@ export function CalendarWindow() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(today);
   const [currentDate, setCurrentDate] = useState(today);
 
-  // Fetch tasks from API
-  const { data: tasksResponse, isLoading: tasksLoading, refetch } = useGetTasksQuery();
+  // Fetch tasks from API, scoped to active space
+  const { data: tasksResponse, isLoading: tasksLoading, refetch } = useGetTasksQuery(
+    activeSpaceId ? { space_id: activeSpaceId } : undefined
+  );
 
   // Refetch tasks every time the modal opens
   useEffect(() => {

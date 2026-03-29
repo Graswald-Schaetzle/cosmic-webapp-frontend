@@ -1,6 +1,7 @@
 import { Menu, MenuItem, Box, CircularProgress, TextField } from '@mui/material';
 import { useState, useMemo } from 'react';
 import { useGetListsQuery } from '../../../api/lists/listsApi';
+import { useSpace } from '../../../contexts/SpaceContext';
 
 interface ListModalProps {
   isOpen: boolean;
@@ -17,7 +18,10 @@ export const ListModal = ({
   currentLists = [],
   anchorEl,
 }: ListModalProps) => {
-  const { data: listsData, isLoading, error } = useGetListsQuery();
+  const { activeSpaceId } = useSpace();
+  const { data: listsData, isLoading, error } = useGetListsQuery(
+    activeSpaceId ? { space_id: activeSpaceId } : undefined
+  );
   const [searchQuery, setSearchQuery] = useState('');
 
   // Filter lists based on search query
