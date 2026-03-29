@@ -31,6 +31,8 @@ import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
 import DesignServicesIcon from '@mui/icons-material/DesignServices';
 import TakeoutDiningIcon from '@mui/icons-material/TakeoutDining';
 import HomeWorkIcon from '@mui/icons-material/HomeWork';
+import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
+import ChatBubbleOutlineRoundedIcon from '@mui/icons-material/ChatBubbleOutlineRounded';
 import type { SvgIconProps } from '@mui/material';
 import {
   useGetUserMenuQuery,
@@ -167,10 +169,6 @@ function createMenuItemsFromCatalog(catalog: MenuCatalogItem[]): MenuItem[] {
 // --- Styled Components ---
 
 const StyledPaper = styled(Paper)({
-  position: 'fixed',
-  top: '50%',
-  right: 40,
-  transform: 'translateY(-50%)',
   width: 64,
   borderRadius: 34,
   padding: 12,
@@ -181,6 +179,27 @@ const StyledPaper = styled(Paper)({
   display: 'flex',
   flexDirection: 'column',
   gap: 12,
+  boxShadow: 'none',
+  '&.expanded': {
+    width: 184,
+    '& .MuiListItem': {
+      width: '100%',
+    },
+    '& .MuiListItemText-primary': {
+      transform: 'scaleX(1)',
+      opacity: 1,
+    },
+  },
+});
+
+const ShortcutPaper = styled(Paper)({
+  width: 64,
+  borderRadius: 34,
+  padding: 12,
+  background: 'var(--Back, #2E2E2E59)',
+  backdropFilter: 'blur(100px)',
+  WebkitBackdropFilter: 'blur(100px)',
+  transition: 'all 0.3s ease',
   boxShadow: 'none',
   '&.expanded': {
     width: 184,
@@ -224,6 +243,15 @@ const StyledListItem = styled(ListItem)({
   },
 });
 
+const StaticListItem = styled(StyledListItem)({
+  cursor: 'default',
+  opacity: 1,
+  justifyContent: 'flex-start',
+  '&:hover': {
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  },
+});
+
 const StyledListItemText = styled(ListItemText)({
   margin: 0,
   '& .MuiListItemText-primary': {
@@ -248,6 +276,12 @@ const StyledListItemIcon = styled(ListItemIcon)({
   marginRight: 0,
   flexShrink: 0,
   padding: 0,
+});
+
+const SidebarStack = styled(Box)({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 14,
 });
 
 const OtherElementsPaper = styled(Paper)(({ theme }) => ({
@@ -996,7 +1030,7 @@ export function Menu() {
         sx={{
           position: 'fixed',
           top: '50%',
-          right: 0,
+          right: 40,
           transform: 'translateY(-50%)',
           zIndex: 9999,
           display: 'flex',
@@ -1005,54 +1039,70 @@ export function Menu() {
           gap: '30px',
         }}
       >
-        {/* Main Sidebar */}
-        <StyledPaper
-          className={isWide ? 'expanded' : ''}
+        <SidebarStack
           onMouseEnter={() => setIsWide(true)}
           onMouseLeave={handleMouseLeave}
         >
-          {/* AI Agent - fixed at top */}
-          <StyledListItem>
-            <StyledListItemIcon>
-              <Icon src="/icons/menu/white/ai-agent.svg" alt="AI Agent" />
-            </StyledListItemIcon>
-            {isWide && <StyledListItemText primary="AI Agent" />}
-          </StyledListItem>
-          <Box
-            sx={{
-              height: 2,
-              bgcolor: '#FFFFFF',
-              opacity: 0.5,
-              borderRadius: '100px',
-              mx: 1,
-              my: 0,
-            }}
-          />
+          {/* Main Sidebar */}
+          <StyledPaper className={isWide ? 'expanded' : ''}>
+            <StaticListItem
+              sx={{
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                boxShadow: 'inset 0 0 0 1px rgba(255, 255, 255, 0.06)',
+              }}
+            >
+              <StyledListItemIcon>
+                <SearchRoundedIcon sx={{ fontSize: 20, color: 'white', opacity: 0.9 }} />
+              </StyledListItemIcon>
+              {isWide && <StyledListItemText primary="Search" />}
+            </StaticListItem>
+            <Box
+              sx={{
+                height: 2,
+                bgcolor: '#FFFFFF',
+                opacity: 0.5,
+                borderRadius: '100px',
+                mx: 1,
+                my: 0,
+              }}
+            />
 
-          {/* Draggable menu items */}
-          <DroppableList
-            items={menuItems}
-            listType="main"
-            onItemClick={handleMenuItemClick}
-            isOpen={isOpen}
-            isObjectsOpen={isObjectsOpen}
-            isWide={isWide}
-            onDrop={handleDrop}
-            onHoverMove={applyMenuMove}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          />
+            {/* Draggable menu items */}
+            <DroppableList
+              items={menuItems}
+              listType="main"
+              onItemClick={handleMenuItemClick}
+              isOpen={isOpen}
+              isObjectsOpen={isObjectsOpen}
+              isWide={isWide}
+              onDrop={handleDrop}
+              onHoverMove={applyMenuMove}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            />
 
-          <DroppableMoreButton
-            onClick={handleOtherElementsClick}
-            isWide={isWide}
-            onDropToOther={(sourceList, sourceIndex) => {
-              void handleDrop(sourceList, sourceIndex, 'other', otherItems.length);
-            }}
-            setShowOtherElements={setShowOtherElements}
-            setIsWide={setIsWide}
-          />
-        </StyledPaper>
+            <DroppableMoreButton
+              onClick={handleOtherElementsClick}
+              isWide={isWide}
+              onDropToOther={(sourceList, sourceIndex) => {
+                void handleDrop(sourceList, sourceIndex, 'other', otherItems.length);
+              }}
+              setShowOtherElements={setShowOtherElements}
+              setIsWide={setIsWide}
+            />
+          </StyledPaper>
+
+          <ShortcutPaper className={isWide ? 'expanded' : ''}>
+            <StaticListItem>
+              <StyledListItemIcon>
+                <ChatBubbleOutlineRoundedIcon
+                  sx={{ fontSize: 20, color: 'white', opacity: 0.9 }}
+                />
+              </StyledListItemIcon>
+              {isWide && <StyledListItemText primary="Chat" />}
+            </StaticListItem>
+          </ShortcutPaper>
+        </SidebarStack>
 
         {/* More Panel */}
         <Box
@@ -1060,11 +1110,7 @@ export function Menu() {
             display: 'flex',
             flexDirection: 'column',
             gap: '10px',
-            position: 'fixed',
-            top: '50%',
-            right: '248px',
             width: '320px',
-            transform: 'translateY(-50%)',
             zIndex: 10000,
           }}
         >
