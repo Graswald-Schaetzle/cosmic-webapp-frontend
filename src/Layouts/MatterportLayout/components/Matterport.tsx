@@ -94,15 +94,15 @@ export default function Matterport({ children }: MatterportProps) {
         const tags = await getMatterTags(mpSdk);
         setMattertags(tags);
 
-        // Disable default tag behaviors for all tags
-        tags.forEach((tag: MatterTag) => {
-          if (tag.sid) {
-            mpSdk.Tag.allowAction(tag.sid, {
-              opening: false,
-              navigating: false,
-            });
+        // Disable default tag behaviors for all pre-existing tags
+        for (const tag of tags) {
+          if (!tag.sid) continue;
+          try {
+            await mpSdk.Tag.allowAction(tag.sid, { opening: false, navigating: false, docking: false, transitioning: false });
+          } catch {
+            try { await mpSdk.Mattertag.preventAction(tag.sid, { opening: true, navigating: true, docking: true, transitioning: true }); } catch { /* not critical */ }
           }
-        });
+        }
 
         // Optional: subscribe to tag state changes (dispatch window open/close)
         try {

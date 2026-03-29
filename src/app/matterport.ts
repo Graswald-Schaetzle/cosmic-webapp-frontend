@@ -27,13 +27,31 @@ export async function addTagToSession(
     stemVector: { x: 0, y: 0.3, z: 0 },
     color,
   };
+  const suppressTag = async (sdk: any, sid: string) => {
+    // Try Tag.allowAction (newer SDK)
+    try {
+      await sdk.Tag.allowAction(sid, { opening: false, navigating: false, docking: false, transitioning: false });
+    } catch (e) {
+      console.warn('[addTagToSession] Tag.allowAction failed, trying Mattertag.preventAction:', e);
+      // Fallback to Mattertag.preventAction (older SDK — true means "prevent this action")
+      try {
+        await sdk.Mattertag.preventAction(sid, {
+          opening: true,
+          navigating: true,
+          docking: true,
+          transitioning: true,
+        });
+      } catch (e2) {
+        console.warn('[addTagToSession] Mattertag.preventAction also failed:', e2);
+      }
+    }
+  };
+
   console.log('[addTagToSession] Adding tag:', opts.label);
   try {
     const result: string[] = await sdk.Tag.add(tagData);
     console.log('[addTagToSession] Tag.add succeeded:', result);
-    for (const sid of result) {
-      try { await sdk.Tag.allowAction(sid, { opening: false, navigating: false, docking: false }); } catch { /* not critical */ }
-    }
+    for (const sid of result) await suppressTag(sdk, sid);
     return result;
   } catch (err1: unknown) {
     console.warn('[addTagToSession] Tag.add failed:', err1);
@@ -41,9 +59,7 @@ export async function addTagToSession(
   try {
     const result: string[] = await sdk.Mattertag.add(tagData);
     console.log('[addTagToSession] Mattertag.add succeeded:', result);
-    for (const sid of result) {
-      try { await sdk.Tag.allowAction(sid, { opening: false, navigating: false, docking: false }); } catch { /* not critical */ }
-    }
+    for (const sid of result) await suppressTag(sdk, sid);
     return result;
   } catch (err2: unknown) {
     console.error('[addTagToSession] Both Tag.add and Mattertag.add failed:', err2);
