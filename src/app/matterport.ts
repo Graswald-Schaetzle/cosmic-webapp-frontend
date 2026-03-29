@@ -14,14 +14,17 @@ export function createMatterTag(sdk: any, tag: MatterTag): Promise<string[]> {
  */
 export async function addTagToSession(
   sdk: any,
-  opts: { label: string; description?: string; x: number; y: number; z: number }
+  opts: { label: string; description?: string; x: number; y: number; z: number; tag_type?: 'room' | 'object' }
 ): Promise<void> {
+  const color = opts.tag_type === 'room'
+    ? { r: 1, g: 0.65, b: 0 }
+    : { r: 0.2, g: 0.5, b: 1 };
   const tagData = {
     label: opts.label,
     description: opts.description || '',
     anchorPosition: { x: opts.x, y: opts.y, z: opts.z },
     stemVector: { x: 0, y: 0.3, z: 0 },
-    color: { r: 0.2, g: 0.5, b: 1 },
+    color,
   };
   console.log('[addTagToSession] Adding tag:', tagData);
   try {

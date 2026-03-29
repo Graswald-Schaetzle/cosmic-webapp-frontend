@@ -38,6 +38,12 @@ export interface LocationDetail {
   floorId: string;
 }
 
+export interface ResponsibleUser {
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
 // New types for all locations API
 export interface LocationItem {
   location_id: string;
@@ -55,6 +61,9 @@ export interface LocationItem {
   room_name: string;
   tasks: Task[];
   taskError: string | null;
+  tag_type: 'room' | 'object';
+  responsible_user_id: number | null;
+  responsible_user: ResponsibleUser | null;
 }
 
 export interface AllLocationsResponse {
@@ -100,6 +109,9 @@ export interface LocationDetailResponse {
   room_name: string;
   tasks: Task[];
   taskError: string | null;
+  tag_type: 'room' | 'object';
+  responsible_user_id: number | null;
+  responsible_user: ResponsibleUser | null;
 }
 
 // New types for floors and rooms
@@ -217,6 +229,8 @@ export const locationApi = createApi({
         z: number;
         floorId?: string;
         spaceId?: number | null;
+        tag_type?: 'room' | 'object';
+        responsible_user_id?: number | null;
       }
     >({
       query: body => ({

@@ -1,6 +1,7 @@
 import { Dialog } from '../../components/Dialog';
-import { Box, Typography, IconButton, Tabs, Tab, Paper, CircularProgress } from '@mui/material';
+import { Box, Typography, IconButton, Tabs, Tab, Paper, CircularProgress, Chip } from '@mui/material';
 import { ObjectInfoTab } from './components/ObjectInfoTab';
+import { RoomInfoTab } from './components/RoomInfoTab';
 import { DocumentTab } from './components/DocumentTab.tsx';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store.ts';
@@ -56,6 +57,9 @@ export function MatterTagWindow() {
     dispatch(closeMatterTagWindow());
   };
 
+  const tagType = locationData?.tag_type ?? 'object';
+  const isRoom = tagType === 'room';
+
   return (
     <Dialog
       open={isOpen}
@@ -81,7 +85,7 @@ export function MatterTagWindow() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          height: '40px',
+          minHeight: '40px',
           position: 'relative',
           px: 2,
         }}
@@ -90,8 +94,10 @@ export function MatterTagWindow() {
           sx={{
             width: '100%',
             display: 'flex',
+            flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
+            gap: '6px',
           }}
         >
           <Typography
@@ -105,16 +111,33 @@ export function MatterTagWindow() {
               textAlign: 'center',
             }}
           >
-            {isLoading || isFetching ? 'Location' : locationData?.location_name || 'Location'}
+            {isLoading || isFetching ? '...' : locationData?.location_name || '...'}
           </Typography>
+
+          {locationData && (
+            <Chip
+              label={isRoom ? 'Room' : 'Object'}
+              size="small"
+              sx={{
+                height: '22px',
+                borderRadius: '100px',
+                bgcolor: isRoom ? 'rgba(255, 166, 0, 0.25)' : 'rgba(51, 128, 255, 0.25)',
+                color: isRoom ? '#FFA600' : '#3380FF',
+                border: `1px solid ${isRoom ? 'rgba(255, 166, 0, 0.4)' : 'rgba(51, 128, 255, 0.4)'}`,
+                fontWeight: 600,
+                fontSize: '11px',
+                '& .MuiChip-label': { px: '8px' },
+              }}
+            />
+          )}
         </Box>
         <IconButton
-          //onClick={() => onEdit(tag)}
           size="small"
           aria-label="Edit tag"
           sx={{
             position: 'absolute',
             right: 0,
+            top: 0,
           }}
         >
           <img src="/icons/mattertag/edit.svg" alt="Edit" />
@@ -132,7 +155,7 @@ export function MatterTagWindow() {
       {error && !locationData && (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
           <Typography color="error" sx={{ color: '#ff6b6b' }}>
-            Failed to load location data
+            Failed to load tag data
           </Typography>
         </Box>
       )}
@@ -194,7 +217,7 @@ export function MatterTagWindow() {
                   },
                 }}
               >
-                <Tab label="Object info" />
+                <Tab label="Info" />
                 <Tab label="Documents" />
               </Tabs>
             </Paper>
@@ -202,7 +225,11 @@ export function MatterTagWindow() {
 
           {/* Tab Content */}
           {activeTab === 0 ? (
-            <ObjectInfoTab tag={tag} handleClose={handleClose} locationData={locationData} />
+            isRoom ? (
+              <RoomInfoTab locationData={locationData} />
+            ) : (
+              <ObjectInfoTab tag={tag} handleClose={handleClose} locationData={locationData} />
+            )
           ) : (
             <DocumentTab locationData={locationData} />
           )}
