@@ -103,6 +103,9 @@ interface ModalState {
     position: { x: number; y: number; z: number } | null;
     floorId: string | null;
   };
+  moreElementsWindowModal: {
+    isOpen: boolean;
+  };
 }
 
 const initialState: ModalState = {
@@ -184,6 +187,9 @@ const initialState: ModalState = {
     isOpen: false,
     position: null,
     floorId: null,
+  },
+  moreElementsWindowModal: {
+    isOpen: false,
   },
 };
 
@@ -431,6 +437,12 @@ const modalSlice = createSlice({
       state.newLocationWindowModal.position = null;
       state.newLocationWindowModal.floorId = null;
     },
+    openMoreElementsWindow: state => {
+      state.moreElementsWindowModal.isOpen = true;
+    },
+    closeMoreElementsWindow: state => {
+      state.moreElementsWindowModal.isOpen = false;
+    },
     closeAllModals: state => {
       state.matterTagWindowModal.isOpen = false;
       state.matterTagWindowModal.selectedTag = null;
@@ -472,6 +484,7 @@ const modalSlice = createSlice({
       state.newLocationWindowModal.isOpen = false;
       state.newLocationWindowModal.position = null;
       state.newLocationWindowModal.floorId = null;
+      state.moreElementsWindowModal.isOpen = false;
     },
   },
 });
@@ -514,6 +527,8 @@ export const {
   closeSpaceViewerWindow,
   openNewLocationWindow,
   closeNewLocationWindow,
+  openMoreElementsWindow,
+  closeMoreElementsWindow,
   closeAllModals,
 } = modalSlice.actions;
 
