@@ -1284,7 +1284,7 @@ function MobileMenu({
       <Box
         sx={{
           position: 'fixed',
-          bottom: 'max(20px, env(safe-area-inset-bottom))',
+          bottom: 'max(90px, env(safe-area-inset-bottom))',
           right: 20,
           display: 'flex',
           flexDirection: 'column',
@@ -1293,21 +1293,6 @@ function MobileMenu({
           zIndex: 9999,
         }}
       >
-        <IconButton
-          aria-label="Chat"
-          sx={{
-            width: 48,
-            height: 48,
-            borderRadius: '50%',
-            background: 'var(--Back, #2E2E2E59)',
-            backdropFilter: 'blur(100px)',
-            WebkitBackdropFilter: 'blur(100px)',
-            color: 'white',
-            '&:hover': { background: 'rgba(46, 46, 46, 0.6)' },
-          }}
-        >
-          <ChatBubbleOutlineRoundedIcon sx={{ fontSize: 22, color: 'white', opacity: 0.9 }} />
-        </IconButton>
         <IconButton
           aria-label="Open menu"
           onClick={onOpenMore}
@@ -1324,6 +1309,21 @@ function MobileMenu({
           }}
         >
           <Icon src="/icons/menu/plus.svg" alt="Menu" style={{ width: 28, height: 28 }} />
+        </IconButton>
+        <IconButton
+          aria-label="Chat"
+          sx={{
+            width: 48,
+            height: 48,
+            borderRadius: '50%',
+            background: 'var(--Back, #2E2E2E59)',
+            backdropFilter: 'blur(100px)',
+            WebkitBackdropFilter: 'blur(100px)',
+            color: 'white',
+            '&:hover': { background: 'rgba(46, 46, 46, 0.6)' },
+          }}
+        >
+          <ChatBubbleOutlineRoundedIcon sx={{ fontSize: 22, color: 'white', opacity: 0.9 }} />
         </IconButton>
       </Box>
 
