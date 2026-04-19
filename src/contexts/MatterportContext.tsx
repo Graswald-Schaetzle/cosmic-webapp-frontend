@@ -44,13 +44,14 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
   const lastIntersectionRef = useRef<any | null>(null);
   const poseRef = useRef<any | null>(null);
 
-  // Mobile long-press detection refs: heuristic-based, using Pointer.intersection
-  // updates as a proxy for "finger currently on screen" (updates stop when the
-  // finger is lifted, so gaps > ~250ms indicate a release).
-  const mobileDwellIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const lastPointerUpdateMsRef = useRef<number>(0);
+  // Desktop dwell detection: track last stable screen position
   const touchStablePosRef = useRef<{ x: number; y: number } | null>(null);
   const touchStableStartMsRef = useRef<number>(0);
+
+  // Mobile long-press detection: native touch events are reliable regardless of
+  // whether Pointer.intersection fires while the finger is stationary.
+  const touchDwellTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStartClientRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     if (!sdk) return;
@@ -115,64 +116,8 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
           };
 
           if (isMobileRef.current) {
-            // MOBILE: require an active touch-and-hold. Pointer.intersection
-            // updates arrive only while the finger is on the 3D scene, so the
-            // absence of updates for a short window indicates the finger lifted.
-            const now = Date.now();
-            lastPointerUpdateMsRef.current = now;
-
-            const stable = touchStablePosRef.current;
-            const moved =
-              !stable ||
-              Math.abs(currentScreenPos.x - stable.x) > pxThreshold ||
-              Math.abs(currentScreenPos.y - stable.y) > pxThreshold;
-
-            if (moved) {
-              touchStablePosRef.current = currentScreenPos;
-              touchStableStartMsRef.current = now;
-              setDwellIndicator(null);
-            }
-
-            if (!mobileDwellIntervalRef.current) {
-              mobileDwellIntervalRef.current = setInterval(() => {
-                const now2 = Date.now();
-
-                // Finger likely lifted: no intersection updates recently
-                if (now2 - lastPointerUpdateMsRef.current > 250) {
-                  if (mobileDwellIntervalRef.current) {
-                    clearInterval(mobileDwellIntervalRef.current);
-                    mobileDwellIntervalRef.current = null;
-                  }
-                  touchStablePosRef.current = null;
-                  touchStableStartMsRef.current = 0;
-                  return;
-                }
-
-                // Long-press threshold reached
-                const start = touchStableStartMsRef.current;
-                if (start > 0 && now2 - start >= 3000) {
-                  const saved = lastIntersectionRef.current;
-                  const { w: cw, h: ch } = getWindowSize();
-                  if (saved) {
-                    const sx = saved.screenPos.x;
-                    const sy = saved.screenPos.y;
-                    const inBounds = sx > 0 && sy > 0 && sx < cw && sy < ch;
-                    setDwellIndicator({
-                      screenX: inBounds ? sx : cw / 2,
-                      screenY: inBounds ? sy : ch / 2,
-                      worldPos: saved.worldPos,
-                      floorId: String(saved.floorId),
-                    });
-                  }
-                  if (mobileDwellIntervalRef.current) {
-                    clearInterval(mobileDwellIntervalRef.current);
-                    mobileDwellIntervalRef.current = null;
-                  }
-                  touchStablePosRef.current = null;
-                  touchStableStartMsRef.current = 0;
-                }
-              }, 150);
-            }
+            // Mobile dwell is driven by native touch event listeners (see useEffect
+            // below). We only need lastIntersectionRef kept up-to-date for position.
             return;
           }
 
@@ -329,16 +274,90 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
     }
   };
 
+  // Mobile long-press via native touch events. Pointer.intersection fires only on
+  // pointer *move*, not while the finger is stationary, so the previous interval
+  // approach timed out immediately on a still hold. Window-level touch events are
+  // reliable and don't interfere with the Matterport iframe's own touch handling.
+  useEffect(() => {
+    if (!isMobile || !sdk) return;
+
+    const DWELL_MS = 3000;
+    const MOVE_THRESHOLD_PX = 15;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      touchStartClientRef.current = { x: touch.clientX, y: touch.clientY };
+
+      if (touchDwellTimerRef.current) clearTimeout(touchDwellTimerRef.current);
+
+      touchDwellTimerRef.current = setTimeout(() => {
+        touchStartClientRef.current = null;
+        const saved = lastIntersectionRef.current;
+        if (!saved) return;
+        const iframe = document.querySelector('iframe');
+        const cw = iframe?.clientWidth || window.innerWidth;
+        const ch = iframe?.clientHeight || window.innerHeight;
+        const sx = saved.screenPos.x;
+        const sy = saved.screenPos.y;
+        const inBounds = sx > 0 && sy > 0 && sx < cw && sy < ch;
+        setDwellIndicator({
+          screenX: inBounds ? sx : cw / 2,
+          screenY: inBounds ? sy : ch / 2,
+          worldPos: saved.worldPos,
+          floorId: String(saved.floorId),
+        });
+      }, DWELL_MS);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!touchStartClientRef.current || !touchDwellTimerRef.current) return;
+      const touch = e.touches[0];
+      const dx = touch.clientX - touchStartClientRef.current.x;
+      const dy = touch.clientY - touchStartClientRef.current.y;
+      if (Math.abs(dx) > MOVE_THRESHOLD_PX || Math.abs(dy) > MOVE_THRESHOLD_PX) {
+        clearTimeout(touchDwellTimerRef.current);
+        touchDwellTimerRef.current = null;
+        touchStartClientRef.current = null;
+        setDwellIndicator(null);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      if (touchDwellTimerRef.current) {
+        clearTimeout(touchDwellTimerRef.current);
+        touchDwellTimerRef.current = null;
+      }
+      touchStartClientRef.current = null;
+    };
+
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd, { passive: true });
+    window.addEventListener('touchcancel', handleTouchEnd, { passive: true });
+
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('touchcancel', handleTouchEnd);
+      if (touchDwellTimerRef.current) {
+        clearTimeout(touchDwellTimerRef.current);
+        touchDwellTimerRef.current = null;
+      }
+    };
+  }, [isMobile, sdk]);
+
   const clearDwellIndicator = () => {
     setDwellIndicator(null);
     if (dwellTimerRef.current) {
       clearTimeout(dwellTimerRef.current);
       dwellTimerRef.current = null;
     }
-    if (mobileDwellIntervalRef.current) {
-      clearInterval(mobileDwellIntervalRef.current);
-      mobileDwellIntervalRef.current = null;
+    if (touchDwellTimerRef.current) {
+      clearTimeout(touchDwellTimerRef.current);
+      touchDwellTimerRef.current = null;
     }
+    touchStartClientRef.current = null;
     touchStablePosRef.current = null;
     touchStableStartMsRef.current = 0;
   };
@@ -349,9 +368,9 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
         clearTimeout(dwellTimerRef.current);
         dwellTimerRef.current = null;
       }
-      if (mobileDwellIntervalRef.current) {
-        clearInterval(mobileDwellIntervalRef.current);
-        mobileDwellIntervalRef.current = null;
+      if (touchDwellTimerRef.current) {
+        clearTimeout(touchDwellTimerRef.current);
+        touchDwellTimerRef.current = null;
       }
     };
   }, []);
