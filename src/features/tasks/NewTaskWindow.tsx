@@ -19,7 +19,7 @@ import { CalendarModal } from '../task/components/CalendarModal';
 import { RecurringModal } from '../task/components/RecurringModal';
 import { TimePickerModal } from '../task/components/TimePickerModal';
 import { Box, Typography, IconButton, Chip, Stack, TextField, Tooltip } from '@mui/material';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export const NewTaskWindow = () => {
   const dispatch = useDispatch();
@@ -78,6 +78,32 @@ export const NewTaskWindow = () => {
     locationId: '',
   };
   const [task, setTask] = useState(defaultTaskState);
+
+  // Tag input state
+  const [isTagInputActive, setIsTagInputActive] = useState(false);
+  const [tagInputValue, setTagInputValue] = useState('');
+  const tagContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isTagInputActive) return;
+    const handleMouseDown = (e: MouseEvent) => {
+      if (tagContainerRef.current && !tagContainerRef.current.contains(e.target as Node)) {
+        setIsTagInputActive(false);
+        setTagInputValue('');
+      }
+    };
+    document.addEventListener('mousedown', handleMouseDown);
+    return () => document.removeEventListener('mousedown', handleMouseDown);
+  }, [isTagInputActive]);
+
+  const handleAddTagConfirm = () => {
+    const trimmed = tagInputValue.trim();
+    if (trimmed) {
+      setTask(prev => ({ ...prev, tags: [...prev.tags, trimmed] }));
+    }
+    setTagInputValue('');
+    setIsTagInputActive(false);
+  };
 
   // If preSelectedLocation changes (modal opened from MatterTag), set name/location and disable name field
   const nameFieldDisabled = Boolean(preSelectedLocation);
@@ -177,6 +203,8 @@ export const NewTaskWindow = () => {
     }
     setTask(defaultTaskState);
     setValidationErrors({});
+    setIsTagInputActive(false);
+    setTagInputValue('');
   };
 
   const handleTypeSelect = (newType: string) => {
@@ -765,11 +793,7 @@ export const NewTaskWindow = () => {
           />
         </Box>
         {/* Tags */}
-        <Box
-          sx={{
-            opacity: 0.15,
-          }}
-        >
+        <Box ref={tagContainerRef}>
           <Box
             sx={{
               padding: '12px 18px',
@@ -783,39 +807,69 @@ export const NewTaskWindow = () => {
             </Typography>
           </Box>
           <Stack direction="row" flexWrap="wrap" gap="12px">
-            {task.tags.length > 0 ? (
-              task.tags.map(tag => (
-                <Chip
-                  key={tag}
-                  label={tag}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    background: '#5E5E5E2E',
-                    backgroundColor: '#00000033',
-                    color: '#fff',
-                    borderRadius: '20px',
-                    padding: '8px 6px',
-                    height: 40,
-                    maxWidth: 300,
-                    fontSize: 14,
-                    lineHeight: '22px',
-                    fontWeight: 600,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    '&:hover': {
-                      bgcolor: '#FFFFFF1A',
-                    },
-                  }}
-                />
-              ))
+            {task.tags.map(tag => (
+              <Chip
+                key={tag}
+                label={tag}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  background: '#5E5E5E2E',
+                  backgroundColor: '#00000033',
+                  color: '#fff',
+                  borderRadius: '20px',
+                  padding: '8px 6px',
+                  height: 40,
+                  maxWidth: 300,
+                  fontSize: 14,
+                  lineHeight: '22px',
+                  fontWeight: 600,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  '&:hover': {
+                    bgcolor: '#FFFFFF1A',
+                  },
+                }}
+              />
+            ))}
+            {isTagInputActive ? (
+              <Box
+                component="input"
+                autoFocus
+                value={tagInputValue}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setTagInputValue(e.target.value)
+                }
+                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                  if (e.key === 'Enter') handleAddTagConfirm();
+                  if (e.key === 'Escape') {
+                    setIsTagInputActive(false);
+                    setTagInputValue('');
+                  }
+                }}
+                placeholder="Tag name..."
+                sx={{
+                  background: '#00000033',
+                  color: '#fff',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  borderRadius: '20px',
+                  padding: '8px 18px',
+                  height: 40,
+                  minWidth: 120,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  outline: 'none',
+                  '&::placeholder': { color: 'rgba(255,255,255,0.5)' },
+                }}
+              />
             ) : (
               <Box
                 component="button"
                 type="button"
+                onClick={() => setIsTagInputActive(true)}
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
