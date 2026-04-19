@@ -87,8 +87,10 @@
         border-radius: 20px;
         cursor: pointer;
         transition: 300ms;
-        &:hover {
-          background: rgba(255, 255, 255, 0.05);
+        @media (hover: hover) {
+          &:hover {
+            background: rgba(255, 255, 255, 0.05);
+          }
         }
       }
     }

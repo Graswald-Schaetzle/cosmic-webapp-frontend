@@ -241,7 +241,7 @@ export function ObjectManagerWindow() {
       <Dialog
         open={isOpen}
         onClose={handleClose}
-        className="w-[380px] max-h-[600px]"
+        className="w-[380px] max-w-full max-h-[600px]"
         PaperProps={{
           sx: {
             borderRadius: '32px',
@@ -271,7 +271,7 @@ export function ObjectManagerWindow() {
       <Dialog
         open={isOpen}
         onClose={handleClose}
-        className="w-[380px] max-h-[600px]"
+        className="w-[380px] max-w-full max-h-[600px]"
         PaperProps={{
           sx: {
             borderRadius: '32px',
@@ -301,7 +301,7 @@ export function ObjectManagerWindow() {
     <Dialog
       open={isOpen}
       onClose={handleClose}
-      className="w-[380px] max-h-[600px]"
+      className="w-[380px] max-w-full max-h-[600px]"
       PaperProps={{
         sx: {
           borderRadius: '32px',
@@ -419,7 +419,8 @@ export function ObjectManagerWindow() {
         fullWidth
         sx={{
           justifyContent: 'flex-start',
-          width: '356px',
+          width: { xs: '100%', sm: '356px' },
+          maxWidth: '100%',
           height: '48px',
           textTransform: 'none',
           bgcolor: 'rgba(0, 0, 0, 0.15)',

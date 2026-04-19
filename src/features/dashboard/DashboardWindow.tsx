@@ -144,7 +144,7 @@ export const DashboardWindow = () => {
     <Dialog
       open={isOpen}
       onClose={handleClose}
-      className="w-[756px]"
+      className="w-[756px] max-w-full"
       PaperProps={{
         sx: {
           borderRadius: '32px',
@@ -152,12 +152,13 @@ export const DashboardWindow = () => {
           backgroundColor: 'rgba(46, 46, 46, 0.35)',
           backdropFilter: 'blur(100px)',
           WebkitBackdropFilter: 'blur(100px)',
-          padding: '32px 24px 24px',
+          padding: { xs: '20px 16px 16px', sm: '32px 24px 24px' },
           display: 'flex',
           flexDirection: 'column',
           gap: '20px',
           height: 'auto',
           maxHeight: '90vh',
+          overflowY: 'auto',
         },
       }}
     >
@@ -201,7 +202,7 @@ export const DashboardWindow = () => {
       </Box>
 
       {/* Two Columns Layouts */}
-      <Box sx={{ display: 'flex', gap: '20px' }}>
+      <Box sx={{ display: 'flex', gap: '20px', flexDirection: { xs: 'column', md: 'row' } }}>
         {/* Left Column */}
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Weather Section */}
@@ -495,7 +496,7 @@ export const DashboardWindow = () => {
                         <Box
                           className="arrow-icon"
                           sx={{
-                            display: 'none',
+                            display: { xs: 'block', md: 'none' },
                             position: 'absolute',
                             right: '18px',
                             top: '50%',
@@ -633,7 +634,7 @@ export const DashboardWindow = () => {
                         <Box
                           className="arrow-icon"
                           sx={{
-                            display: 'none',
+                            display: { xs: 'block', md: 'none' },
                             position: 'absolute',
                             right: '18px',
                             top: '50%',

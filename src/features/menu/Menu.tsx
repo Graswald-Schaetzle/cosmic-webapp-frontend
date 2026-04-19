@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { DndProvider, useDrag, useDrop, DragSourceMonitor } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
+import { MultiBackend } from 'react-dnd-multi-backend';
+import { HTML5toTouch } from 'rdndmb-html5-to-touch';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import {
   openDashboardWindow,
   openTasksWindow,
@@ -38,6 +40,8 @@ import TakeoutDiningIcon from '@mui/icons-material/TakeoutDining';
 import HomeWorkIcon from '@mui/icons-material/HomeWork';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import ChatBubbleOutlineRoundedIcon from '@mui/icons-material/ChatBubbleOutlineRounded';
+import LogoutIcon from '@mui/icons-material/Logout';
+import { useAuth } from '../../contexts/AuthContext';
 import type { SvgIconProps } from '@mui/material';
 import {
   useGetUserMenuQuery,
@@ -1019,10 +1023,38 @@ export function Menu() {
     [applyMenuMove, customMenuItems, persistMenuItems]
   );
 
+  const isMobile = useIsMobile();
+
   if (isLoadingUserMenu || isMatterportLoading) return null;
 
+  if (isMobile) {
+    return (
+      <DndProvider backend={MultiBackend} options={HTML5toTouch}>
+        <MobileMenu
+          mainItems={menuItems}
+          otherItems={otherItems}
+          isOpen={isOpen}
+          isObjectsOpen={isObjectsOpen}
+          isMoreElementsOpen={isMoreElementsOpen}
+          moreSearch={moreSearch}
+          setMoreSearch={setMoreSearch}
+          onItemClick={handleMenuItemClick}
+          onDrop={handleDrop}
+          onHoverMove={applyMenuMove}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onOpenMore={() => {
+            dispatch(closeAllModals());
+            dispatch(openMoreElementsWindow());
+          }}
+          onCloseMore={handleCloseMoreElements}
+        />
+      </DndProvider>
+    );
+  }
+
   return (
-    <DndProvider backend={HTML5Backend}>
+    <DndProvider backend={MultiBackend} options={HTML5toTouch}>
       <Box
         sx={{
           position: 'fixed',
@@ -1106,7 +1138,7 @@ export function Menu() {
       <Dialog
         open={isMoreElementsOpen}
         onClose={handleCloseMoreElements}
-        className="w-[560px]"
+        className="w-[560px] max-w-full"
         PaperProps={{
           sx: {
             borderRadius: '32px',
@@ -1183,6 +1215,273 @@ export function Menu() {
         />
       </Dialog>
     </DndProvider>
+  );
+}
+
+// --- MobileMenu: FAB + fullscreen overlay grid ---
+
+interface MobileMenuProps {
+  mainItems: MenuItem[];
+  otherItems: MenuItem[];
+  isOpen: boolean;
+  isObjectsOpen: boolean;
+  isMoreElementsOpen: boolean;
+  moreSearch: string;
+  setMoreSearch: (value: string) => void;
+  onItemClick: (id: string) => void;
+  onDrop: (
+    sourceList: string,
+    sourceIndex: number,
+    targetList: string,
+    targetIndex: number
+  ) => void;
+  onHoverMove: (
+    sourceList: string,
+    sourceIndex: number,
+    targetList: string,
+    targetIndex: number
+  ) => void;
+  onDragStart: () => void;
+  onDragEnd: (didDrop: boolean, moved: boolean) => void;
+  onOpenMore: () => void;
+  onCloseMore: () => void;
+}
+
+function MobileMenu({
+  mainItems,
+  otherItems,
+  isOpen,
+  isObjectsOpen,
+  isMoreElementsOpen,
+  moreSearch,
+  setMoreSearch,
+  onItemClick,
+  onDrop,
+  onHoverMove,
+  onDragStart,
+  onDragEnd,
+  onOpenMore,
+  onCloseMore,
+}: MobileMenuProps) {
+  const { logout } = useAuth();
+
+  const handleItemClick = (id: string) => {
+    onItemClick(id);
+    onCloseMore();
+  };
+
+  const handleLogout = () => {
+    onCloseMore();
+    logout();
+  };
+
+  const searchTerm = moreSearch.trim().toLowerCase();
+  const filteredMain = mainItems.filter(item => item.label.toLowerCase().includes(searchTerm));
+  const filteredOther = otherItems.filter(item => item.label.toLowerCase().includes(searchTerm));
+
+  return (
+    <>
+      <Box
+        sx={{
+          position: 'fixed',
+          bottom: 'max(20px, env(safe-area-inset-bottom))',
+          right: 20,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          alignItems: 'center',
+          zIndex: 9999,
+        }}
+      >
+        <IconButton
+          aria-label="Chat"
+          sx={{
+            width: 48,
+            height: 48,
+            borderRadius: '50%',
+            background: 'var(--Back, #2E2E2E59)',
+            backdropFilter: 'blur(100px)',
+            WebkitBackdropFilter: 'blur(100px)',
+            color: 'white',
+            '&:hover': { background: 'rgba(46, 46, 46, 0.6)' },
+          }}
+        >
+          <ChatBubbleOutlineRoundedIcon sx={{ fontSize: 22, color: 'white', opacity: 0.9 }} />
+        </IconButton>
+        <IconButton
+          aria-label="Open menu"
+          onClick={onOpenMore}
+          sx={{
+            width: 64,
+            height: 64,
+            borderRadius: '50%',
+            background: 'var(--Back, #2E2E2E59)',
+            backdropFilter: 'blur(100px)',
+            WebkitBackdropFilter: 'blur(100px)',
+            color: 'white',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.35)',
+            '&:hover': { background: 'rgba(46, 46, 46, 0.6)' },
+          }}
+        >
+          <Icon src="/icons/menu/plus.svg" alt="Menu" style={{ width: 28, height: 28 }} />
+        </IconButton>
+      </Box>
+
+      <Dialog
+        open={isMoreElementsOpen}
+        onClose={onCloseMore}
+        PaperProps={{
+          sx: {
+            backgroundColor: 'rgba(46, 46, 46, 0.55)',
+            backdropFilter: 'blur(100px)',
+            WebkitBackdropFilter: 'blur(100px)',
+            padding: '20px 16px max(20px, env(safe-area-inset-bottom))',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px',
+            overflowY: 'auto',
+          },
+        }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '12px',
+          }}
+        >
+          <TextField
+            value={moreSearch}
+            onChange={e => setMoreSearch(e.target.value)}
+            placeholder="Search apps"
+            variant="standard"
+            fullWidth
+            InputProps={{
+              disableUnderline: true,
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchRoundedIcon sx={{ fontSize: 20, color: 'white', opacity: 0.9 }} />
+                </InputAdornment>
+              ),
+              sx: {
+                color: 'white',
+                fontSize: '16px',
+                lineHeight: '20px',
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                borderRadius: '500px',
+                padding: '10px 16px',
+                '& input': { padding: 0 },
+                '& input::placeholder': { color: 'rgba(255, 255, 255, 0.6)', opacity: 1 },
+              },
+            }}
+          />
+          <IconButton
+            onClick={onCloseMore}
+            sx={{ color: 'white', opacity: 0.75, '&:hover': { opacity: 1 }, flexShrink: 0 }}
+          >
+            <Icon src="/icons/mattertag/cross.svg" alt="Close" />
+          </IconButton>
+        </Box>
+
+        {filteredMain.length > 0 && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <Typography
+              sx={{
+                color: 'rgba(255, 255, 255, 0.6)',
+                fontSize: '12px',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                px: 1,
+              }}
+            >
+              Main
+            </Typography>
+            <DroppableList
+              items={filteredMain}
+              listType="main"
+              onItemClick={handleItemClick}
+              isOpen={isOpen}
+              isObjectsOpen={isObjectsOpen}
+              isWide={true}
+              onDrop={onDrop}
+              onHoverMove={onHoverMove}
+              onDragStart={onDragStart}
+              onDragEnd={onDragEnd}
+              layout="grid"
+            />
+          </Box>
+        )}
+
+        {filteredOther.length > 0 && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <Typography
+              sx={{
+                color: 'rgba(255, 255, 255, 0.6)',
+                fontSize: '12px',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                px: 1,
+              }}
+            >
+              More
+            </Typography>
+            <DroppableList
+              items={filteredOther}
+              listType="other"
+              onItemClick={handleItemClick}
+              isOpen={isOpen}
+              isObjectsOpen={isObjectsOpen}
+              isWide={true}
+              onDrop={onDrop}
+              onHoverMove={onHoverMove}
+              onDragStart={onDragStart}
+              onDragEnd={onDragEnd}
+              layout="grid"
+            />
+          </Box>
+        )}
+
+        {filteredMain.length === 0 && filteredOther.length === 0 && (
+          <Typography sx={{ color: 'rgba(255, 255, 255, 0.6)', textAlign: 'center', py: 4 }}>
+            No apps match "{moreSearch}"
+          </Typography>
+        )}
+
+        <Box sx={{ mt: 'auto', pt: '12px' }}>
+          <Box
+            component="button"
+            type="button"
+            onClick={handleLogout}
+            sx={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px',
+              padding: '14px 18px',
+              minHeight: '48px',
+              background: 'rgba(0, 0, 0, 0.25)',
+              border: 'none',
+              borderRadius: '500px',
+              color: '#FFFFFF',
+              fontWeight: 600,
+              fontSize: '14px',
+              lineHeight: '22px',
+              cursor: 'pointer',
+              '@media (hover: hover)': {
+                '&:hover': { background: 'rgba(255, 255, 255, 0.12)' },
+              },
+            }}
+          >
+            <LogoutIcon fontSize="small" />
+            Sign out
+          </Box>
+        </Box>
+      </Dialog>
+    </>
   );
 }
 // Build: Sun Mar 22 16:38:21 CET 2026

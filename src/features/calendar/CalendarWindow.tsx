@@ -432,7 +432,7 @@ export function CalendarWindow() {
     <Dialog
       open={isOpen}
       onClose={handleClose}
-      className="w-[756px] h-[440px]"
+      className="w-[756px] max-w-full"
       PaperProps={{
         sx: {
           borderRadius: '32px',
@@ -445,6 +445,8 @@ export function CalendarWindow() {
           flexDirection: 'column',
           gap: '20px',
           height: 'auto',
+          maxHeight: '90dvh',
+          overflowY: 'auto',
         },
       }}
     >
@@ -549,7 +551,7 @@ export function CalendarWindow() {
       </Box>
 
       {/* Content */}
-      <Box sx={{ display: 'flex', gap: '20px', flex: 1 }}>
+      <Box sx={{ display: 'flex', gap: '20px', flex: 1, flexDirection: { xs: 'column', md: 'row' } }}>
         {/* Left side */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
           {/* Month selector */}

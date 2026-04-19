@@ -1,8 +1,10 @@
 @mixin hover-effect {
   cursor: pointer;
   transition: 300ms;
-  &:hover {
-    background: rgba(255, 255, 255, 0.10);
+  @media (hover: hover) {
+    &:hover {
+      background: rgba(255, 255, 255, 0.10);
+    }
   }
 }
 @mixin models-bg {

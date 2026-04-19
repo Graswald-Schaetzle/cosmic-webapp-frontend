@@ -223,7 +223,7 @@ export const AddTaskToListModal = ({
       <Dialog
         open={isOpen}
         onClose={handleClose}
-        className="w-[380px] max-h-[600px]"
+        className="w-[380px] max-w-full max-h-[600px]"
         PaperProps={{
           sx: {
             borderRadius: '32px',
@@ -250,7 +250,7 @@ export const AddTaskToListModal = ({
       <Dialog
         open={isOpen}
         onClose={handleClose}
-        className="w-[380px] max-h-[600px]"
+        className="w-[380px] max-w-full max-h-[600px]"
         PaperProps={{
           sx: {
             borderRadius: '32px',
@@ -276,7 +276,7 @@ export const AddTaskToListModal = ({
     <Dialog
       open={isOpen}
       onClose={handleClose}
-      className="w-[380px] max-h-[600px]"
+      className="w-[380px] max-w-full max-h-[600px]"
       PaperProps={{
         sx: {
           borderRadius: '32px',

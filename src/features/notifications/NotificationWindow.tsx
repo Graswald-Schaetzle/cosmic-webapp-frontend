@@ -245,7 +245,7 @@ export const NotificationWindow = () => {
       <Dialog
         open={isOpen}
         onClose={handleClose}
-        className="w-[756px]"
+        className="w-[756px] max-w-full"
         PaperProps={{
           sx: {
             borderRadius: '32px',
@@ -275,7 +275,7 @@ export const NotificationWindow = () => {
       <Dialog
         open={isOpen}
         onClose={handleClose}
-        className="w-[756px]"
+        className="w-[756px] max-w-full"
         PaperProps={{
           sx: {
             borderRadius: '32px',
@@ -305,7 +305,7 @@ export const NotificationWindow = () => {
     <Dialog
       open={isOpen}
       onClose={handleClose}
-      className="w-[756px]"
+      className="w-[756px] max-w-full"
       PaperProps={{
         sx: {
           borderRadius: '32px',
@@ -322,9 +322,9 @@ export const NotificationWindow = () => {
         },
       }}
     >
-      <Box sx={{ display: 'flex', gap: '20px' }}>
+      <Box sx={{ display: 'flex', gap: '20px', flexDirection: { xs: 'column', md: 'row' } }}>
         {/* Left Column */}
-        <Box sx={{ width: '50%', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <Box sx={{ width: { xs: '100%', md: '50%' }, display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Header */}
           <Box
             sx={{
@@ -495,7 +495,7 @@ export const NotificationWindow = () => {
         </Box>
 
         {/* Right Column */}
-        <Box sx={{ width: '50%', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <Box sx={{ width: { xs: '100%', md: '50%' }, display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Header */}
           <Box
             sx={{
