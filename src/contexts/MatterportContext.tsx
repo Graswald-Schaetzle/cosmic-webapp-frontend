@@ -8,6 +8,7 @@ import {
   createFrameHTML,
 } from '../app/matterport';
 import { DwellIndicator, MatterportContextType, MatterTag, TagData } from '../types/matterport';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 // Declare the global connect function
 declare global {
@@ -33,9 +34,23 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [dwellIndicator, setDwellIndicator] = useState<DwellIndicator | null>(null);
 
+  const isMobile = useIsMobile();
+  const isMobileRef = useRef(isMobile);
+  useEffect(() => {
+    isMobileRef.current = isMobile;
+  }, [isMobile]);
+
   const dwellTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastIntersectionRef = useRef<any | null>(null);
   const poseRef = useRef<any | null>(null);
+
+  // Mobile long-press detection refs: heuristic-based, using Pointer.intersection
+  // updates as a proxy for "finger currently on screen" (updates stop when the
+  // finger is lifted, so gaps > ~250ms indicate a release).
+  const mobileDwellIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastPointerUpdateMsRef = useRef<number>(0);
+  const touchStablePosRef = useRef<{ x: number; y: number } | null>(null);
+  const touchStableStartMsRef = useRef<number>(0);
 
   useEffect(() => {
     if (!sdk) return;
@@ -91,22 +106,85 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
           }
 
           const currentScreenPos = { x: screenPos.x, y: screenPos.y };
-          const prevScreenPos = lastIntersectionRef.current?.screenPos;
-
-          // Check if position changed significantly IN SCREEN PIXELS (threshold: 15 pixels)
           const pxThreshold = 15;
+
+          lastIntersectionRef.current = {
+            worldPos: pos,
+            screenPos: currentScreenPos,
+            floorId: newIntersection.floorId ?? newIntersection.floorIndex ?? '',
+          };
+
+          if (isMobileRef.current) {
+            // MOBILE: require an active touch-and-hold. Pointer.intersection
+            // updates arrive only while the finger is on the 3D scene, so the
+            // absence of updates for a short window indicates the finger lifted.
+            const now = Date.now();
+            lastPointerUpdateMsRef.current = now;
+
+            const stable = touchStablePosRef.current;
+            const moved =
+              !stable ||
+              Math.abs(currentScreenPos.x - stable.x) > pxThreshold ||
+              Math.abs(currentScreenPos.y - stable.y) > pxThreshold;
+
+            if (moved) {
+              touchStablePosRef.current = currentScreenPos;
+              touchStableStartMsRef.current = now;
+              setDwellIndicator(null);
+            }
+
+            if (!mobileDwellIntervalRef.current) {
+              mobileDwellIntervalRef.current = setInterval(() => {
+                const now2 = Date.now();
+
+                // Finger likely lifted: no intersection updates recently
+                if (now2 - lastPointerUpdateMsRef.current > 250) {
+                  if (mobileDwellIntervalRef.current) {
+                    clearInterval(mobileDwellIntervalRef.current);
+                    mobileDwellIntervalRef.current = null;
+                  }
+                  touchStablePosRef.current = null;
+                  touchStableStartMsRef.current = 0;
+                  return;
+                }
+
+                // Long-press threshold reached
+                const start = touchStableStartMsRef.current;
+                if (start > 0 && now2 - start >= 3000) {
+                  const saved = lastIntersectionRef.current;
+                  const { w: cw, h: ch } = getWindowSize();
+                  if (saved) {
+                    const sx = saved.screenPos.x;
+                    const sy = saved.screenPos.y;
+                    const inBounds = sx > 0 && sy > 0 && sx < cw && sy < ch;
+                    setDwellIndicator({
+                      screenX: inBounds ? sx : cw / 2,
+                      screenY: inBounds ? sy : ch / 2,
+                      worldPos: saved.worldPos,
+                      floorId: String(saved.floorId),
+                    });
+                  }
+                  if (mobileDwellIntervalRef.current) {
+                    clearInterval(mobileDwellIntervalRef.current);
+                    mobileDwellIntervalRef.current = null;
+                  }
+                  touchStablePosRef.current = null;
+                  touchStableStartMsRef.current = 0;
+                }
+              }, 150);
+            }
+            return;
+          }
+
+          // DESKTOP: original idle-based dwell timer
+          const prevScreenPos = touchStablePosRef.current;
           const moved =
             !prevScreenPos ||
             Math.abs(currentScreenPos.x - prevScreenPos.x) > pxThreshold ||
             Math.abs(currentScreenPos.y - prevScreenPos.y) > pxThreshold;
 
-          // If moved, reset the dwell timer
           if (moved) {
-            lastIntersectionRef.current = {
-              worldPos: pos,
-              screenPos: currentScreenPos,
-              floorId: newIntersection.floorId ?? newIntersection.floorIndex ?? '',
-            };
+            touchStablePosRef.current = currentScreenPos;
 
             if (dwellTimerRef.current) {
               clearTimeout(dwellTimerRef.current);
@@ -120,13 +198,6 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
 
               const x = saved.screenPos.x;
               const y = saved.screenPos.y;
-              console.log(
-                '[MatterportContext] Dwell timer fired. Coordinates:',
-                saved.worldPos,
-                'Screen:',
-                x,
-                y
-              );
 
               if (x > 0 && y > 0 && x < w && y < h) {
                 setDwellIndicator({
@@ -136,10 +207,6 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
                   floorId: String(saved.floorId),
                 });
               } else {
-                console.log(
-                  '[MatterportContext] Screen coordinates out of bounds, using center fallback',
-                  { w, h }
-                );
                 setDwellIndicator({
                   screenX: w / 2,
                   screenY: h / 2,
@@ -268,7 +335,26 @@ export function MatterportProvider({ children }: MatterportProviderProps) {
       clearTimeout(dwellTimerRef.current);
       dwellTimerRef.current = null;
     }
+    if (mobileDwellIntervalRef.current) {
+      clearInterval(mobileDwellIntervalRef.current);
+      mobileDwellIntervalRef.current = null;
+    }
+    touchStablePosRef.current = null;
+    touchStableStartMsRef.current = 0;
   };
+
+  useEffect(() => {
+    return () => {
+      if (dwellTimerRef.current) {
+        clearTimeout(dwellTimerRef.current);
+        dwellTimerRef.current = null;
+      }
+      if (mobileDwellIntervalRef.current) {
+        clearInterval(mobileDwellIntervalRef.current);
+        mobileDwellIntervalRef.current = null;
+      }
+    };
+  }, []);
 
   const deleteTag = async (id: string) => {
     if (!sdk) throw new Error('Matterport SDK not initialized');
