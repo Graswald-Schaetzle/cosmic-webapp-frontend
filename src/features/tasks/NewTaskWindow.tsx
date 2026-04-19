@@ -74,7 +74,7 @@ export const NewTaskWindow = () => {
     dueDate: '00.00.0000',
     recurring: '',
     description: '',
-    tags: [],
+    tags: [] as string[],
     locationId: '',
   };
   const [task, setTask] = useState(defaultTaskState);
