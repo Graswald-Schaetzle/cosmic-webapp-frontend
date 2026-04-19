@@ -88,7 +88,8 @@ export default function Matterport({ children }: MatterportProps) {
     return true;
   };
 
-  const handleOverlayClick = () => {
+  const handlePinClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!dwellIndicator) return;
     dispatch(
       openNewLocationWindow({
@@ -96,6 +97,11 @@ export default function Matterport({ children }: MatterportProps) {
         floorId: dwellIndicator.floorId,
       })
     );
+    clearDwellIndicator();
+  };
+
+  const handleOverlayClick = () => {
+    // Tap/click outside the "+" pin cancels placement.
     clearDwellIndicator();
   };
 
@@ -310,10 +316,10 @@ export default function Matterport({ children }: MatterportProps) {
               left: dwellIndicator.screenX,
               top: dwellIndicator.screenY,
               transform: 'translate(-50%, -50%)',
-              pointerEvents: 'none',
             }}
           >
             <div
+              onClick={handlePinClick}
               style={{
                 width: 44,
                 height: 44,
@@ -326,6 +332,7 @@ export default function Matterport({ children }: MatterportProps) {
                 justifyContent: 'center',
                 animation: 'dwellPulse 1.2s ease-in-out infinite',
                 boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
+                cursor: 'pointer',
               }}
             >
               <span
