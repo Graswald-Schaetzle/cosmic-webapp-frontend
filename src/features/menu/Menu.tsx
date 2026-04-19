@@ -11,6 +11,8 @@ import {
   openCalendarWindow,
   openReconstructionWindow,
   openSpacesWindow,
+  openMoreElementsWindow,
+  closeMoreElementsWindow,
   closeAllModals,
 } from '../../store/modalSlice.ts';
 import { RootState } from '../../store/store';
@@ -24,8 +26,11 @@ import {
   ListItemText,
   IconButton,
   Typography,
+  TextField,
+  InputAdornment,
   styled,
 } from '@mui/material';
+import { Dialog } from '../../components/Dialog';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
 import DesignServicesIcon from '@mui/icons-material/DesignServices';
@@ -283,31 +288,6 @@ const SidebarStack = styled(Box)({
   flexDirection: 'column',
   gap: 14,
 });
-
-const OtherElementsPaper = styled(Paper)(({ theme }) => ({
-  width: '100%',
-  borderRadius: 32,
-  padding: theme.spacing(1.5),
-  background: 'var(--Back, #2E2E2E59)',
-  backdropFilter: 'blur(100px)',
-  WebkitBackdropFilter: 'blur(100px)',
-  transition: 'all 0.3s ease',
-  boxShadow: 'none',
-  '&.hidden': {
-    opacity: 0,
-    pointerEvents: 'none',
-    transform: 'scaleX(0)',
-  },
-  '& .MuiListItemText-primary': {
-    transform: 'scaleX(1) !important',
-    opacity: '1 !important',
-    color: 'white',
-    whiteSpace: 'nowrap',
-  },
-  '& .MuiListItem': {
-    minWidth: 'fit-content',
-  },
-}));
 
 const Icon = styled('img')({
   width: 24,
@@ -598,7 +578,7 @@ interface DroppableMoreButtonProps {
   onClick: () => void;
   isWide: boolean;
   onDropToOther: (sourceList: string, sourceIndex: number) => void;
-  setShowOtherElements: (show: boolean) => void;
+  onOpenMore: () => void;
   setIsWide: (isWide: boolean) => void;
 }
 
@@ -606,7 +586,7 @@ function DroppableMoreButton({
   onClick,
   isWide,
   onDropToOther,
-  setShowOtherElements,
+  onOpenMore,
   setIsWide,
 }: DroppableMoreButtonProps) {
   const [{ isOver, canDrop }, drop] = useDrop({
@@ -616,7 +596,7 @@ function DroppableMoreButton({
       canDrop: monitor.canDrop(),
     }),
     drop: (item: DragItem) => {
-      setShowOtherElements(true);
+      onOpenMore();
       setIsWide(true);
       if (item.sourceList !== 'other') {
         onDropToOther(item.sourceList, item.index);
@@ -743,6 +723,9 @@ export function Menu() {
   const { isOpen: isObjectsOpen } = useSelector(
     (state: RootState) => state.modal.objectManagerWindowModal
   );
+  const { isOpen: isMoreElementsOpen } = useSelector(
+    (state: RootState) => state.modal.moreElementsWindowModal
+  );
   const { isLoading: isMatterportLoading } = useMatterport();
 
   const { data: userMenuData, isLoading: isLoadingUserMenu } = useGetUserMenuQuery();
@@ -760,7 +743,7 @@ export function Menu() {
 
   const [customMenuItems, setCustomMenuItems] = useState<MenuItem[]>(defaultMenuItems);
   const [isWide, setIsWide] = useState(false);
-  const [showOtherElements, setShowOtherElements] = useState(false);
+  const [moreSearch, setMoreSearch] = useState('');
   const isUpdatingUserMenu = useRef(false);
   const customMenuItemsRef = useRef<MenuItem[]>(defaultMenuItems);
   const dragSnapshotRef = useRef<MenuItem[] | null>(null);
@@ -945,7 +928,6 @@ export function Menu() {
 
   const handleMenuItemClick = (itemId: string) => {
     dispatch(closeAllModals());
-    setShowOtherElements(false);
     switch (itemId) {
       case 'dashboard':
         dispatch(openDashboardWindow());
@@ -975,13 +957,28 @@ export function Menu() {
   };
 
   const handleMouseLeave = () => {
-    if (!showOtherElements) setIsWide(false);
+    if (!isMoreElementsOpen) setIsWide(false);
   };
 
   const handleOtherElementsClick = () => {
-    setShowOtherElements(!showOtherElements);
-    setIsWide(true);
+    if (isMoreElementsOpen) {
+      dispatch(closeMoreElementsWindow());
+      setIsWide(false);
+    } else {
+      dispatch(closeAllModals());
+      dispatch(openMoreElementsWindow());
+      setIsWide(true);
+    }
   };
+
+  const handleCloseMoreElements = () => {
+    dispatch(closeMoreElementsWindow());
+    setIsWide(false);
+  };
+
+  useEffect(() => {
+    if (!isMoreElementsOpen) setMoreSearch('');
+  }, [isMoreElementsOpen]);
 
   const handleDragStart = useCallback(() => {
     dragSnapshotRef.current = customMenuItemsRef.current;
@@ -1033,10 +1030,6 @@ export function Menu() {
           right: 40,
           transform: 'translateY(-50%)',
           zIndex: 9999,
-          display: 'flex',
-          flexDirection: 'row-reverse',
-          alignItems: 'center',
-          gap: '30px',
         }}
       >
         <SidebarStack
@@ -1087,7 +1080,10 @@ export function Menu() {
               onDropToOther={(sourceList, sourceIndex) => {
                 void handleDrop(sourceList, sourceIndex, 'other', otherItems.length);
               }}
-              setShowOtherElements={setShowOtherElements}
+              onOpenMore={() => {
+                dispatch(closeAllModals());
+                dispatch(openMoreElementsWindow());
+              }}
               setIsWide={setIsWide}
             />
           </StyledPaper>
@@ -1104,68 +1100,88 @@ export function Menu() {
           </ShortcutPaper>
         </SidebarStack>
 
-        {/* More Panel */}
-        <Box
-          sx={{
+      </Box>
+
+      {/* More Elements Dialog */}
+      <Dialog
+        open={isMoreElementsOpen}
+        onClose={handleCloseMoreElements}
+        className="w-[560px]"
+        PaperProps={{
+          sx: {
+            borderRadius: '32px',
+            overflow: 'hidden',
+            backgroundColor: 'rgba(46, 46, 46, 0.35)',
+            backdropFilter: 'blur(100px)',
+            WebkitBackdropFilter: 'blur(100px)',
+            padding: '32px 24px 24px',
             display: 'flex',
             flexDirection: 'column',
-            gap: '10px',
-            width: '320px',
-            zIndex: 10000,
+            gap: '20px',
+            height: 'auto',
+            maxHeight: '90vh',
+          },
+        }}
+      >
+        <Box
+          sx={{
+            padding: '0 8px 0 8px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '12px',
           }}
         >
-          <OtherElementsPaper className={showOtherElements ? '' : 'hidden'}>
-            <Box sx={{ position: 'relative', width: '100%' }}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  pl: 1,
-                  minWidth: 'fit-content',
-                }}
-              >
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    color: 'white',
-                    height: 44,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  More elements
-                </Typography>
-                <IconButton
-                  onClick={() => {
-                    setShowOtherElements(false);
-                    setIsWide(false);
-                  }}
-                  sx={{ color: 'white', opacity: 0.75, '&:hover': { opacity: 1 } }}
-                >
-                  <Icon src="/icons/mattertag/cross.svg" alt="Close" />
-                </IconButton>
-              </Box>
-
-              <DroppableList
-                items={otherItems}
-                listType="other"
-                onItemClick={handleMenuItemClick}
-                isOpen={isOpen}
-                isObjectsOpen={isObjectsOpen}
-                isWide={true}
-                onDrop={handleDrop}
-                onHoverMove={applyMenuMove}
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-                layout="grid"
-              />
-            </Box>
-          </OtherElementsPaper>
+          <TextField
+            value={moreSearch}
+            onChange={e => setMoreSearch(e.target.value)}
+            placeholder="Search apps"
+            variant="standard"
+            fullWidth
+            autoFocus
+            InputProps={{
+              disableUnderline: true,
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchRoundedIcon sx={{ fontSize: 20, color: 'white', opacity: 0.9 }} />
+                </InputAdornment>
+              ),
+              sx: {
+                color: 'white',
+                fontSize: '16px',
+                lineHeight: '20px',
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                borderRadius: '500px',
+                padding: '8px 16px',
+                '& input': { padding: 0 },
+                '& input::placeholder': { color: 'rgba(255, 255, 255, 0.6)', opacity: 1 },
+              },
+            }}
+          />
+          <IconButton
+            onClick={handleCloseMoreElements}
+            sx={{ color: 'white', opacity: 0.75, '&:hover': { opacity: 1 }, flexShrink: 0 }}
+          >
+            <Icon src="/icons/mattertag/cross.svg" alt="Close" />
+          </IconButton>
         </Box>
-      </Box>
+
+        <DroppableList
+          items={otherItems.filter(item =>
+            item.label.toLowerCase().includes(moreSearch.trim().toLowerCase())
+          )}
+          listType="other"
+          onItemClick={handleMenuItemClick}
+          isOpen={isOpen}
+          isObjectsOpen={isObjectsOpen}
+          isWide={true}
+          onDrop={handleDrop}
+          onHoverMove={applyMenuMove}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          layout="grid"
+        />
+      </Dialog>
     </DndProvider>
   );
 }
