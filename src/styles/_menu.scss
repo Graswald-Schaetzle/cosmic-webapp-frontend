@@ -138,8 +138,10 @@
     @include hover-effect;
 
 
-    &:hover {
-      opacity: 1;
+    @media (hover: hover) {
+      &:hover {
+        opacity: 1;
+      }
     }
     &.selected {
       background-color: #fff;
@@ -159,9 +161,17 @@
     img.black { display: none}
   }
 
-  &.wide,
-  &:hover {
-    .block-1 {
+  &.wide .block-1 {
+    width: 184px;
+
+    .item p {
+      transform: scaleX(1);
+      opacity: 1;
+    }
+  }
+
+  @media (hover: hover) {
+    &:hover .block-1 {
       width: 184px;
 
       .item p {

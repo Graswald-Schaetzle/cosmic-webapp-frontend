@@ -130,7 +130,7 @@ export function NewLocationWindow() {
     <Dialog
       open={isOpen}
       onClose={handleClose}
-      className="w-[360px]"
+      className="w-[360px] max-w-full"
       PaperProps={{
         sx: {
           borderRadius: '32px',

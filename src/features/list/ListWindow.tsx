@@ -183,7 +183,7 @@ export const ListWindow = () => {
       <Dialog
         open={isOpen}
         onClose={handleClose}
-        className="w-[380px] max-h-[67vh]"
+        className="w-[380px] max-w-full max-h-[67vh]"
         PaperProps={{
           sx: {
             borderRadius: '32px',
@@ -211,7 +211,7 @@ export const ListWindow = () => {
       <Dialog
         open={isOpen}
         onClose={handleClose}
-        className="w-[380px] max-h-[67vh]"
+        className="w-[380px] max-w-full max-h-[67vh]"
         PaperProps={{
           sx: {
             borderRadius: '32px',
@@ -237,7 +237,7 @@ export const ListWindow = () => {
     <Dialog
       open={isOpen}
       onClose={handleClose}
-      className="w-[380px] max-h-[67vh]"
+      className="w-[380px] max-w-full max-h-[67vh]"
       PaperProps={{
         sx: {
           borderRadius: '32px',
@@ -361,7 +361,8 @@ export const ListWindow = () => {
           fullWidth
           sx={{
             justifyContent: 'flex-start',
-            width: '356px',
+            width: { xs: '100%', sm: '356px' },
+            maxWidth: '100%',
             height: '48px',
             textTransform: 'none',
             bgcolor: 'rgba(0, 0, 0, 0.15)',
@@ -397,7 +398,8 @@ export const ListWindow = () => {
           fullWidth
           sx={{
             justifyContent: 'flex-start',
-            width: '356px',
+            width: { xs: '100%', sm: '356px' },
+            maxWidth: '100%',
             height: '48px',
             textTransform: 'none',
             bgcolor: 'rgba(0, 0, 0, 0.15)',

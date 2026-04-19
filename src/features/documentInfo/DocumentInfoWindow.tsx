@@ -250,7 +250,7 @@ export const DocumentInfoWindow = () => {
       <Dialog
         open={isOpen}
         onClose={handleClose}
-        className="w-[590px] max-h-[90vh]"
+        className="w-[590px] max-w-full max-h-[90vh]"
         PaperProps={{
           sx: {
             borderRadius: '32px',
@@ -285,7 +285,7 @@ export const DocumentInfoWindow = () => {
     <Dialog
       open={isOpen}
       onClose={handleClose}
-      className="w-[590px] max-h-[90vh]"
+      className="w-[590px] max-w-full max-h-[90vh]"
       PaperProps={{
         sx: {
           borderRadius: '32px',

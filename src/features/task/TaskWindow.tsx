@@ -674,7 +674,7 @@ export const TaskWindow = () => {
       <Dialog
         open={isOpen}
         onClose={handleClose}
-        className="w-[380px] max-h-[66vh]"
+        className="w-[380px] max-w-full max-h-[66vh]"
         PaperProps={{
           sx: {
             borderRadius: '32px',
@@ -701,7 +701,7 @@ export const TaskWindow = () => {
       <Dialog
         open={isOpen}
         onClose={handleClose}
-        className="w-[380px] max-h-[66vh]"
+        className="w-[380px] max-w-full max-h-[66vh]"
         PaperProps={{
           sx: {
             borderRadius: '32px',
@@ -727,7 +727,7 @@ export const TaskWindow = () => {
     <Dialog
       open={isOpen}
       onClose={handleClose}
-      className="w-[380px] max-h-[66vh]"
+      className="w-[380px] max-w-full max-h-[66vh]"
       PaperProps={{
         sx: {
           borderRadius: '32px',

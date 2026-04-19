@@ -54,7 +54,8 @@ function LoginForm() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        height: '100vh',
+        minHeight: '100dvh',
+        px: { xs: 2, sm: 0 },
         background: '#1a1a2e',
       }}
     >
@@ -65,10 +66,12 @@ function LoginForm() {
           display: 'flex',
           flexDirection: 'column',
           gap: 2,
-          p: 4,
+          p: { xs: 3, sm: 4 },
           background: '#16213e',
           borderRadius: 2,
-          minWidth: 320,
+          minWidth: 0,
+          width: { xs: '100%', sm: 320 },
+          maxWidth: '100%',
         }}
       >
         <Typography variant="h5" sx={{ color: '#fff', mb: 1 }}>

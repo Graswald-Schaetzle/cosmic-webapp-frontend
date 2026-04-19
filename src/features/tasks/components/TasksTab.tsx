@@ -264,7 +264,8 @@ export const TasksTab = ({
         fullWidth
         sx={{
           justifyContent: 'flex-start',
-          width: '356px',
+          width: { xs: '100%', sm: '356px' },
+          maxWidth: '100%',
           height: '48px',
           textTransform: 'none',
           bgcolor: 'rgba(0, 0, 0, 0.15)',

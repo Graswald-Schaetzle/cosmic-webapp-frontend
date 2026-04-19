@@ -9,7 +9,7 @@ import HomeWorkIcon from '@mui/icons-material/HomeWork';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ViewInArIcon from '@mui/icons-material/ViewInAr';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import Dialog from '@mui/material/Dialog';
+import { Dialog } from '../../components/Dialog';
 
 const paperStyles = {
   borderRadius: '32px',
@@ -18,7 +18,7 @@ const paperStyles = {
   backdropFilter: 'blur(100px)',
   WebkitBackdropFilter: 'blur(100px)',
   padding: '32px 24px 24px',
-  minWidth: 500,
+  minWidth: { xs: 0, sm: 500 },
   maxWidth: 760,
   width: '100%',
   boxShadow: 'none',
@@ -214,6 +214,7 @@ export const SpacesWindow = () => {
     <Dialog
       open={isOpen}
       onClose={handleClose}
+      className="max-w-full"
       hideBackdrop
       disableEnforceFocus
       PaperProps={{ sx: paperStyles }}

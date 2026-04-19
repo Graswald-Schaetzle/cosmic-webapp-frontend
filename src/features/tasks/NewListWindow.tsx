@@ -56,7 +56,7 @@ export const NewListWindow = () => {
     <Dialog
       open={isOpen}
       onClose={handleClose}
-      className="w-[380px] max-h-[644px]"
+      className="w-[380px] max-w-full max-h-[644px]"
       PaperProps={{
         sx: {
           borderRadius: '32px',

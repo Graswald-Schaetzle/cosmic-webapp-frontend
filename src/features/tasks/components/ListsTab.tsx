@@ -68,7 +68,8 @@ export const ListsTab = ({ handleClose }: ListsTabProps) => {
         fullWidth
         sx={{
           justifyContent: 'flex-start',
-          width: '356px',
+          width: { xs: '100%', sm: '356px' },
+          maxWidth: '100%',
           height: '48px',
           minHeight: '48px',
           maxHeight: '48px',

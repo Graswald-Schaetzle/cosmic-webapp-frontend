@@ -187,7 +187,7 @@ export const ReconstructionWindow = () => {
     <Dialog
       open={isOpen}
       onClose={handleClose}
-      className="w-[420px] max-h-[700px]"
+      className="w-[420px] max-w-full max-h-[700px]"
       PaperProps={{
         sx: {
           borderRadius: '32px',

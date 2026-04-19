@@ -262,7 +262,7 @@ export const AddDocumentWindow = () => {
     <Dialog
       open={isOpen}
       onClose={handleClose}
-      className="w-[380px] max-h-[600px]"
+      className="w-[380px] max-w-full max-h-[600px]"
       PaperProps={{
         sx: {
           borderRadius: '32px',
@@ -347,7 +347,8 @@ export const AddDocumentWindow = () => {
           onDrop={handleDrop}
           onClick={handleBrowseClick}
           sx={{
-            width: '356px',
+            width: { xs: '100%', sm: '356px' },
+            maxWidth: '100%',
             height: '180px',
             borderRadius: '20px',
             padding: '40px 18px 24px',

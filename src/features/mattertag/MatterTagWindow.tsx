@@ -73,7 +73,7 @@ export function MatterTagWindow() {
     <Dialog
       open={isOpen}
       onClose={handleClose}
-      className="w-[380px] max-h-[600px]"
+      className="w-[380px] max-w-full max-h-[600px]"
       PaperProps={{
         sx: {
           borderRadius: '32px',
@@ -85,6 +85,7 @@ export function MatterTagWindow() {
           display: 'flex',
           flexDirection: 'column',
           gap: '20px',
+          overflowY: 'auto',
         },
       }}
     >
@@ -177,7 +178,8 @@ export function MatterTagWindow() {
             <Paper
               elevation={0}
               sx={{
-                width: '356px',
+                width: { xs: '100%', sm: '356px' },
+                maxWidth: '100%',
                 height: '44px',
                 bgcolor: 'rgba(0, 0, 0, 0.15)',
                 p: '4px',
@@ -201,7 +203,8 @@ export function MatterTagWindow() {
                     height: '36px',
                   },
                   '& .MuiTab-root': {
-                    width: '172px',
+                    width: { xs: '50%', sm: '172px' },
+                    flex: { xs: 1, sm: 'none' },
                     height: '36px',
                     borderRadius: '20px',
                     textTransform: 'none',
