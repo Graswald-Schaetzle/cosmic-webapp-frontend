@@ -31,10 +31,10 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
         weekday: 'text-muted-foreground rounded-md w-8 font-normal text-[0.8rem]',
         week: 'flex w-full mt-2',
         day: cn(
-          'relative h-8 w-8 p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-accent [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected].day-range-end)]:rounded-r-md',
+          'relative h-8 w-8 p-0 text-center text-sm focus-within:relative focus-within:z-20 has-aria-[selected]:bg-accent [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected].day-range-end)]:rounded-r-md',
           props.mode === 'range'
-            ? '[&:has(>.day-range-end)]:rounded-r-md [&:has(>.day-range-start)]:rounded-l-md first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md'
-            : '[&:has([aria-selected])]:rounded-md'
+            ? '[&:has(>.day-range-end)]:rounded-r-md [&:has(>.day-range-start)]:rounded-l-md first:has-aria-[selected]:rounded-l-md last:has-aria-[selected]:rounded-r-md'
+            : 'has-aria-[selected]:rounded-md'
         ),
         day_button: cn(
           buttonVariants({ variant: 'ghost' }),
@@ -43,7 +43,7 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
         range_start: 'day-range-start',
         range_end: 'day-range-end',
         selected:
-          '[&>button]:bg-slate-200 [&>button]:text-slate-900 [&>button]:hover:bg-slate-200 [&>button]:hover:text-slate-900 [&>button]:focus:bg-slate-200 [&>button]:focus:text-slate-900 [&>button]:border [&>button]:border-black',
+          '[&>button]:bg-slate-200 [&>button]:text-slate-900 hover:[&>button]:bg-slate-200 hover:[&>button]:text-slate-900 focus:[&>button]:bg-slate-200 focus:[&>button]:text-slate-900 [&>button]:border [&>button]:border-black',
         today: 'bg-accent text-accent-foreground rounded-md',
         outside:
           'day-outside text-muted-foreground aria-selected:bg-accent/50 aria-selected:text-muted-foreground',

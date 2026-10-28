@@ -1,6 +1,101 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@plugin 'tailwindcss-animate';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-success: #34c759;
+  --color-warning: #ff9500;
+  --color-danger: #ff3b30;
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@utility matterport-iframe {
+  @apply w-full h-full;
+}
+
+@utility create-task-button {
+  @apply fixed z-200 w-12 h-12 rounded-full bg-blue-500 text-white flex items-center justify-center hover:bg-blue-600 transition-colors shadow-lg;
+}
+
+@utility task-modal {
+  @apply fixed inset-0 bg-black/50 z-50;
+}
+
+@utility task-modal-content {
+  @apply fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] p-5 rounded-[32px] bg-gray-800/90 backdrop-blur-xs flex flex-col gap-5 z-200;
+}
+
+@utility task-input {
+  @apply w-full h-10 px-4 rounded-full bg-gray-700/50 text-white placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500;
+}
+
+@utility task-textarea {
+  @apply w-full h-24 px-4 py-2 rounded-2xl bg-gray-700/50 text-white placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500 resize-none;
+}
+
+@utility task-select {
+  @apply w-full h-10 px-4 rounded-full bg-gray-700/50 text-white placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500;
+}
+
+@utility task-button {
+  @apply w-full h-12 rounded-full bg-blue-500 text-white font-semibold hover:bg-blue-600 transition-colors;
+}
 
 @layer base {
   html,
@@ -106,40 +201,6 @@
     --chart-4: 280 65% 60%;
 
     --chart-5: 340 75% 55%;
-  }
-}
-
-@layer components {
-  .matterport-iframe {
-    @apply w-full h-full;
-  }
-
-  .create-task-button {
-    @apply fixed z-[200] w-12 h-12 rounded-full bg-blue-500 text-white flex items-center justify-center hover:bg-blue-600 transition-colors shadow-lg;
-  }
-
-  .task-modal {
-    @apply fixed inset-0 bg-black/50 z-50;
-  }
-
-  .task-modal-content {
-    @apply fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] p-5 rounded-[32px] bg-gray-800/90 backdrop-blur-sm flex flex-col gap-5 z-[200];
-  }
-
-  .task-input {
-    @apply w-full h-10 px-4 rounded-full bg-gray-700/50 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500;
-  }
-
-  .task-textarea {
-    @apply w-full h-24 px-4 py-2 rounded-2xl bg-gray-700/50 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none;
-  }
-
-  .task-select {
-    @apply w-full h-10 px-4 rounded-full bg-gray-700/50 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500;
-  }
-
-  .task-button {
-    @apply w-full h-12 rounded-full bg-blue-500 text-white font-semibold hover:bg-blue-600 transition-colors;
   }
 }
 

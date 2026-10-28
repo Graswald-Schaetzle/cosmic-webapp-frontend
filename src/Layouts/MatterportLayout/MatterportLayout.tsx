@@ -7,7 +7,7 @@ interface MatterportLayoutProps {
 
 export function MatterportLayout({ children }: MatterportLayoutProps) {
   return (
-    <div className="relative w-full h-[100dvh]">
+    <div className="relative w-full h-dvh">
       <Matterport>{children}</Matterport>
     </div>
   );
