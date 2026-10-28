@@ -40,17 +40,19 @@ export const RecurringModal = ({
         vertical: 'top',
         horizontal: 'left',
       }}
-      PaperProps={{
-        sx: {
-          mt: '-50px',
-          ml: '20px',
-          borderRadius: '20px',
-          padding: '8px',
-          backgroundColor: 'rgba(46, 46, 46, 0.35)',
-          backdropFilter: 'blur(100px)',
-          WebkitBackdropFilter: 'blur(100px)',
-          display: 'flex',
-          flexDirection: 'column',
+      slotProps={{
+        paper: {
+          sx: {
+            mt: '-50px',
+            ml: '20px',
+            borderRadius: '20px',
+            padding: '8px',
+            backgroundColor: 'rgba(46, 46, 46, 0.35)',
+            backdropFilter: 'blur(100px)',
+            WebkitBackdropFilter: 'blur(100px)',
+            display: 'flex',
+            flexDirection: 'column',
+          },
         },
       }}
     >

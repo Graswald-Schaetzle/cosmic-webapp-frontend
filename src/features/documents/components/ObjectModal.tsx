@@ -61,20 +61,22 @@ export const ObjectModal = ({
         vertical: 'top',
         horizontal: 'left',
       }}
-      PaperProps={{
-        sx: {
-          mt: marginTop || '-50px',
-          ml: marginLeft || '20px',
-          borderRadius: '20px',
-          padding: '0 8px',
-          backgroundColor: 'rgba(46, 46, 46, 0.35)',
-          backdropFilter: 'blur(100px)',
-          WebkitBackdropFilter: 'blur(100px)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px',
-          maxHeight: '300px',
-          overflow: 'hidden',
+      slotProps={{
+        paper: {
+          sx: {
+            mt: marginTop || '-50px',
+            ml: marginLeft || '20px',
+            borderRadius: '20px',
+            padding: '0 8px',
+            backgroundColor: 'rgba(46, 46, 46, 0.35)',
+            backdropFilter: 'blur(100px)',
+            WebkitBackdropFilter: 'blur(100px)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            maxHeight: '300px',
+            overflow: 'hidden',
+          },
         },
       }}
     >
@@ -133,15 +135,36 @@ export const ObjectModal = ({
         }}
       >
         {isLoading ? (
-          <Box display="flex" justifyContent="center" alignItems="center" py={2}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              py: 2,
+            }}
+          >
             <CircularProgress size={20} sx={{ color: '#fff' }} />
           </Box>
         ) : error ? (
-          <Box display="flex" justifyContent="center" alignItems="center" py={2}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              py: 2,
+            }}
+          >
             <Box sx={{ color: '#fff', fontSize: '12px' }}>Error loading locations</Box>
           </Box>
         ) : filteredOptions.length === 0 ? (
-          <Box display="flex" justifyContent="center" alignItems="center" py={2}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              py: 2,
+            }}
+          >
             <Box sx={{ color: '#fff', fontSize: '12px' }}>No locations found</Box>
           </Box>
         ) : (

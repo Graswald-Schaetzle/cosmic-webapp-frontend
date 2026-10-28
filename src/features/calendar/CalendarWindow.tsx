@@ -38,9 +38,11 @@ export function CalendarWindow() {
   const [currentDate, setCurrentDate] = useState(today);
 
   // Fetch tasks from API, scoped to active space
-  const { data: tasksResponse, isLoading: tasksLoading, refetch } = useGetTasksQuery(
-    activeSpaceId ? { space_id: activeSpaceId } : undefined
-  );
+  const {
+    data: tasksResponse,
+    isLoading: tasksLoading,
+    refetch,
+  } = useGetTasksQuery(activeSpaceId ? { space_id: activeSpaceId } : undefined);
 
   // Refetch tasks every time the modal opens
   useEffect(() => {
@@ -551,7 +553,9 @@ export function CalendarWindow() {
       </Box>
 
       {/* Content */}
-      <Box sx={{ display: 'flex', gap: '20px', flex: 1, flexDirection: { xs: 'column', md: 'row' } }}>
+      <Box
+        sx={{ display: 'flex', gap: '20px', flex: 1, flexDirection: { xs: 'column', md: 'row' } }}
+      >
         {/* Left side */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
           {/* Month selector */}
@@ -904,12 +908,14 @@ export function CalendarWindow() {
                     >
                       <ListItemText
                         primary={task.name}
-                        primaryTypographyProps={{
-                          sx: {
-                            fontSize: '14px',
-                            fontWeight: 500,
-                            lineHeight: '22px',
-                            color: '#FFFFFF',
+                        slotProps={{
+                          primary: {
+                            sx: {
+                              fontSize: '14px',
+                              fontWeight: 500,
+                              lineHeight: '22px',
+                              color: '#FFFFFF',
+                            },
                           },
                         }}
                       />

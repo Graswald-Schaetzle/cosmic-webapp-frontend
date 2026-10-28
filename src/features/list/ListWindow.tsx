@@ -253,7 +253,14 @@ export const ListWindow = () => {
       }}
     >
       {/* Header */}
-      <Box display="flex" alignItems="center" gap={1} className="px-[18px]">
+      <Box
+        className="px-[18px]"
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+        }}
+      >
         {/* Back/Delete Icon */}
         <IconButton
           onClick={isEditMode ? handleDelete : handleClose}
@@ -279,7 +286,14 @@ export const ListWindow = () => {
           />
         </IconButton>
         {/* List Name */}
-        <Box display="flex" alignItems="center" flex={1} justifyContent="center">
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            flex: 1,
+            justifyContent: 'center',
+          }}
+        >
           {isEditMode ? (
             <TextField
               value={editName}
@@ -493,18 +507,21 @@ export const ListWindow = () => {
                 >
                   <ListItemText
                     primary={task.title}
-                    primaryTypographyProps={{
-                      sx: {
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        lineHeight: '22px',
-                        color: '#FFFFFF',
+                    slotProps={{
+                      primary: {
+                        sx: {
+                          fontSize: '14px',
+                          fontWeight: 500,
+                          lineHeight: '22px',
+                          color: '#FFFFFF',
+                        },
                       },
-                    }}
-                    secondaryTypographyProps={{
-                      sx: {
-                        fontSize: '12px',
-                        color: 'rgba(255, 255, 255, 0.7)',
+
+                      secondary: {
+                        sx: {
+                          fontSize: '12px',
+                          color: 'rgba(255, 255, 255, 0.7)',
+                        },
                       },
                     }}
                   />
@@ -544,11 +561,13 @@ export const ListWindow = () => {
             <ListItem>
               <ListItemText
                 primary="No tasks in this list"
-                primaryTypographyProps={{
-                  sx: {
-                    fontSize: '14px',
-                    color: 'rgba(255, 255, 255, 0.5)',
-                    textAlign: 'center',
+                slotProps={{
+                  primary: {
+                    sx: {
+                      fontSize: '14px',
+                      color: 'rgba(255, 255, 255, 0.5)',
+                      textAlign: 'center',
+                    },
                   },
                 }}
               />

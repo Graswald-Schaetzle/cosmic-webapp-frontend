@@ -303,7 +303,14 @@ export const DocumentInfoWindow = () => {
       }}
     >
       {/* Header */}
-      <Box display="flex" alignItems="center" gap={1} className="px-[18px]">
+      <Box
+        className="px-[18px]"
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+        }}
+      >
         <IconButton
           onClick={isEditMode ? handleDelete : handleBack}
           size="small"
@@ -327,7 +334,14 @@ export const DocumentInfoWindow = () => {
             style={{ width: isEditMode ? '24px' : '40px', height: isEditMode ? '24px' : '40px' }}
           />
         </IconButton>
-        <Box display="flex" alignItems="center" flex={1} justifyContent="center">
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            flex: 1,
+            justifyContent: 'center',
+          }}
+        >
           {isEditMode ? (
             <TextField
               value={tempDocumentName}
@@ -605,18 +619,6 @@ export const DocumentInfoWindow = () => {
                 onChange={handlePageInputChange}
                 onBlur={handlePageInputBlur}
                 disabled={isLoading || isFileLoading}
-                inputProps={{
-                  style: {
-                    width: '55px',
-                    height: '40px',
-                    padding: '8px 24px',
-                    borderRadius: '500px',
-                    color: '#FFFFFF',
-                    textAlign: 'center',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                  },
-                }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     bgcolor: 'transparent',
@@ -628,6 +630,20 @@ export const DocumentInfoWindow = () => {
                     },
                     '&.Mui-focused fieldset': {
                       border: 'none',
+                    },
+                  },
+                }}
+                slotProps={{
+                  htmlInput: {
+                    style: {
+                      width: '55px',
+                      height: '40px',
+                      padding: '8px 24px',
+                      borderRadius: '500px',
+                      color: '#FFFFFF',
+                      textAlign: 'center',
+                      fontSize: '14px',
+                      fontWeight: 500,
                     },
                   },
                 }}

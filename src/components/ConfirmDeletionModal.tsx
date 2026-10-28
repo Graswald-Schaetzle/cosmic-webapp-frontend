@@ -74,7 +74,14 @@ export const ConfirmDeletionModal = ({
       }}
     >
       {/* Header */}
-      <Box display="flex" alignItems="center" gap={1} className="px-[18px]">
+      <Box
+        className="px-[18px]"
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+        }}
+      >
         <IconButton
           onClick={handleBack}
           disabled={isDeleting}
@@ -102,7 +109,14 @@ export const ConfirmDeletionModal = ({
             style={{ width: '40px', height: '40px' }}
           />
         </IconButton>
-        <Box display="flex" alignItems="center" flex={1} justifyContent="center">
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            flex: 1,
+            justifyContent: 'center',
+          }}
+        >
           <Typography
             sx={{
               fontWeight: 700,

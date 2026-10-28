@@ -96,18 +96,20 @@ export const MonthYearPickerModal = ({
         vertical: 'top',
         horizontal: 'right',
       }}
-      PaperProps={{
-        sx: {
-          mt: '-56px',
-          ml: '-21px',
-          borderRadius: '32px',
-          padding: '0 8px',
-          backgroundColor: 'rgba(46, 46, 46, 0.35)',
-          backdropFilter: 'blur(100px)',
-          WebkitBackdropFilter: 'blur(100px)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '16px',
+      slotProps={{
+        paper: {
+          sx: {
+            mt: '-56px',
+            ml: '-21px',
+            borderRadius: '32px',
+            padding: '0 8px',
+            backgroundColor: 'rgba(46, 46, 46, 0.35)',
+            backdropFilter: 'blur(100px)',
+            WebkitBackdropFilter: 'blur(100px)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+          },
         },
       }}
     >

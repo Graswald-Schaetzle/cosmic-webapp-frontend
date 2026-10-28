@@ -41,9 +41,11 @@ export const AddTaskToListModal = ({
   const [searchQuery, setSearchQuery] = useState('');
 
   // API hooks
-  const { data: tasksResponse, isLoading, error } = useGetTasksQuery(
-    activeSpaceId ? { space_id: activeSpaceId } : undefined
-  );
+  const {
+    data: tasksResponse,
+    isLoading,
+    error,
+  } = useGetTasksQuery(activeSpaceId ? { space_id: activeSpaceId } : undefined);
   const { data: floorsData } = useGetFloorsQuery();
   const { data: roomsData } = useGetRoomsQuery();
   const { locations } = useLocations();
@@ -292,7 +294,14 @@ export const AddTaskToListModal = ({
       }}
     >
       {/* Header */}
-      <Box display="flex" alignItems="center" gap={1} className="px-[18px]">
+      <Box
+        className="px-[18px]"
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+        }}
+      >
         {/* Back Icon */}
         <IconButton
           onClick={handleClose}
@@ -396,13 +405,6 @@ export const AddTaskToListModal = ({
           placeholder="Search tasks..."
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ color: 'rgba(255, 255, 255, 0.7)' }} />
-              </InputAdornment>
-            ),
-          }}
           sx={{
             '& .MuiOutlinedInput-root': {
               color: '#fff',
@@ -424,6 +426,15 @@ export const AddTaskToListModal = ({
                 color: 'rgba(255, 255, 255, 0.7)',
                 opacity: 1,
               },
+            },
+          }}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: 'rgba(255, 255, 255, 0.7)' }} />
+                </InputAdornment>
+              ),
             },
           }}
         />
@@ -576,11 +587,13 @@ export const AddTaskToListModal = ({
                 >
                   <ListItemText
                     primary={task.title}
-                    primaryTypographyProps={{
-                      sx: {
-                        fontSize: '14px',
-                        lineHeight: '22px',
-                        color: '#FFFFFF',
+                    slotProps={{
+                      primary: {
+                        sx: {
+                          fontSize: '14px',
+                          lineHeight: '22px',
+                          color: '#FFFFFF',
+                        },
                       },
                     }}
                   />

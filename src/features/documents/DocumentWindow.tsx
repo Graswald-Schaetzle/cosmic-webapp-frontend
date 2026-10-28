@@ -42,12 +42,9 @@ export function DocumentsWindow() {
     data: documentsResponse,
     isLoading,
     error,
-  } = useGetAllDocumentsQuery(
-    activeSpaceId ? { space_id: activeSpaceId } : {},
-    {
-      skip: !isOpen,
-    }
-  );
+  } = useGetAllDocumentsQuery(activeSpaceId ? { space_id: activeSpaceId } : {}, {
+    skip: !isOpen,
+  });
 
   // Fetch tasks from API
   const { data: tasksResponse } = useGetTasksQuery(
@@ -646,12 +643,14 @@ export function DocumentsWindow() {
                                   >
                                     <ListItemText
                                       primary={doc.name}
-                                      primaryTypographyProps={{
-                                        sx: {
-                                          fontSize: '14px',
-                                          fontWeight: 500,
-                                          lineHeight: '22px',
-                                          color: '#FFFFFF',
+                                      slotProps={{
+                                        primary: {
+                                          sx: {
+                                            fontSize: '14px',
+                                            fontWeight: 500,
+                                            lineHeight: '22px',
+                                            color: '#FFFFFF',
+                                          },
                                         },
                                       }}
                                     />

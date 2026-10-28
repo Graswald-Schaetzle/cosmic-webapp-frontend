@@ -280,7 +280,14 @@ export const AddDocumentWindow = () => {
       }}
     >
       {/* Header */}
-      <Box display="flex" alignItems="center" gap={1} className="px-[18px]">
+      <Box
+        className="px-[18px]"
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+        }}
+      >
         <IconButton
           onClick={handleBack}
           size="small"
@@ -304,7 +311,14 @@ export const AddDocumentWindow = () => {
             style={{ width: '40px', height: '40px' }}
           />
         </IconButton>
-        <Box display="flex" alignItems="center" flex={1} justifyContent="center">
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            flex: 1,
+            justifyContent: 'center',
+          }}
+        >
           <Typography
             sx={{
               fontSize: '20px',
@@ -497,7 +511,14 @@ export const AddDocumentWindow = () => {
           />
 
           {/* Object selection */}
-          <Box height="42px" display="flex" alignItems="center" justifyContent="space-between">
+          <Box
+            sx={{
+              height: '42px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
             {/* Left side */}
             <Box
               sx={{
@@ -507,7 +528,13 @@ export const AddDocumentWindow = () => {
                 height: '100%',
               }}
             >
-              <Typography color="#fff" sx={{ fontSize: 16, fontWeight: 500 }}>
+              <Typography
+                sx={{
+                  color: '#fff',
+                  fontSize: 16,
+                  fontWeight: 500,
+                }}
+              >
                 Object
               </Typography>
             </Box>
@@ -540,7 +567,14 @@ export const AddDocumentWindow = () => {
               }}
             >
               {selectedObject ? `${selectedObject.name}` : 'Select Object'}
-              <Box component="span" ml={1} display="flex" alignItems="center">
+              <Box
+                component="span"
+                sx={{
+                  ml: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
                 {preSelectedLocation ? (
                   <Typography
                     sx={{

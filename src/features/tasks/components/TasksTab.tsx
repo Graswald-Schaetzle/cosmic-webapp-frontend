@@ -374,11 +374,13 @@ export const TasksTab = ({
                 >
                   <ListItemText
                     primary={task.title}
-                    primaryTypographyProps={{
-                      sx: {
-                        fontSize: '14px',
-                        lineHeight: '22px',
-                        color: '#FFFFFF',
+                    slotProps={{
+                      primary: {
+                        sx: {
+                          fontSize: '14px',
+                          lineHeight: '22px',
+                          color: '#FFFFFF',
+                        },
                       },
                     }}
                   />

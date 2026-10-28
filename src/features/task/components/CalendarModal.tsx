@@ -64,19 +64,21 @@ export const CalendarModal = ({
         vertical: 'top',
         horizontal: 'right',
       }}
-      PaperProps={{
-        sx: {
-          mt: '-60px',
-          ml: '-80px',
-          borderRadius: '32px',
-          padding: '4px 12px',
-          backgroundColor: 'rgba(46, 46, 46, 0.35)',
-          backdropFilter: 'blur(100px)',
-          WebkitBackdropFilter: 'blur(100px)',
-          boxShadow: 'none',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '20px',
+      slotProps={{
+        paper: {
+          sx: {
+            mt: '-60px',
+            ml: '-80px',
+            borderRadius: '32px',
+            padding: '4px 12px',
+            backgroundColor: 'rgba(46, 46, 46, 0.35)',
+            backdropFilter: 'blur(100px)',
+            WebkitBackdropFilter: 'blur(100px)',
+            boxShadow: 'none',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px',
+          },
         },
       }}
     >

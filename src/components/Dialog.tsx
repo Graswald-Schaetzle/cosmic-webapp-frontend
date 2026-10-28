@@ -1,5 +1,10 @@
 import React from 'react';
-import { Dialog as MuiDialog, DialogProps as MuiDialogProps, Slide } from '@mui/material';
+import {
+  Dialog as MuiDialog,
+  DialogProps as MuiDialogProps,
+  PaperProps as MuiPaperProps,
+  Slide,
+} from '@mui/material';
 import { TransitionProps } from '@mui/material/transitions';
 import { useIsMobile } from '../hooks/useIsMobile';
 
@@ -8,7 +13,7 @@ interface DialogProps extends Omit<MuiDialogProps, 'open' | 'onClose'> {
   onClose: () => void;
   className?: string;
   children: React.ReactNode;
-  PaperProps?: MuiDialogProps['PaperProps'];
+  PaperProps?: MuiPaperProps;
 }
 
 const SlideUp = React.forwardRef(function SlideUp(
@@ -48,18 +53,22 @@ export const Dialog: React.FC<DialogProps> = ({
       disableEnforceFocus
       hideBackdrop
       fullScreen={isMobile}
-      TransitionComponent={isMobile ? SlideUp : undefined}
       {...props}
-      PaperProps={{
-        className: className,
-        ...PaperProps,
-        sx: {
-          margin: 2,
-          position: 'relative',
-          // MUI >= 7.2 focuses the dialog paper itself; keep the previous look without a focus ring.
-          outline: 'none',
-          ...PaperProps?.sx,
-          ...mobilePaperSx,
+      slots={{
+        transition: isMobile ? SlideUp : undefined,
+      }}
+      slotProps={{
+        paper: {
+          className: className,
+          ...PaperProps,
+          sx: {
+            margin: 2,
+            position: 'relative',
+            // MUI >= 7.2 focuses the dialog paper itself; keep the previous look without a focus ring.
+            outline: 'none',
+            ...PaperProps?.sx,
+            ...mobilePaperSx,
+          },
         },
       }}
     >

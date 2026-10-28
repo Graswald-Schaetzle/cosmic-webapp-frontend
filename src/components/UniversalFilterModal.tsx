@@ -6,14 +6,7 @@ import { useGetFloorsQuery, useGetRoomsQuery } from '../api/locationApi/location
 import { useGetTasksQuery } from '../api/tasks/taskApi';
 
 export type FilterType =
-  | 'Status'
-  | 'Object'
-  | 'Floor'
-  | 'Room'
-  | 'Task'
-  | 'Due date'
-  | 'Assignee'
-  | 'Task type';
+  'Status' | 'Object' | 'Floor' | 'Room' | 'Task' | 'Due date' | 'Assignee' | 'Task type';
 
 interface UniversalFilterModalProps {
   isOpen: boolean;
@@ -224,22 +217,24 @@ export const UniversalFilterModal = ({
         onClose={onClose}
         anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-        PaperProps={{
-          sx: {
-            mt: '-20px',
-            ml: '25px',
-            borderRadius: '20px',
-            padding: '0 8px',
-            backgroundColor: 'rgba(46, 46, 46, 0.35)',
-            backdropFilter: 'blur(100px)',
-            WebkitBackdropFilter: 'blur(100px)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-            maxHeight: '400px',
-            overflow: 'hidden',
-            minWidth: '150px',
-            maxWidth: '150px',
+        slotProps={{
+          paper: {
+            sx: {
+              mt: '-20px',
+              ml: '25px',
+              borderRadius: '20px',
+              padding: '0 8px',
+              backgroundColor: 'rgba(46, 46, 46, 0.35)',
+              backdropFilter: 'blur(100px)',
+              WebkitBackdropFilter: 'blur(100px)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              maxHeight: '400px',
+              overflow: 'hidden',
+              minWidth: '150px',
+              maxWidth: '150px',
+            },
           },
         }}
       >
@@ -322,21 +317,23 @@ export const UniversalFilterModal = ({
               ? { vertical: 'top', horizontal: 'left' }
               : { vertical: 'top', horizontal: 'left' }
           }
-          PaperProps={{
-            sx: {
-              mt: secondPanelPosition === 'bottom' ? '10px' : '-20px',
-              ml: secondPanelPosition === 'bottom' ? '25px' : '185px', // 150px (left) + 35px gap
-              borderRadius: '20px',
-              padding: '0 8px',
-              backgroundColor: 'rgba(46, 46, 46, 0.35)',
-              backdropFilter: 'blur(100px)',
-              WebkitBackdropFilter: 'blur(100px)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px',
-              maxHeight: '400px',
-              overflow: 'hidden',
-              minWidth: '200px',
+          slotProps={{
+            paper: {
+              sx: {
+                mt: secondPanelPosition === 'bottom' ? '10px' : '-20px',
+                ml: secondPanelPosition === 'bottom' ? '25px' : '185px', // 150px (left) + 35px gap
+                borderRadius: '20px',
+                padding: '0 8px',
+                backgroundColor: 'rgba(46, 46, 46, 0.35)',
+                backdropFilter: 'blur(100px)',
+                WebkitBackdropFilter: 'blur(100px)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                maxHeight: '400px',
+                overflow: 'hidden',
+                minWidth: '200px',
+              },
             },
           }}
         >
@@ -400,7 +397,14 @@ export const UniversalFilterModal = ({
             }}
           >
             {isLoading ? (
-              <Box display="flex" justifyContent="center" alignItems="center" py={2}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  py: 2,
+                }}
+              >
                 <CircularProgress size={20} sx={{ color: '#fff' }} />
               </Box>
             ) : filteredOptions.length === 0 ? (

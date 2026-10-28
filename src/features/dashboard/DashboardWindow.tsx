@@ -484,12 +484,14 @@ export const DashboardWindow = () => {
                       >
                         <ListItemText
                           primary={notification.name}
-                          primaryTypographyProps={{
-                            sx: {
-                              fontSize: '14px',
-                              fontWeight: 500,
-                              lineHeight: '22px',
-                              color: '#FFFFFF',
+                          slotProps={{
+                            primary: {
+                              sx: {
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                lineHeight: '22px',
+                                color: '#FFFFFF',
+                              },
                             },
                           }}
                         />
@@ -622,12 +624,14 @@ export const DashboardWindow = () => {
                         </Box>
                         <ListItemText
                           primary={activity.name}
-                          primaryTypographyProps={{
-                            sx: {
-                              fontSize: '14px',
-                              fontWeight: 500,
-                              lineHeight: '22px',
-                              color: '#FFFFFF',
+                          slotProps={{
+                            primary: {
+                              sx: {
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                lineHeight: '22px',
+                                color: '#FFFFFF',
+                              },
                             },
                           }}
                         />

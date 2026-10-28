@@ -181,12 +181,14 @@ export const ObjectInfoTab = ({ tag, handleClose, locationData }: ObjectInfoTabP
                 >
                   <ListItemText
                     primary={task.name}
-                    primaryTypographyProps={{
-                      sx: {
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        lineHeight: '22px',
-                        color: '#FFFFFF',
+                    slotProps={{
+                      primary: {
+                        sx: {
+                          fontSize: '14px',
+                          fontWeight: 500,
+                          lineHeight: '22px',
+                          color: '#FFFFFF',
+                        },
                       },
                     }}
                   />
@@ -209,11 +211,13 @@ export const ObjectInfoTab = ({ tag, handleClose, locationData }: ObjectInfoTabP
             <ListItem>
               <ListItemText
                 primary="No tasks found"
-                primaryTypographyProps={{
-                  sx: {
-                    fontSize: '14px',
-                    color: 'rgba(255, 255, 255, 0.5)',
-                    textAlign: 'center',
+                slotProps={{
+                  primary: {
+                    sx: {
+                      fontSize: '14px',
+                      color: 'rgba(255, 255, 255, 0.5)',
+                      textAlign: 'center',
+                    },
                   },
                 }}
               />
