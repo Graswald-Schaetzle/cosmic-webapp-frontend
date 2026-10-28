@@ -51,6 +51,7 @@ export interface JobOutputResponse {
   ply_url?: string;
   splat_url?: string;
   spz_url?: string;
+  collision_url?: string;
 }
 
 // Helper to get a human-readable status label

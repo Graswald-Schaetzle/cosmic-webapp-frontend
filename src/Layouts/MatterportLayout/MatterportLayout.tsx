@@ -1,5 +1,5 @@
 import React from 'react';
-import Matterport from './components/Matterport.tsx';
+import { ViewerSwitch } from '../../features/splat/ViewerSwitch';
 
 interface MatterportLayoutProps {
   children?: React.ReactNode;
@@ -8,7 +8,7 @@ interface MatterportLayoutProps {
 export function MatterportLayout({ children }: MatterportLayoutProps) {
   return (
     <div className="relative w-full h-dvh">
-      <Matterport>{children}</Matterport>
+      <ViewerSwitch>{children}</ViewerSwitch>
     </div>
   );
 }

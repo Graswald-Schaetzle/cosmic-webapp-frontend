@@ -114,7 +114,11 @@ export const SpaceViewerWindow = () => {
             </Typography>
           </Box>
         )}
-        <LazySplatViewer splatUrl={splatUrl!} onClose={handleClose} />
+        <LazySplatViewer
+          splatUrl={splatUrl!}
+          collisionUrl={jobOutput?.collision_url}
+          onClose={handleClose}
+        />
       </Box>
     );
   }
