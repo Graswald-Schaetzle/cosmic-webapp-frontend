@@ -5,7 +5,7 @@ import { closeReconstructionWindow } from '../../store/modalSlice';
 import { Box, Typography, IconButton, Button, TextField, LinearProgress } from '@mui/material';
 import ThreeDRotationIcon from '@mui/icons-material/ThreeDRotation';
 import { useCallback, useState } from 'react';
-import { SplatViewer } from './SplatViewer';
+import { LazySplatViewer } from './LazySplatViewer';
 import {
   useCreateJobMutation,
   useStartJobMutation,
@@ -755,7 +755,7 @@ const JobDetail = ({ jobId, onCancel }: { jobId: number; onCancel: (id: number) 
 
       {/* Splat Viewer overlay */}
       {splatViewerUrl && (
-        <SplatViewer splatUrl={splatViewerUrl} onClose={() => setSplatViewerUrl(null)} />
+        <LazySplatViewer splatUrl={splatViewerUrl} onClose={() => setSplatViewerUrl(null)} />
       )}
 
       {/* Cancel button */}
