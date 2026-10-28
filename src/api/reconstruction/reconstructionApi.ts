@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import type { SpaceFrame, SplatPlacement } from '../../features/splat/spaceFrame';
 
 // Types for reconstruction jobs
 export type ReconstructionStatus =
@@ -48,7 +49,7 @@ export interface CreateJobRequest {
 
 /** Per-space view settings, in the splat's own coordinates (see spaces.splat_view). */
 export interface SplatView {
-  /** Euler angles (x, y, z) in degrees, applied to the splat and the collision mesh. */
+  /** Legacy: replaced by space_frame once a space has one. Euler angles (x, y, z) in degrees. */
   rotation_deg?: [number, number, number];
   /** Where the camera starts (after the rotation): eye position and the point it looks at. */
   start?: { position: [number, number, number]; target: [number, number, number] };
@@ -61,6 +62,8 @@ export interface JobOutputResponse {
   spz_url?: string;
   collision_url?: string;
   splat_view?: SplatView | null;
+  /** How the splat sits in the space frame; null for spaces that were never calibrated. */
+  space_frame?: SpaceFrame | null;
 }
 
 // Helper to get a human-readable status label
@@ -105,8 +108,7 @@ export function getProgressPercent(status: ReconstructionStatus): number {
 }
 
 const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL ||
-  'https://cosmic-backend-701520654148.europe-west4.run.app'
+  import.meta.env.VITE_API_BASE_URL || 'https://cosmic-backend-701520654148.europe-west4.run.app'
 ).trim();
 
 export const reconstructionApi = createApi({
@@ -121,7 +123,7 @@ export const reconstructionApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ['ReconstructionJobs'],
+  tagTypes: ['ReconstructionJobs', 'JobOutput'],
   endpoints: builder => ({
     // Create a new reconstruction job (returns upload URL)
     createJob: builder.mutation<{ data: ReconstructionJob }, CreateJobRequest>({
@@ -170,6 +172,21 @@ export const reconstructionApi = createApi({
         method: 'GET',
       }),
       transformResponse: (response: { data: JobOutputResponse }) => response.data,
+      providesTags: ['JobOutput'],
+    }),
+
+    // Calibrate how the space's splat sits in the space frame. The backend moves the space's
+    // tags with the model, so locations have to be reloaded afterwards.
+    setSpaceFrame: builder.mutation<
+      { data: SpaceFrame },
+      { spaceId: number; splat: SplatPlacement; expectedVersion: number }
+    >({
+      query: ({ spaceId, splat, expectedVersion }) => ({
+        url: `/spaces/${spaceId}/frame`,
+        method: 'PUT',
+        body: { splat, expected_version: expectedVersion },
+      }),
+      invalidatesTags: ['JobOutput'],
     }),
 
     // Cancel a job
@@ -189,5 +206,6 @@ export const {
   useGetJobQuery,
   useListJobsQuery,
   useGetJobOutputQuery,
+  useSetSpaceFrameMutation,
   useCancelJobMutation,
 } = reconstructionApi;
