@@ -31,7 +31,7 @@ export function Calendar({ width = '240px', date, onDateChange }: CalendarProps)
         onSelect={handleDateSelect}
         month={month}
         onMonthChange={setMonth}
-        initialFocus
+        autoFocus
         className="rounded-md border-slate-800"
       />
     </div>
