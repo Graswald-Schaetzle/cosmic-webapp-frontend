@@ -6,6 +6,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { SparkRenderer, SplatMesh, SplatFileType } from '@sparkjsdev/spark';
 import { LocationItem } from '../../api/locationApi/locationApi';
 import { SplatView } from '../../api/reconstruction/reconstructionApi';
+import { SpaceFrame, applyPlacementTo, placementToMatrix, resolvePlacement } from './spaceFrame';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { VirtualJoystick } from './VirtualJoystick';
 import { WalkControls } from './WalkControls';
@@ -43,6 +44,7 @@ export const getSplatFileType = (url: string): SplatFileType | undefined => {
 };
 
 const TAG_COLORS = { room: '#FFA600', object: '#3380FF' } as const;
+const CALIBRATION_COLOR = '#00D26A';
 
 function makeMarkerTexture(color: string): THREE.CanvasTexture {
   const size = 96;
@@ -77,8 +79,15 @@ interface SplatSceneProps {
   collisionUrl?: string | null;
   /** Rotate the splat 180 degrees about X (for scenes exported upside down). */
   flipped?: boolean;
-  /** Saved orientation and start camera of the space. */
+  /** Saved start camera of the space (and, for spaces without a frame, the legacy rotation). */
   view?: SplatView | null;
+  /** How the splat and collision mesh sit in the space frame. */
+  frame?: SpaceFrame | null;
+  /**
+   * While set, taps on the model pick points for the calibration instead of walking, and the
+   * points are shown as green markers. Needs a collision mesh to pick on.
+   */
+  calibration?: { points: THREE.Vector3[]; onPick: (point: THREE.Vector3) => void } | null;
   tags?: LocationItem[];
   onTagClick?: (location: LocationItem) => void;
   /** Called when the user confirms the "+" shown after holding still at a spot. */
@@ -97,25 +106,33 @@ export const SplatScene = ({
   collisionUrl,
   flipped = false,
   view,
+  frame,
+  calibration,
   tags = [],
   onTagClick,
   onPlaceTag,
   onLoadingChange,
 }: SplatSceneProps) => {
   const isMobile = useIsMobile();
-  const baseRotation = useMemo(() => {
-    const [x, y, z] = (view?.rotation_deg ?? [0, 0, 0]).map(THREE.MathUtils.degToRad);
-    return new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z, 'XYZ'));
-  }, [view]);
+  const placement = useMemo(() => resolvePlacement(frame, view), [frame, view]);
+  const placementRef = useRef(placement);
+  placementRef.current = placement;
   const containerRef = useRef<HTMLDivElement>(null);
   const splatRef = useRef<SplatMesh | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const markersRef = useRef<Marker[]>([]);
+  const calibrationMarkersRef = useRef<THREE.Sprite[]>([]);
+  // The collision mesh as loaded (without placement) and the placement its collider was built for.
+  const colliderSourceRef = useRef<THREE.Object3D | null>(null);
+  const colliderRef = useRef<Collider | null>(null);
+  const colliderPlacementRef = useRef<typeof placement | null>(null);
   const walkRef = useRef<WalkControls | null>(null);
   const orbitRef = useRef<OrbitControls | null>(null);
   const modeRef = useRef<ViewMode>('orbit');
   const callbacks = useRef({ onTagClick, onPlaceTag, onLoadingChange });
   callbacks.current = { onTagClick, onPlaceTag, onLoadingChange };
+  const calibrationRef = useRef(calibration);
+  calibrationRef.current = calibration;
   const viewRef = useRef(view);
   viewRef.current = view;
 
@@ -182,7 +199,9 @@ export const SplatScene = ({
     orbitRef.current = orbit;
 
     const raycaster = new THREE.Raycaster();
-    let collider: Collider | null = null;
+    colliderRef.current = null;
+    colliderSourceRef.current = null;
+    colliderPlacementRef.current = null;
 
     const pointerToRay = (clientX: number, clientY: number) => {
       const rect = renderer.domElement.getBoundingClientRect();
@@ -195,9 +214,9 @@ export const SplatScene = ({
     };
 
     const pickPoint = (clientX: number, clientY: number): THREE.Vector3 | null => {
-      if (!collider) return null;
+      if (!colliderRef.current) return null;
       const ray = pointerToRay(clientX, clientY);
-      return raycastCollider(collider, ray.origin, ray.direction);
+      return raycastCollider(colliderRef.current, ray.origin, ray.direction);
     };
 
     const projectToClient = (point: THREE.Vector3) => {
@@ -212,6 +231,8 @@ export const SplatScene = ({
 
     const handleTap = (clientX: number, clientY: number) => {
       setIndicator(null);
+      // Calibration picks are handled by the pointer listener below.
+      if (calibrationRef.current) return;
       let nearest: Marker | null = null;
       let nearestDistance = MARKER_PICK_RADIUS_PX;
       for (const marker of markersRef.current) {
@@ -250,7 +271,7 @@ export const SplatScene = ({
       clearDwell();
       dwellAnchor = { x, y };
       dwellTimer = setTimeout(() => {
-        if (walk.isActive) return;
+        if (walk.isActive || calibrationRef.current) return;
         const point = pickPoint(dwellAnchor.x, dwellAnchor.y);
         if (point) {
           const rect = renderer.domElement.getBoundingClientRect();
@@ -284,10 +305,27 @@ export const SplatScene = ({
     dom.addEventListener('pointercancel', onDwellUp);
     dom.addEventListener('pointerleave', clearDwell);
 
+    // Calibration: a tap (press and release without dragging) on the model picks a point.
+    let pressAt: { x: number; y: number } | null = null;
+    const onCalibrationDown = (event: PointerEvent) => {
+      pressAt = { x: event.clientX, y: event.clientY };
+    };
+    const onCalibrationUp = (event: PointerEvent) => {
+      const press = pressAt;
+      pressAt = null;
+      const active = calibrationRef.current;
+      if (!active || !press) return;
+      if (Math.hypot(event.clientX - press.x, event.clientY - press.y) > DWELL_MOVE_PX) return;
+      const point = pickPoint(event.clientX, event.clientY);
+      if (point) active.onPick(point);
+    };
+    dom.addEventListener('pointerdown', onCalibrationDown);
+    dom.addEventListener('pointerup', onCalibrationUp);
+
     const spark = new SparkRenderer({ renderer });
     scene.add(spark);
     const splat = new SplatMesh({ url: splatUrl, fileType: getSplatFileType(splatUrl) });
-    splat.quaternion.copy(baseRotation);
+    applyPlacementTo(splat, placementRef.current);
     splatRef.current = splat;
     scene.add(splat);
 
@@ -295,8 +333,10 @@ export const SplatScene = ({
       ? new GLTFLoader()
           .loadAsync(collisionUrl)
           .then(gltf => {
-            // The collision mesh shares the splat's frame, so it gets the same rotation.
-            gltf.scene.quaternion.copy(baseRotation);
+            // The collision mesh shares the splat's source frame, so it gets the same placement.
+            applyPlacementTo(gltf.scene, placementRef.current);
+            colliderSourceRef.current = gltf.scene;
+            colliderPlacementRef.current = placementRef.current;
             return createCollider(gltf.scene);
           })
           .catch(err => {
@@ -308,13 +348,18 @@ export const SplatScene = ({
     Promise.all([splat.initialized, collisionPromise])
       .then(([, loadedCollider]) => {
         if (cancelled) return;
-        collider = loadedCollider;
+        colliderRef.current = loadedCollider;
         walk.collider = loadedCollider;
         setHasCollider(Boolean(loadedCollider));
 
         const box = splat.getBoundingBox(true);
-        const center = box.getCenter(new THREE.Vector3()).applyQuaternion(baseRotation);
-        const radius = Math.max(box.getSize(new THREE.Vector3()).length() / 2, 0.5);
+        const center = box
+          .getCenter(new THREE.Vector3())
+          .applyMatrix4(placementToMatrix(placementRef.current));
+        const radius = Math.max(
+          (box.getSize(new THREE.Vector3()).length() / 2) * placementRef.current.scale,
+          0.5
+        );
         const start = viewRef.current?.start;
         const startTarget = start ? new THREE.Vector3(...start.target) : null;
         const spot = loadedCollider && !start ? findStartSpot(loadedCollider) : null;
@@ -383,6 +428,7 @@ export const SplatScene = ({
       // Hide markers that are behind walls.
       for (const marker of markersRef.current) {
         let visible = true;
+        const collider = colliderRef.current;
         if (collider) {
           toMarker.subVectors(marker.sprite.position, camera.position);
           const distance = toMarker.length();
@@ -403,6 +449,8 @@ export const SplatScene = ({
       dom.removeEventListener('pointerup', onDwellUp);
       dom.removeEventListener('pointercancel', onDwellUp);
       dom.removeEventListener('pointerleave', clearDwell);
+      dom.removeEventListener('pointerdown', onCalibrationDown);
+      dom.removeEventListener('pointerup', onCalibrationUp);
       resizeObserver.disconnect();
       renderer.setAnimationLoop(null);
       walk.dispose();
@@ -412,6 +460,14 @@ export const SplatScene = ({
         marker.sprite.material.dispose();
       }
       markersRef.current = [];
+      for (const sprite of calibrationMarkersRef.current) {
+        sprite.material.map?.dispose();
+        sprite.material.dispose();
+      }
+      calibrationMarkersRef.current = [];
+      colliderRef.current = null;
+      colliderSourceRef.current = null;
+      colliderPlacementRef.current = null;
       splatRef.current = null;
       sceneRef.current = null;
       walkRef.current = null;
@@ -426,16 +482,60 @@ export const SplatScene = ({
         delete (window as unknown as Record<string, unknown>).__splat;
       }
     };
-  }, [splatUrl, collisionUrl, baseRotation, applyMode]);
+  }, [splatUrl, collisionUrl, applyMode]);
 
-  // Splats exported from some pipelines are upside down; let the user flip them on top of the
-  // space's saved rotation.
+  // Keep the splat and its collision mesh at the space's placement. A calibration changes it
+  // without reloading the files; only the collider's BVH is rebuilt. Splats exported from some
+  // pipelines are upside down; `flipped` lets the user flip them on top of the placement.
   useEffect(() => {
     const splat = splatRef.current;
     if (!splat) return;
-    splat.quaternion.copy(baseRotation);
+    applyPlacementTo(splat, placement);
     if (flipped) splat.quaternion.premultiply(new THREE.Quaternion(1, 0, 0, 0));
-  }, [flipped, isLoading, baseRotation]);
+
+    const source = colliderSourceRef.current;
+    if (source && colliderPlacementRef.current !== placement) {
+      applyPlacementTo(source, placement);
+      const rebuilt = createCollider(source);
+      colliderRef.current = rebuilt;
+      colliderPlacementRef.current = placement;
+      if (walkRef.current) walkRef.current.collider = rebuilt;
+    }
+  }, [flipped, isLoading, placement]);
+
+  // Calibrating happens from the outside: orbit view, no walking, no tag placing.
+  const isCalibrating = Boolean(calibration);
+  useEffect(() => {
+    if (isCalibrating) applyMode('orbit');
+  }, [isCalibrating, applyMode]);
+
+  // Markers for the points picked so far.
+  const calibrationPoints = calibration?.points;
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+    for (const sprite of calibrationMarkersRef.current) {
+      scene.remove(sprite);
+      sprite.material.map?.dispose();
+      sprite.material.dispose();
+    }
+    const texture = makeMarkerTexture(CALIBRATION_COLOR);
+    calibrationMarkersRef.current = (calibrationPoints ?? []).map(point => {
+      const sprite = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: texture,
+          depthTest: false,
+          transparent: true,
+          sizeAttenuation: false,
+        })
+      );
+      sprite.scale.set(0.04, 0.04, 1);
+      sprite.renderOrder = 1000;
+      sprite.position.copy(point);
+      scene.add(sprite);
+      return sprite;
+    });
+  }, [calibrationPoints, isLoading]);
 
   // Keep tag markers in sync with the location list.
   useEffect(() => {
