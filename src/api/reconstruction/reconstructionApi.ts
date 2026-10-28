@@ -46,12 +46,21 @@ export interface CreateJobRequest {
   input_type?: 'video' | 'images';
 }
 
+/** Per-space view settings, in the splat's own coordinates (see spaces.splat_view). */
+export interface SplatView {
+  /** Euler angles (x, y, z) in degrees, applied to the splat and the collision mesh. */
+  rotation_deg?: [number, number, number];
+  /** Where the camera starts (after the rotation): eye position and the point it looks at. */
+  start?: { position: [number, number, number]; target: [number, number, number] };
+}
+
 export interface JobOutputResponse {
   job_id: number;
   ply_url?: string;
   splat_url?: string;
   spz_url?: string;
   collision_url?: string;
+  splat_view?: SplatView | null;
 }
 
 // Helper to get a human-readable status label

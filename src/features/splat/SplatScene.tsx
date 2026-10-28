@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Box, CircularProgress, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { SparkRenderer, SplatMesh, SplatFileType } from '@sparkjsdev/spark';
 import { LocationItem } from '../../api/locationApi/locationApi';
+import { SplatView } from '../../api/reconstruction/reconstructionApi';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { VirtualJoystick } from './VirtualJoystick';
 import { WalkControls } from './WalkControls';
@@ -76,6 +77,8 @@ interface SplatSceneProps {
   collisionUrl?: string | null;
   /** Rotate the splat 180 degrees about X (for scenes exported upside down). */
   flipped?: boolean;
+  /** Saved orientation and start camera of the space. */
+  view?: SplatView | null;
   tags?: LocationItem[];
   onTagClick?: (location: LocationItem) => void;
   /** Called when the user confirms the "+" shown after holding still at a spot. */
@@ -93,12 +96,17 @@ export const SplatScene = ({
   splatUrl,
   collisionUrl,
   flipped = false,
+  view,
   tags = [],
   onTagClick,
   onPlaceTag,
   onLoadingChange,
 }: SplatSceneProps) => {
   const isMobile = useIsMobile();
+  const baseRotation = useMemo(() => {
+    const [x, y, z] = (view?.rotation_deg ?? [0, 0, 0]).map(THREE.MathUtils.degToRad);
+    return new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z, 'XYZ'));
+  }, [view]);
   const containerRef = useRef<HTMLDivElement>(null);
   const splatRef = useRef<SplatMesh | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -108,6 +116,8 @@ export const SplatScene = ({
   const modeRef = useRef<ViewMode>('orbit');
   const callbacks = useRef({ onTagClick, onPlaceTag, onLoadingChange });
   callbacks.current = { onTagClick, onPlaceTag, onLoadingChange };
+  const viewRef = useRef(view);
+  viewRef.current = view;
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -277,13 +287,18 @@ export const SplatScene = ({
     const spark = new SparkRenderer({ renderer });
     scene.add(spark);
     const splat = new SplatMesh({ url: splatUrl, fileType: getSplatFileType(splatUrl) });
+    splat.quaternion.copy(baseRotation);
     splatRef.current = splat;
     scene.add(splat);
 
     const collisionPromise: Promise<Collider | null> = collisionUrl
       ? new GLTFLoader()
           .loadAsync(collisionUrl)
-          .then(gltf => createCollider(gltf.scene))
+          .then(gltf => {
+            // The collision mesh shares the splat's frame, so it gets the same rotation.
+            gltf.scene.quaternion.copy(baseRotation);
+            return createCollider(gltf.scene);
+          })
           .catch(err => {
             console.warn('Collision mesh unavailable, walking without collision:', err);
             return null;
@@ -298,10 +313,22 @@ export const SplatScene = ({
         setHasCollider(Boolean(loadedCollider));
 
         const box = splat.getBoundingBox(true);
-        const center = box.getCenter(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3()).applyQuaternion(baseRotation);
         const radius = Math.max(box.getSize(new THREE.Vector3()).length() / 2, 0.5);
-        const spot = loadedCollider ? findStartSpot(loadedCollider) : null;
-        if (spot && loadedCollider) {
+        const start = viewRef.current?.start;
+        const startTarget = start ? new THREE.Vector3(...start.target) : null;
+        const spot = loadedCollider && !start ? findStartSpot(loadedCollider) : null;
+        if (start && startTarget) {
+          camera.position.set(...start.position);
+          camera.lookAt(startTarget);
+          orbit.target.copy(startTarget);
+          if (loadedCollider) {
+            applyMode('walk');
+          } else {
+            orbit.update();
+            applyMode('orbit');
+          }
+        } else if (spot && loadedCollider) {
           camera.position.set(spot.x, spot.y + 1.6, spot.z);
           walk.syncFromCamera();
           walk.yaw = mostOpenYaw(loadedCollider, camera.position);
@@ -399,12 +426,16 @@ export const SplatScene = ({
         delete (window as unknown as Record<string, unknown>).__splat;
       }
     };
-  }, [splatUrl, collisionUrl, applyMode]);
+  }, [splatUrl, collisionUrl, baseRotation, applyMode]);
 
-  // Splats exported from some pipelines are upside down; let the user flip them.
+  // Splats exported from some pipelines are upside down; let the user flip them on top of the
+  // space's saved rotation.
   useEffect(() => {
-    splatRef.current?.quaternion.set(flipped ? 1 : 0, 0, 0, flipped ? 0 : 1);
-  }, [flipped, isLoading]);
+    const splat = splatRef.current;
+    if (!splat) return;
+    splat.quaternion.copy(baseRotation);
+    if (flipped) splat.quaternion.premultiply(new THREE.Quaternion(1, 0, 0, 0));
+  }, [flipped, isLoading, baseRotation]);
 
   // Keep tag markers in sync with the location list.
   useEffect(() => {
