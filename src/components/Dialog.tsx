@@ -56,6 +56,8 @@ export const Dialog: React.FC<DialogProps> = ({
         sx: {
           margin: 2,
           position: 'relative',
+          // MUI >= 7.2 focuses the dialog paper itself; keep the previous look without a focus ring.
+          outline: 'none',
           ...PaperProps?.sx,
           ...mobilePaperSx,
         },
