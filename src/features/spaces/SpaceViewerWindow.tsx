@@ -117,6 +117,7 @@ export const SpaceViewerWindow = () => {
         <LazySplatViewer
           splatUrl={splatUrl!}
           collisionUrl={jobOutput?.collision_url}
+          view={jobOutput?.splat_view}
           onClose={handleClose}
         />
       </Box>

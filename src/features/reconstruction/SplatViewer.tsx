@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { Box, IconButton, Tooltip } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import FlipIcon from '@mui/icons-material/Flip';
+import { SplatView } from '../../api/reconstruction/reconstructionApi';
 import { SplatScene } from '../splat/SplatScene';
 
 interface SplatViewerProps {
   splatUrl: string;
   collisionUrl?: string | null;
+  view?: SplatView | null;
   onClose?: () => void;
 }
 
@@ -24,7 +26,7 @@ const buttonSx = {
 } as const;
 
 /** Full-screen splat viewer with close and flip buttons, used from the space and job windows. */
-export const SplatViewer = ({ splatUrl, collisionUrl, onClose }: SplatViewerProps) => {
+export const SplatViewer = ({ splatUrl, collisionUrl, view, onClose }: SplatViewerProps) => {
   const [flipped, setFlipped] = useState(false);
 
   return (
@@ -47,7 +49,7 @@ export const SplatViewer = ({ splatUrl, collisionUrl, onClose }: SplatViewerProp
           <FlipIcon />
         </IconButton>
       </Tooltip>
-      <SplatScene splatUrl={splatUrl} collisionUrl={collisionUrl} flipped={flipped} />
+      <SplatScene splatUrl={splatUrl} collisionUrl={collisionUrl} flipped={flipped} view={view} />
     </Box>
   );
 };

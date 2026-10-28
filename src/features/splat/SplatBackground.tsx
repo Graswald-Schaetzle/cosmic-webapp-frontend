@@ -42,6 +42,7 @@ export function SplatBackground({ space, children }: SplatBackgroundProps) {
             key={splatUrl}
             splatUrl={splatUrl}
             collisionUrl={output?.collision_url}
+            view={output?.splat_view}
             tags={tags}
             onTagClick={location => dispatch(openMatterTagWindow(locationToTagPayload(location)))}
             onPlaceTag={position => dispatch(openNewLocationWindow({ position, floorId: '' }))}
