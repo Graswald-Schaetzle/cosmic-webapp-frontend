@@ -6,6 +6,7 @@ export interface SpaceLatestJob {
   status: string;
   output_splat_path: string | null;
   output_spz_path: string | null;
+  output_rad_path?: string | null;
   created_at: string;
 }
 

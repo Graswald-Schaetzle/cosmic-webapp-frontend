@@ -14,7 +14,11 @@ const storageKey = (spaceId: number) => `cosmic_viewer_${spaceId}`;
 
 export const hasSplat = (space: Space | null): boolean =>
   space?.latest_job?.status === 'completed' &&
-  Boolean(space.latest_job.output_spz_path || space.latest_job.output_splat_path);
+  Boolean(
+    space.latest_job.output_spz_path ||
+    space.latest_job.output_splat_path ||
+    space.latest_job.output_rad_path
+  );
 
 const readChoice = (spaceId: number): Viewer | null => {
   try {

@@ -32,6 +32,7 @@ export interface ReconstructionJob {
   output_ply_path: string | null;
   output_splat_path: string | null;
   output_spz_path: string | null;
+  output_rad_path?: string | null;
   colmap_sparse_path: string | null;
   point_count: number | null;
   created_at: string;
@@ -51,6 +52,8 @@ export interface JobOutputResponse {
   ply_url?: string;
   splat_url?: string;
   spz_url?: string;
+  /** Streamable (paged, level-of-detail) version of a large scene. */
+  rad_url?: string;
   collision_url?: string;
 }
 
