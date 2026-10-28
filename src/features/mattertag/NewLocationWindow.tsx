@@ -245,15 +245,17 @@ export function NewLocationWindow() {
               label="Responsible (optional)"
               sx={selectSx}
               MenuProps={{
-                PaperProps: {
-                  sx: {
-                    bgcolor: 'rgba(46, 46, 46, 0.95)',
-                    backdropFilter: 'blur(20px)',
-                    borderRadius: '12px',
-                    '& .MuiMenuItem-root': {
-                      color: 'white',
-                      '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
-                      '&.Mui-selected': { bgcolor: 'rgba(255,255,255,0.15)' },
+                slotProps: {
+                  paper: {
+                    sx: {
+                      bgcolor: 'rgba(46, 46, 46, 0.95)',
+                      backdropFilter: 'blur(20px)',
+                      borderRadius: '12px',
+                      '& .MuiMenuItem-root': {
+                        color: 'white',
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
+                        '&.Mui-selected': { bgcolor: 'rgba(255,255,255,0.15)' },
+                      },
                     },
                   },
                 },

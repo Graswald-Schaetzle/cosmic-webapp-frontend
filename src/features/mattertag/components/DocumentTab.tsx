@@ -179,12 +179,14 @@ export const DocumentTab = ({ locationData }: DocumentTabProps) => {
                   >
                     <ListItemText
                       primary={document.name}
-                      primaryTypographyProps={{
-                        sx: {
-                          fontSize: '14px',
-                          fontWeight: 500,
-                          lineHeight: '22px',
-                          color: '#FFFFFF',
+                      slotProps={{
+                        primary: {
+                          sx: {
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            lineHeight: '22px',
+                            color: '#FFFFFF',
+                          },
                         },
                       }}
                     />

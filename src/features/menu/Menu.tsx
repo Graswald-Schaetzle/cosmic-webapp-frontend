@@ -379,7 +379,9 @@ function DropZone({ targetList, targetIndex, onDrop }: DropZoneProps) {
 
   return (
     <div
-      ref={drop}
+      ref={node => {
+        drop(node);
+      }}
       style={{
         height: active ? '16px' : '4px',
         borderRadius: '8px',
@@ -609,7 +611,11 @@ function DroppableMoreButton({
   });
 
   return (
-    <div ref={drop}>
+    <div
+      ref={node => {
+        drop(node);
+      }}
+    >
       <StyledListItem
         onClick={onClick}
         sx={{
@@ -1064,10 +1070,7 @@ export function Menu() {
           zIndex: 9999,
         }}
       >
-        <SidebarStack
-          onMouseEnter={() => setIsWide(true)}
-          onMouseLeave={handleMouseLeave}
-        >
+        <SidebarStack onMouseEnter={() => setIsWide(true)} onMouseLeave={handleMouseLeave}>
           {/* Main Sidebar */}
           <StyledPaper className={isWide ? 'expanded' : ''}>
             <StaticListItem
@@ -1123,15 +1126,12 @@ export function Menu() {
           <ShortcutPaper className={isWide ? 'expanded' : ''}>
             <StaticListItem>
               <StyledListItemIcon>
-                <ChatBubbleOutlineRoundedIcon
-                  sx={{ fontSize: 20, color: 'white', opacity: 0.9 }}
-                />
+                <ChatBubbleOutlineRoundedIcon sx={{ fontSize: 20, color: 'white', opacity: 0.9 }} />
               </StyledListItemIcon>
               {isWide && <StyledListItemText primary="Chat" />}
             </StaticListItem>
           </ShortcutPaper>
         </SidebarStack>
-
       </Box>
 
       {/* More Elements Dialog */}
@@ -1171,22 +1171,24 @@ export function Menu() {
             variant="standard"
             fullWidth
             autoFocus
-            InputProps={{
-              disableUnderline: true,
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchRoundedIcon sx={{ fontSize: 20, color: 'white', opacity: 0.9 }} />
-                </InputAdornment>
-              ),
-              sx: {
-                color: 'white',
-                fontSize: '16px',
-                lineHeight: '20px',
-                backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                borderRadius: '500px',
-                padding: '8px 16px',
-                '& input': { padding: 0 },
-                '& input::placeholder': { color: 'rgba(255, 255, 255, 0.6)', opacity: 1 },
+            slotProps={{
+              input: {
+                disableUnderline: true,
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchRoundedIcon sx={{ fontSize: 20, color: 'white', opacity: 0.9 }} />
+                  </InputAdornment>
+                ),
+                sx: {
+                  color: 'white',
+                  fontSize: '16px',
+                  lineHeight: '20px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                  borderRadius: '500px',
+                  padding: '8px 16px',
+                  '& input': { padding: 0 },
+                  '& input::placeholder': { color: 'rgba(255, 255, 255, 0.6)', opacity: 1 },
+                },
               },
             }}
           />
@@ -1357,22 +1359,24 @@ function MobileMenu({
             placeholder="Search apps"
             variant="standard"
             fullWidth
-            InputProps={{
-              disableUnderline: true,
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchRoundedIcon sx={{ fontSize: 20, color: 'white', opacity: 0.9 }} />
-                </InputAdornment>
-              ),
-              sx: {
-                color: 'white',
-                fontSize: '16px',
-                lineHeight: '20px',
-                backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                borderRadius: '500px',
-                padding: '10px 16px',
-                '& input': { padding: 0 },
-                '& input::placeholder': { color: 'rgba(255, 255, 255, 0.6)', opacity: 1 },
+            slotProps={{
+              input: {
+                disableUnderline: true,
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchRoundedIcon sx={{ fontSize: 20, color: 'white', opacity: 0.9 }} />
+                  </InputAdornment>
+                ),
+                sx: {
+                  color: 'white',
+                  fontSize: '16px',
+                  lineHeight: '20px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                  borderRadius: '500px',
+                  padding: '10px 16px',
+                  '& input': { padding: 0 },
+                  '& input::placeholder': { color: 'rgba(255, 255, 255, 0.6)', opacity: 1 },
+                },
               },
             }}
           />

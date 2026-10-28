@@ -324,7 +324,14 @@ export const NotificationWindow = () => {
     >
       <Box sx={{ display: 'flex', gap: '20px', flexDirection: { xs: 'column', md: 'row' } }}>
         {/* Left Column */}
-        <Box sx={{ width: { xs: '100%', md: '50%' }, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <Box
+          sx={{
+            width: { xs: '100%', md: '50%' },
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px',
+          }}
+        >
           {/* Header */}
           <Box
             sx={{
@@ -361,12 +368,14 @@ export const NotificationWindow = () => {
           >
             <ListItemText
               primary="All notifications"
-              primaryTypographyProps={{
-                sx: {
-                  fontWeight: 500,
-                  fontSize: '16px',
-                  lineHeight: '22px',
-                  color: isAllSelected ? '#000000' : '#FFFFFF',
+              slotProps={{
+                primary: {
+                  sx: {
+                    fontWeight: 500,
+                    fontSize: '16px',
+                    lineHeight: '22px',
+                    color: isAllSelected ? '#000000' : '#FFFFFF',
+                  },
                 },
               }}
             />
@@ -457,12 +466,14 @@ export const NotificationWindow = () => {
                       >
                         <ListItemText
                           primary={room.room_name}
-                          primaryTypographyProps={{
-                            sx: {
-                              fontWeight: 500,
-                              fontSize: '16px',
-                              lineHeight: '22px',
-                              color: selectedRoom === room.room_id ? '#000000' : '#FFFFFF',
+                          slotProps={{
+                            primary: {
+                              sx: {
+                                fontWeight: 500,
+                                fontSize: '16px',
+                                lineHeight: '22px',
+                                color: selectedRoom === room.room_id ? '#000000' : '#FFFFFF',
+                              },
                             },
                           }}
                         />
@@ -495,7 +506,14 @@ export const NotificationWindow = () => {
         </Box>
 
         {/* Right Column */}
-        <Box sx={{ width: { xs: '100%', md: '50%' }, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <Box
+          sx={{
+            width: { xs: '100%', md: '50%' },
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px',
+          }}
+        >
           {/* Header */}
           <Box
             sx={{

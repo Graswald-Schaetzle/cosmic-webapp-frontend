@@ -19,9 +19,11 @@ export const ListModal = ({
   anchorEl,
 }: ListModalProps) => {
   const { activeSpaceId } = useSpace();
-  const { data: listsData, isLoading, error } = useGetListsQuery(
-    activeSpaceId ? { space_id: activeSpaceId } : undefined
-  );
+  const {
+    data: listsData,
+    isLoading,
+    error,
+  } = useGetListsQuery(activeSpaceId ? { space_id: activeSpaceId } : undefined);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Filter lists based on search query
@@ -55,33 +57,35 @@ export const ListModal = ({
         vertical: 'top',
         horizontal: 'left',
       }}
-      PaperProps={{
-        sx: {
-          width: 190,
-          mt: '-56px',
-          ml: '24px',
-          borderRadius: '20px',
-          padding: '8px',
-          backgroundColor: 'rgba(46, 46, 46, 0.35)',
-          backdropFilter: 'blur(100px)',
-          WebkitBackdropFilter: 'blur(100px)',
-          display: 'flex',
-          flexDirection: 'column',
-          '& .MuiMenuItem-root': {
-            color: '#fff',
-            fontSize: 14,
-            fontWeight: 600,
-            padding: '6px 8px',
-            borderRadius: '14px',
-            height: 'auto',
-            minHeight: '42px',
-            lineHeight: '22px',
+      slotProps={{
+        paper: {
+          sx: {
+            width: 190,
+            mt: '-56px',
+            ml: '24px',
+            borderRadius: '20px',
+            padding: '8px',
+            backgroundColor: 'rgba(46, 46, 46, 0.35)',
+            backdropFilter: 'blur(100px)',
+            WebkitBackdropFilter: 'blur(100px)',
             display: 'flex',
-            alignItems: 'center',
-            whiteSpace: 'normal',
-            wordBreak: 'break-word',
-            '&:hover': {
-              backgroundColor: '#FFFFFF40',
+            flexDirection: 'column',
+            '& .MuiMenuItem-root': {
+              color: '#fff',
+              fontSize: 14,
+              fontWeight: 600,
+              padding: '6px 8px',
+              borderRadius: '14px',
+              height: 'auto',
+              minHeight: '42px',
+              lineHeight: '22px',
+              display: 'flex',
+              alignItems: 'center',
+              whiteSpace: 'normal',
+              wordBreak: 'break-word',
+              '&:hover': {
+                backgroundColor: '#FFFFFF40',
+              },
             },
           },
         },
@@ -137,15 +141,36 @@ export const ListModal = ({
         }}
       >
         {isLoading ? (
-          <Box display="flex" justifyContent="center" alignItems="center" py={2}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              py: 2,
+            }}
+          >
             <CircularProgress size={20} sx={{ color: '#fff' }} />
           </Box>
         ) : error ? (
-          <Box display="flex" justifyContent="center" alignItems="center" py={2}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              py: 2,
+            }}
+          >
             <Box sx={{ color: '#fff', fontSize: '12px' }}>Error loading lists</Box>
           </Box>
         ) : filteredLists.length === 0 ? (
-          <Box display="flex" justifyContent="center" alignItems="center" py={2}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              py: 2,
+            }}
+          >
             <Box sx={{ color: '#fff', fontSize: '12px' }}>
               {searchQuery ? 'No lists found' : 'No lists available'}
             </Box>

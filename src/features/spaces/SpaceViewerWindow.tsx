@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import { closeSpaceViewerWindow } from '../../store/modalSlice';
 import { useGetJobOutputQuery } from '../../api/reconstruction/reconstructionApi';
-import { SplatViewer } from '../reconstruction/SplatViewer';
+import { LazySplatViewer } from '../reconstruction/LazySplatViewer';
 import { Box, Typography, IconButton, CircularProgress } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -114,7 +114,11 @@ export const SpaceViewerWindow = () => {
             </Typography>
           </Box>
         )}
-        <SplatViewer splatUrl={splatUrl!} onClose={handleClose} />
+        <LazySplatViewer
+          splatUrl={splatUrl!}
+          collisionUrl={jobOutput?.collision_url}
+          onClose={handleClose}
+        />
       </Box>
     );
   }

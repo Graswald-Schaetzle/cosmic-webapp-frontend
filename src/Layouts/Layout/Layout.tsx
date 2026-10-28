@@ -13,7 +13,7 @@ export function Layout({ children }: LayoutProps) {
   const isMobile = useIsMobile();
 
   return (
-    <div className="relative w-full h-[100dvh] overflow-hidden">
+    <div className="relative w-full h-dvh overflow-hidden">
       {!isMobile && (
         <div className="absolute top-4 right-4 z-50">
           <Tooltip title="Sign out">

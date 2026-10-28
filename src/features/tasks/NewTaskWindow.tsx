@@ -114,24 +114,26 @@ export const NewTaskWindow = () => {
       title={title}
       placement="top"
       arrow
-      PopperProps={{
-        sx: {
-          '& .MuiTooltip-tooltip': {
-            backgroundColor: 'rgba(46, 46, 46, 0.95)',
-            backdropFilter: 'blur(100px)',
-            WebkitBackdropFilter: 'blur(100px)',
-            color: '#FFFFFF',
-            fontSize: '12px',
-            fontWeight: 500,
-            padding: '8px 12px',
-            borderRadius: '12px',
-            boxShadow: 'none',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            maxWidth: '200px',
-            textAlign: 'center',
-          },
-          '& .MuiTooltip-arrow': {
-            color: 'rgba(46, 46, 46, 0.95)',
+      slotProps={{
+        popper: {
+          sx: {
+            '& .MuiTooltip-tooltip': {
+              backgroundColor: 'rgba(46, 46, 46, 0.95)',
+              backdropFilter: 'blur(100px)',
+              WebkitBackdropFilter: 'blur(100px)',
+              color: '#FFFFFF',
+              fontSize: '12px',
+              fontWeight: 500,
+              padding: '8px 12px',
+              borderRadius: '12px',
+              boxShadow: 'none',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              maxWidth: '200px',
+              textAlign: 'center',
+            },
+            '& .MuiTooltip-arrow': {
+              color: 'rgba(46, 46, 46, 0.95)',
+            },
           },
         },
       }}
@@ -369,7 +371,14 @@ export const NewTaskWindow = () => {
       }}
     >
       {/* Header */}
-      <Box display="flex" alignItems="center" gap={1} className="px-[18px]">
+      <Box
+        className="px-[18px]"
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+        }}
+      >
         <Box
           sx={{
             width: '100%',
@@ -421,8 +430,23 @@ export const NewTaskWindow = () => {
         }}
       >
         {/* Type, Name */}
-        <Box className="type-name-container" display="flex" flexDirection="column" gap="4px">
-          <Box display="flex" alignItems="center" flex={1} justifyContent="start" gap="1px">
+        <Box
+          className="type-name-container"
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '4px',
+          }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              flex: 1,
+              justifyContent: 'start',
+              gap: '1px',
+            }}
+          >
             {/* Left part */}
             <Box
               onClick={handleTypeClick}
@@ -580,9 +604,22 @@ export const NewTaskWindow = () => {
           </Box>
         </Stack>
         {/* Due date & Recurring */}
-        <Box display="flex" justifyContent="space-between" gap={2}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            gap: 2,
+          }}
+        >
           {/* Due date */}
-          <Box display="flex" flexDirection="column" flex={1} alignItems="flex-start">
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              flex: 1,
+              alignItems: 'flex-start',
+            }}
+          >
             <Box
               sx={{
                 padding: '12px 18px',
@@ -591,11 +628,23 @@ export const NewTaskWindow = () => {
                 height: '42px',
               }}
             >
-              <Typography color="#fff" sx={{ fontSize: 16 }}>
+              <Typography
+                sx={{
+                  color: '#fff',
+                  fontSize: 16,
+                }}
+              >
                 Due date
               </Typography>
             </Box>
-            <Box display="flex" alignItems="center" flex={1} justifyContent="center">
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                flex: 1,
+                justifyContent: 'center',
+              }}
+            >
               {/* Left part */}
               <Box
                 onClick={handleTimePickerClick}
@@ -678,7 +727,14 @@ export const NewTaskWindow = () => {
             />
           </Box>
           {/* Recurring */}
-          <Box display="flex" flexDirection="column" flex={1} alignItems="flex-end">
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              flex: 1,
+              alignItems: 'flex-end',
+            }}
+          >
             <Box
               sx={{
                 padding: '12px 18px',
@@ -687,7 +743,12 @@ export const NewTaskWindow = () => {
                 height: '42px',
               }}
             >
-              <Typography color="#fff" sx={{ fontSize: 16 }}>
+              <Typography
+                sx={{
+                  color: '#fff',
+                  fontSize: 16,
+                }}
+              >
                 Recurring
               </Typography>
             </Box>
@@ -716,7 +777,14 @@ export const NewTaskWindow = () => {
               }}
             >
               {task.recurring || 'Select'}
-              <Box component="span" ml={1} display="flex" alignItems="center">
+              <Box
+                component="span"
+                sx={{
+                  ml: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
                 <img
                   src={
                     isRecurringModalOpen
@@ -750,7 +818,12 @@ export const NewTaskWindow = () => {
               height: '42px',
             }}
           >
-            <Typography color="#fff" sx={{ fontSize: 16 }}>
+            <Typography
+              sx={{
+                color: '#fff',
+                fontSize: 16,
+              }}
+            >
               Description
             </Typography>
           </Box>
@@ -802,11 +875,22 @@ export const NewTaskWindow = () => {
               height: '42px',
             }}
           >
-            <Typography color="#fff" sx={{ fontSize: 16 }}>
+            <Typography
+              sx={{
+                color: '#fff',
+                fontSize: 16,
+              }}
+            >
               Tags
             </Typography>
           </Box>
-          <Stack direction="row" flexWrap="wrap" gap="12px">
+          <Stack
+            direction="row"
+            sx={{
+              flexWrap: 'wrap',
+              gap: '12px',
+            }}
+          >
             {task.tags.map(tag => (
               <Chip
                 key={tag}
@@ -954,11 +1038,11 @@ const Row = ({
   hasError?: boolean;
 }) => (
   <Box
-    height="42px"
-    display="flex"
-    alignItems="center"
-    justifyContent="space-between"
     sx={{
+      height: '42px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
       opacity: disabled ? 0.15 : 1,
     }}
   >
@@ -971,7 +1055,13 @@ const Row = ({
         height: '100%',
       }}
     >
-      <Typography color="#fff" sx={{ fontSize: 16, fontWeight: 500 }}>
+      <Typography
+        sx={{
+          color: '#fff',
+          fontSize: 16,
+          fontWeight: 500,
+        }}
+      >
         {label}
       </Typography>
     </Box>
@@ -1003,7 +1093,14 @@ const Row = ({
       }}
     >
       {value}
-      <Box component="span" ml={1} display="flex" alignItems="center">
+      <Box
+        component="span"
+        sx={{
+          ml: 1,
+          display: 'flex',
+          alignItems: 'center',
+        }}
+      >
         <img
           src={
             isOpen

@@ -10,6 +10,7 @@ import {
 } from '../../../store/modalSlice.ts';
 import { useGetAllLocationsQuery, LocationItem } from '../../../api/locationApi/locationApi.ts';
 import { getMatterTags, addTagToSession } from '../../../app/matterport.ts';
+import { loadMatterportSdk } from '../../../lib/matterportSdk';
 
 interface MatterportProps {
   children?: React.ReactNode;
@@ -158,6 +159,7 @@ export default function Matterport({ children }: MatterportProps) {
           throw new Error('Matterport iframe not found');
         }
 
+        await loadMatterportSdk();
         const mpSdk = await window.connect(iframeRef.current);
 
         // Mattertag.getData() is the correct call; Tag.data is an IObservable without getData()

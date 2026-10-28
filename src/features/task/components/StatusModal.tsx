@@ -30,30 +30,32 @@ export const StatusModal = ({
         vertical: 'top',
         horizontal: 'left',
       }}
-      PaperProps={{
-        sx: {
-          mt: '-56px',
-          ml: '24px',
-          borderRadius: '20px',
-          padding: '0px 8px',
-          backgroundColor: 'rgba(46, 46, 46, 0.35)',
-          backdropFilter: 'blur(100px)',
-          WebkitBackdropFilter: 'blur(100px)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '20px',
-          '& .MuiMenuItem-root': {
-            color: '#fff',
-            fontSize: 14,
-            fontWeight: 600,
+      slotProps={{
+        paper: {
+          sx: {
+            mt: '-56px',
+            ml: '24px',
+            borderRadius: '20px',
             padding: '0px 8px',
-            borderRadius: '14px',
-            height: '42px',
-            lineHeight: '22px',
+            backgroundColor: 'rgba(46, 46, 46, 0.35)',
+            backdropFilter: 'blur(100px)',
+            WebkitBackdropFilter: 'blur(100px)',
             display: 'flex',
-            alignItems: 'center',
-            '&:hover': {
-              backgroundColor: '#FFFFFF40',
+            flexDirection: 'column',
+            gap: '20px',
+            '& .MuiMenuItem-root': {
+              color: '#fff',
+              fontSize: 14,
+              fontWeight: 600,
+              padding: '0px 8px',
+              borderRadius: '14px',
+              height: '42px',
+              lineHeight: '22px',
+              display: 'flex',
+              alignItems: 'center',
+              '&:hover': {
+                backgroundColor: '#FFFFFF40',
+              },
             },
           },
         },

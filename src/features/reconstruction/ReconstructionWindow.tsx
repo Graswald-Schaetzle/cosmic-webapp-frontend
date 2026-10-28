@@ -5,7 +5,7 @@ import { closeReconstructionWindow } from '../../store/modalSlice';
 import { Box, Typography, IconButton, Button, TextField, LinearProgress } from '@mui/material';
 import ThreeDRotationIcon from '@mui/icons-material/ThreeDRotation';
 import { useCallback, useState } from 'react';
-import { SplatViewer } from './SplatViewer';
+import { LazySplatViewer } from './LazySplatViewer';
 import {
   useCreateJobMutation,
   useStartJobMutation,
@@ -205,7 +205,13 @@ export const ReconstructionWindow = () => {
       }}
     >
       {/* Header */}
-      <Box display="flex" alignItems="center" className="px-[18px]">
+      <Box
+        className="px-[18px]"
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+        }}
+      >
         {view !== 'list' && (
           <IconButton
             onClick={() => {
@@ -232,7 +238,14 @@ export const ReconstructionWindow = () => {
             />
           </IconButton>
         )}
-        <Box display="flex" alignItems="center" flex={1} justifyContent="center">
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            flex: 1,
+            justifyContent: 'center',
+          }}
+        >
           <Typography sx={{ fontSize: '20px', fontWeight: 700, color: '#FFFFFF' }}>
             {view === 'list' ? '3D Reconstruction' : view === 'create' ? 'New Scan' : 'Job Details'}
           </Typography>
@@ -419,7 +432,13 @@ export const ReconstructionWindow = () => {
                 backgroundColor: '#00000026',
               }}
             >
-              <Box display="flex" justifyContent="space-between" alignItems="center">
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
                 <Typography
                   sx={{
                     color: '#FFFFFF',
@@ -540,7 +559,13 @@ const JobListItem = ({ job, onClick }: { job: ReconstructionJob; onClick: () => 
         '&:hover': { backgroundColor: '#00000040' },
       }}
     >
-      <Box display="flex" justifyContent="space-between" alignItems="center">
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         <Typography
           sx={{
             color: '#FFFFFF',
@@ -639,7 +664,13 @@ const JobDetail = ({ jobId, onCancel }: { jobId: number; onCancel: (id: number) 
           gap: '10px',
         }}
       >
-        <Box display="flex" justifyContent="space-between" alignItems="center">
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
           <Typography sx={{ color: '#FFFFFF', fontWeight: 600, fontSize: '16px' }}>
             {job.title}
           </Typography>
@@ -755,7 +786,7 @@ const JobDetail = ({ jobId, onCancel }: { jobId: number; onCancel: (id: number) 
 
       {/* Splat Viewer overlay */}
       {splatViewerUrl && (
-        <SplatViewer splatUrl={splatViewerUrl} onClose={() => setSplatViewerUrl(null)} />
+        <LazySplatViewer splatUrl={splatViewerUrl} onClose={() => setSplatViewerUrl(null)} />
       )}
 
       {/* Cancel button */}
@@ -784,7 +815,12 @@ const JobDetail = ({ jobId, onCancel }: { jobId: number; onCancel: (id: number) 
 // ── Small Helpers ────────────────────────────────────────────────────────────
 
 const DetailRow = ({ label, value }: { label: string; value: string }) => (
-  <Box display="flex" justifyContent="space-between">
+  <Box
+    sx={{
+      display: 'flex',
+      justifyContent: 'space-between',
+    }}
+  >
     <Typography sx={{ color: '#FFFFFF80', fontSize: '13px' }}>{label}</Typography>
     <Typography sx={{ color: '#FFFFFF', fontSize: '13px', fontWeight: 500 }}>{value}</Typography>
   </Box>

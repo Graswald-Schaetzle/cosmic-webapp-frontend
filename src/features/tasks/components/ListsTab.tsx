@@ -22,9 +22,11 @@ export const ListsTab = ({ handleClose }: ListsTabProps) => {
   const { activeSpaceId } = useSpace();
 
   // Fetch lists from API, scoped to active space
-  const { data: listsData, isLoading, error } = useGetListsQuery(
-    activeSpaceId ? { space_id: activeSpaceId } : undefined
-  );
+  const {
+    data: listsData,
+    isLoading,
+    error,
+  } = useGetListsQuery(activeSpaceId ? { space_id: activeSpaceId } : undefined);
 
   const handleListClick = (listId: number) => {
     handleClose();
@@ -152,12 +154,14 @@ export const ListsTab = ({ handleClose }: ListsTabProps) => {
               >
                 <ListItemText
                   primary={list.name}
-                  primaryTypographyProps={{
-                    sx: {
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      lineHeight: '22px',
-                      color: '#FFFFFF',
+                  slotProps={{
+                    primary: {
+                      sx: {
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        lineHeight: '22px',
+                        color: '#FFFFFF',
+                      },
                     },
                   }}
                 />

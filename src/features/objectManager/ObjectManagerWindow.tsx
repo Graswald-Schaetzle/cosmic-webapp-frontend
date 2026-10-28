@@ -668,12 +668,14 @@ export function ObjectManagerWindow() {
                                 >
                                   <ListItemText
                                     primary={obj.name}
-                                    primaryTypographyProps={{
-                                      sx: {
-                                        fontSize: '14px',
-                                        fontWeight: 500,
-                                        lineHeight: '22px',
-                                        color: '#FFFFFF',
+                                    slotProps={{
+                                      primary: {
+                                        sx: {
+                                          fontSize: '14px',
+                                          fontWeight: 500,
+                                          lineHeight: '22px',
+                                          color: '#FFFFFF',
+                                        },
                                       },
                                     }}
                                   />
