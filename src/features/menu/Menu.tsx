@@ -379,7 +379,9 @@ function DropZone({ targetList, targetIndex, onDrop }: DropZoneProps) {
 
   return (
     <div
-      ref={drop}
+      ref={node => {
+        drop(node);
+      }}
       style={{
         height: active ? '16px' : '4px',
         borderRadius: '8px',
@@ -609,7 +611,11 @@ function DroppableMoreButton({
   });
 
   return (
-    <div ref={drop}>
+    <div
+      ref={node => {
+        drop(node);
+      }}
+    >
       <StyledListItem
         onClick={onClick}
         sx={{
