@@ -3,6 +3,8 @@ import { Box, IconButton, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import MapOutlinedIcon from '@mui/icons-material/MapOutlined';
 import { FloorPlan, PlanView, createPlanView } from './floorPlan';
+import { ImageCrop, SpaceMinimap, createImageView, findContentCrop } from './minimapImage';
+import { SplatPlacement } from './spaceFrame';
 
 /** Where the viewer's camera is, in the space frame. Written every frame by the scene. */
 export interface MapPose {
@@ -22,7 +24,12 @@ export interface MapTag {
 }
 
 interface FloorPlanMapProps {
-  plan: FloorPlan;
+  /** The plan cut from the collision mesh; used when there is no minimap image. */
+  plan: FloorPlan | null;
+  /** A pre-rendered minimap image, which takes precedence over the cut plan. */
+  minimap?: SpaceMinimap | null;
+  /** How the space's source frame sits in the space frame (the image follows it). */
+  placement: SplatPlacement;
   poseRef: MutableRefObject<MapPose>;
   tags?: MapTag[];
   isMobile?: boolean;
@@ -40,6 +47,88 @@ const COLORS = {
   marker: '#1FA9E8',
 };
 const CONE_LENGTH = 38;
+/** The longest side of the image used to find the drawn area, in pixels. */
+const CROP_PROBE_SIZE = 512;
+/** Empty paper kept around the drawing, in pixels of a 1024 px wide image. */
+const CROP_MARGIN = 16;
+
+interface LoadedMinimap {
+  image: HTMLImageElement;
+  crop: ImageCrop;
+}
+
+type MinimapState =
+  { status: 'none' | 'loading' | 'failed' } | { status: 'ready'; loaded: LoadedMinimap };
+
+/** Loads the minimap image and finds the part of it that is drawn on, to waste no panel space. */
+function useMinimapImage(url: string | undefined): MinimapState {
+  const [state, setState] = useState<MinimapState>({ status: url ? 'loading' : 'none' });
+  useEffect(() => {
+    if (!url) {
+      setState({ status: 'none' });
+      return;
+    }
+    setState({ status: 'loading' });
+    let cancelled = false;
+    const load = (withCors: boolean) => {
+      const image = new Image();
+      if (withCors) image.crossOrigin = 'anonymous';
+      image.onload = () => {
+        if (cancelled) return;
+        const full = { x: 0, y: 0, width: image.naturalWidth, height: image.naturalHeight };
+        let crop = full;
+        // Reading pixels needs a CORS-enabled load; without it the whole image is shown.
+        if (withCors) {
+          try {
+            const factor = Math.min(1, CROP_PROBE_SIZE / Math.max(full.width, full.height));
+            const probe = document.createElement('canvas');
+            probe.width = Math.max(1, Math.round(full.width * factor));
+            probe.height = Math.max(1, Math.round(full.height * factor));
+            const probeCtx = probe.getContext('2d', { willReadFrequently: true });
+            probeCtx?.drawImage(image, 0, 0, probe.width, probe.height);
+            const pixels = probeCtx?.getImageData(0, 0, probe.width, probe.height);
+            const found =
+              pixels &&
+              findContentCrop(
+                pixels.data,
+                probe.width,
+                probe.height,
+                Math.round((CROP_MARGIN * probe.width) / 1024)
+              );
+            if (found) {
+              crop = {
+                x: found.x / factor,
+                y: found.y / factor,
+                width: found.width / factor,
+                height: found.height / factor,
+              };
+            }
+          } catch {
+            crop = full;
+          }
+        }
+        setState({ status: 'ready', loaded: { image, crop } });
+      };
+      image.onerror = () => {
+        if (cancelled) return;
+        if (withCors) load(false);
+        else setState({ status: 'failed' });
+      };
+      image.src = url;
+    };
+    load(true);
+    return () => {
+      cancelled = true;
+    };
+  }, [url]);
+  return state;
+}
+
+interface MapSource {
+  kind: 'plan' | 'image';
+  view: PlanView;
+  drawBase: (ctx: CanvasRenderingContext2D) => void;
+}
 
 const readOpen = (fallback: boolean) => {
   try {
@@ -97,7 +186,7 @@ function drawDynamic(
 
   if (!pose.ready) return;
   const [px, py] = view.toScreen(pose.x, pose.z);
-  const heading = pose.heading + view.rotation;
+  const heading = view.headingToScreen(pose.heading);
   const half = Math.min(Math.max(pose.fov, 0.9), 1.8) / 2;
 
   const cone = ctx.createRadialGradient(px, py, 0, px, py, CONE_LENGTH);
@@ -125,6 +214,8 @@ function drawDynamic(
  */
 export const FloorPlanMap = ({
   plan,
+  minimap,
+  placement,
   poseRef,
   tags = [],
   isMobile,
@@ -134,11 +225,39 @@ export const FloorPlanMap = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const tagsRef = useRef(tags);
   tagsRef.current = tags;
-  const view = useMemo(
-    () =>
-      isMobile ? createPlanView(plan, 190, 150, PADDING) : createPlanView(plan, 300, 230, PADDING),
-    [plan, isMobile]
-  );
+  const minimapImage = useMinimapImage(minimap?.url);
+  const maxWidth = isMobile ? 190 : 300;
+  const maxHeight = isMobile ? 150 : 230;
+  const source = useMemo<MapSource | null>(() => {
+    if (minimap && minimapImage.status === 'loading') return null;
+    if (minimap && minimapImage.status === 'ready') {
+      const { image, crop } = minimapImage.loaded;
+      const size = { width: image.naturalWidth, height: image.naturalHeight };
+      const view = createImageView(minimap.frame, placement, size, crop, maxWidth, maxHeight);
+      return {
+        kind: 'image',
+        view,
+        drawBase: ctx => {
+          ctx.fillStyle = COLORS.floor;
+          ctx.fillRect(0, 0, view.width, view.height);
+          ctx.drawImage(
+            image,
+            crop.x,
+            crop.y,
+            crop.width,
+            crop.height,
+            0,
+            0,
+            view.width,
+            view.height
+          );
+        },
+      };
+    }
+    if (!plan) return null;
+    const view = createPlanView(plan, maxWidth, maxHeight, PADDING);
+    return { kind: 'plan', view, drawBase: ctx => drawPlan(ctx, plan, view) };
+  }, [minimap, minimapImage, placement, plan, maxWidth, maxHeight]);
 
   const toggle = (next: boolean) => {
     setOpen(next);
@@ -152,7 +271,8 @@ export const FloorPlanMap = ({
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
-    if (!open || !canvas || !ctx) return;
+    if (!open || !canvas || !ctx || !source) return;
+    const { view } = source;
     const ratio = Math.min(window.devicePixelRatio || 1, 3);
     canvas.width = Math.round(view.width * ratio);
     canvas.height = Math.round(view.height * ratio);
@@ -163,7 +283,7 @@ export const FloorPlanMap = ({
     const baseCtx = base.getContext('2d');
     if (!baseCtx) return;
     baseCtx.scale(ratio, ratio);
-    drawPlan(baseCtx, plan, view);
+    source.drawBase(baseCtx);
     ctx.scale(ratio, ratio);
 
     let frame = 0;
@@ -186,13 +306,16 @@ export const FloorPlanMap = ({
     };
     tick();
     return () => cancelAnimationFrame(frame);
-  }, [open, plan, view, poseRef]);
+  }, [open, source, poseRef]);
 
   const glass = {
     backgroundColor: 'rgba(46, 46, 46, 0.6)',
     backdropFilter: 'blur(12px)',
     WebkitBackdropFilter: 'blur(12px)',
   };
+
+  if (!source) return null;
+  const { view } = source;
 
   if (!open) {
     return (
@@ -225,7 +348,7 @@ export const FloorPlanMap = ({
         borderRadius: '14px',
         overflow: 'hidden',
         boxShadow: '0 4px 20px rgba(0,0,0,0.35)',
-        backgroundColor: COLORS.body,
+        backgroundColor: source.kind === 'image' ? COLORS.floor : COLORS.body,
       }}
     >
       <Box

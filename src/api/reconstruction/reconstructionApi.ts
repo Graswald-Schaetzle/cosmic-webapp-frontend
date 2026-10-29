@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { SpaceFrame, SplatPlacement } from '../../features/splat/spaceFrame';
+import type { SpaceMinimap } from '../../features/splat/minimapImage';
 
 // Types for reconstruction jobs
 export type ReconstructionStatus =
@@ -64,6 +65,8 @@ export interface JobOutputResponse {
   splat_view?: SplatView | null;
   /** How the splat sits in the space frame; null for spaces that were never calibrated. */
   space_frame?: SpaceFrame | null;
+  /** Pre-rendered minimap image and where it sits in the splat's source coordinates. */
+  minimap?: SpaceMinimap | null;
 }
 
 // Helper to get a human-readable status label

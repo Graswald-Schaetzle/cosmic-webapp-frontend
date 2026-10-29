@@ -86,6 +86,7 @@ export function SplatBackground({ space, children }: SplatBackgroundProps) {
             collisionUrl={output?.collision_url}
             view={output?.splat_view}
             frame={output?.space_frame}
+            minimap={output?.minimap}
             calibration={calibration}
             tags={tags}
             onTagClick={location => dispatch(openMatterTagWindow(locationToTagPayload(location)))}

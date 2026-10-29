@@ -913,8 +913,8 @@ export interface PlanView {
   height: number;
   /** Pixels per metre. */
   scale: number;
-  /** Turn of the plan on screen (radians); add it to a world heading to get the screen heading. */
-  rotation: number;
+  /** The angle on screen (radians, clockwise from the right) of a world heading atan2(z, x). */
+  headingToScreen: (heading: number) => number;
   toScreen: (x: number, z: number) => PlanPoint;
   toPlan: (px: number, py: number) => PlanPoint;
 }
@@ -950,7 +950,7 @@ export function createPlanView(
     width: spanU * scale + 2 * padding,
     height: spanV * scale + 2 * padding,
     scale,
-    rotation: -plan.wallAngle,
+    headingToScreen: heading => heading - plan.wallAngle,
     toScreen: (x, z) => {
       const [u, v] = turn(x, z);
       return [(u - minU) * scale + padding, (v - minV) * scale + padding];

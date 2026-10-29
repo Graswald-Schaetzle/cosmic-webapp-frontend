@@ -10,6 +10,7 @@ import { SpaceFrame, applyPlacementTo, placementToMatrix, resolvePlacement } fro
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { FloorPlanMap, MapPose, MapTag } from './FloorPlanMap';
 import { FloorPlan, buildFloorPlan } from './floorPlan';
+import { SpaceMinimap } from './minimapImage';
 import { VirtualJoystick } from './VirtualJoystick';
 import { WalkControls } from './WalkControls';
 import {
@@ -86,6 +87,8 @@ interface SplatSceneProps {
   view?: SplatView | null;
   /** How the splat and collision mesh sit in the space frame. */
   frame?: SpaceFrame | null;
+  /** Pre-rendered minimap image; without it the minimap is cut from the collision mesh. */
+  minimap?: SpaceMinimap | null;
   /**
    * While set, taps on the model pick points for the calibration instead of walking, and the
    * points are shown as green markers. Needs a collision mesh to pick on.
@@ -110,6 +113,7 @@ export const SplatScene = ({
   flipped = false,
   view,
   frame,
+  minimap,
   calibration,
   tags = [],
   onTagClick,
@@ -770,9 +774,11 @@ export const SplatScene = ({
         </ToggleButtonGroup>
       )}
 
-      {!isLoading && !error && !isCalibrating && floorPlan && (
+      {!isLoading && !error && !isCalibrating && (floorPlan || minimap) && (
         <FloorPlanMap
           plan={floorPlan}
+          minimap={minimap}
+          placement={placement}
           poseRef={poseRef}
           tags={mapTags}
           isMobile={isMobile}
