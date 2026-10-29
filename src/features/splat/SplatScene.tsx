@@ -22,9 +22,10 @@ import {
   raycastCollider,
 } from './walkPhysics';
 
-/** Same hold time and tolerance as the Matterport "hold still to add a tag" gesture. */
-export const DWELL_MS = 3000;
-export const DWELL_MOVE_PX = 15;
+/** A press that moves less than this counts as a tap (calibration picks). */
+const TAP_MOVE_PX = 15;
+/** A secondary click shorter than this places a tag; holding longer only opens the menus. */
+const SECONDARY_CLICK_MAX_MS = 350;
 const MARKER_PICK_RADIUS_PX = 28;
 /** Half size of the "[ ]" reticle in the middle of the view while the mouse looks around. */
 const RETICLE_HALF_W_PX = 40;
@@ -113,15 +114,9 @@ interface SplatSceneProps {
   calibration?: { points: THREE.Vector3[]; onPick: (point: THREE.Vector3) => void } | null;
   tags?: LocationItem[];
   onTagClick?: (location: LocationItem) => void;
-  /** Called when the user confirms the "+" shown after holding still at a spot. */
+  /** Called when the user right-clicks a spot of the model (the crosshair spot while looking). */
   onPlaceTag?: (position: { x: number; y: number; z: number }) => void;
   onLoadingChange?: (loading: boolean) => void;
-}
-
-interface Indicator {
-  x: number;
-  y: number;
-  point: THREE.Vector3;
 }
 
 export const SplatScene = ({
@@ -166,9 +161,6 @@ export const SplatScene = ({
   const [error, setError] = useState<string | null>(null);
   const [hasCollider, setHasCollider] = useState(false);
   const [mode, setModeState] = useState<ViewMode>('orbit');
-  const [indicator, setIndicator] = useState<Indicator | null>(null);
-  const indicatorRef = useRef<Indicator | null>(null);
-  indicatorRef.current = indicator;
   const [lookState, setLookState] = useState<LookState>('free');
   // Whether a tag is inside the "[ ]" reticle right now.
   const [tagInReticle, setTagInReticle] = useState(false);
@@ -199,7 +191,6 @@ export const SplatScene = ({
       orbit.update();
     }
     setModeState(next);
-    setIndicator(null);
   }, []);
 
   useEffect(() => {
@@ -297,8 +288,6 @@ export const SplatScene = ({
     };
 
     const handleTap = (clientX: number, clientY: number, pointerType: string) => {
-      const shownIndicator = indicatorRef.current;
-      setIndicator(null);
       // Calibration picks are handled by the pointer listener below.
       if (calibrationRef.current) return;
       const locked = walk.locked;
@@ -309,10 +298,6 @@ export const SplatScene = ({
         const tag = findMarker(clientX, clientY, true);
         if (tag) {
           callbacks.current.onTagClick?.(tag.location);
-          walk.exitLock();
-        } else if (shownIndicator) {
-          const { point } = shownIndicator;
-          callbacks.current.onPlaceTag?.({ x: point.x, y: point.y, z: point.z });
           walk.exitLock();
         }
         return;
@@ -340,15 +325,10 @@ export const SplatScene = ({
     const walk = new WalkControls(camera, renderer.domElement, {
       onTap: handleTap,
       onLockChange: locked => {
-        setIndicator(null);
-        lockedOffset = { x: 0, y: 0 };
         if (locked) {
           setLookState('look');
-          const center = centerOfView();
-          startDwell(center.x, center.y);
           return;
         }
-        clearDwell();
         if (relockOnUnlock) {
           // The menu button was released before the browser had let go; take the mouse back.
           relockOnUnlock = false;
@@ -367,66 +347,7 @@ export const SplatScene = ({
     walk.enabled = false;
     walkRef.current = walk;
 
-    // "Hold still to place a tag": the pointer rests for DWELL_MS without moving or walking.
-    let dwellTimer: ReturnType<typeof setTimeout> | null = null;
-    let dwellAnchor = { x: 0, y: 0 };
-    // While the pointer is locked it does not move; the mouse's travel since the dwell began.
-    let lockedOffset = { x: 0, y: 0 };
-    let touchDown = false;
-    const clearDwell = () => {
-      if (dwellTimer) clearTimeout(dwellTimer);
-      dwellTimer = null;
-    };
-    const startDwell = (x: number, y: number) => {
-      clearDwell();
-      dwellAnchor = { x, y };
-      dwellTimer = setTimeout(() => {
-        if (walk.isActive || calibrationRef.current) return;
-        const point = pickPoint(dwellAnchor.x, dwellAnchor.y);
-        if (point) {
-          const rect = renderer.domElement.getBoundingClientRect();
-          setIndicator({ x: dwellAnchor.x - rect.left, y: dwellAnchor.y - rect.top, point });
-        }
-      }, DWELL_MS);
-    };
-    const onDwellMove = (event: PointerEvent) => {
-      if (event.pointerType === 'touch' && !touchDown) return;
-      if (walk.locked) {
-        lockedOffset.x += event.movementX;
-        lockedOffset.y += event.movementY;
-        if (Math.hypot(lockedOffset.x, lockedOffset.y) > DWELL_MOVE_PX) {
-          lockedOffset = { x: 0, y: 0 };
-          setIndicator(null);
-          const center = centerOfView();
-          startDwell(center.x, center.y);
-        }
-        return;
-      }
-      const moved = Math.hypot(event.clientX - dwellAnchor.x, event.clientY - dwellAnchor.y);
-      if (moved > DWELL_MOVE_PX) {
-        setIndicator(null);
-        startDwell(event.clientX, event.clientY);
-      }
-    };
-    const onDwellDown = (event: PointerEvent) => {
-      // A click under the crosshair confirms the "+" (see handleTap); it must not clear it first.
-      if (walk.locked) return;
-      if (event.pointerType === 'touch') touchDown = true;
-      setIndicator(null);
-      startDwell(event.clientX, event.clientY);
-    };
-    const onDwellUp = (event: PointerEvent) => {
-      if (event.pointerType === 'touch') {
-        touchDown = false;
-        clearDwell();
-      }
-    };
     const dom = renderer.domElement;
-    dom.addEventListener('pointermove', onDwellMove);
-    dom.addEventListener('pointerdown', onDwellDown);
-    dom.addEventListener('pointerup', onDwellUp);
-    dom.addEventListener('pointercancel', onDwellUp);
-    dom.addEventListener('pointerleave', clearDwell);
 
     // Calibration: a tap (press and release without dragging) on the model picks a point.
     let pressAt: { x: number; y: number } | null = null;
@@ -438,29 +359,47 @@ export const SplatScene = ({
       pressAt = null;
       const active = calibrationRef.current;
       if (!active || !press) return;
-      if (Math.hypot(event.clientX - press.x, event.clientY - press.y) > DWELL_MOVE_PX) return;
+      if (Math.hypot(event.clientX - press.x, event.clientY - press.y) > TAP_MOVE_PX) return;
       const point = pickPoint(event.clientX, event.clientY);
       if (point) active.onPick(point);
     };
     dom.addEventListener('pointerdown', onCalibrationDown);
     dom.addEventListener('pointerup', onCalibrationUp);
 
-    // Holding the secondary mouse button lets go of the pointer for as long as it is held, so
-    // the menus can be clicked; letting go takes the mouse back unless a menu was used (it may
-    // have opened a window that needs the cursor).
+    // A short secondary click places a tag where the crosshair points (or at the cursor while the
+    // mouse is free). Holding the button lets go of the pointer for as long as it is held, so the
+    // menus can be clicked; letting go takes the mouse back unless a menu was used (it may have
+    // opened a window that needs the cursor).
+    let secondaryPress: { at: number; point: THREE.Vector3 | null } | null = null;
     const onWindowPointerDown = (event: PointerEvent) => {
       if (event.pointerType !== 'mouse') return;
-      if (event.button === 2 && walk.locked) {
-        menuHeld = true;
-        usedMenu = false;
-        walk.exitLock();
+      if (event.button === 2 && (walk.locked || event.target === dom)) {
+        if (modeRef.current === 'walk' && !calibrationRef.current) {
+          const spot = walk.locked ? centerOfView() : { x: event.clientX, y: event.clientY };
+          secondaryPress = { at: performance.now(), point: pickPoint(spot.x, spot.y) };
+        }
+        if (walk.locked) {
+          menuHeld = true;
+          usedMenu = false;
+          walk.exitLock();
+        }
       } else if (event.button === 0 && menuHeld) {
         const target = event.target as Element | null;
         if (target !== dom && !target?.closest?.('[data-keep-look]')) usedMenu = true;
       }
     };
     const onWindowPointerUp = (event: PointerEvent) => {
-      if (event.button !== 2 || !menuHeld) return;
+      if (event.button !== 2) return;
+      const press = secondaryPress;
+      secondaryPress = null;
+      if (press?.point && !usedMenu && performance.now() - press.at <= SECONDARY_CLICK_MAX_MS) {
+        // The window that opens needs the cursor, so the mouse stays free.
+        menuHeld = false;
+        setLookState('free');
+        callbacks.current.onPlaceTag?.({ x: press.point.x, y: press.point.y, z: press.point.z });
+        return;
+      }
+      if (!menuHeld) return;
       menuHeld = false;
       if (usedMenu || modeRef.current !== 'walk') {
         setLookState('free');
@@ -641,12 +580,6 @@ export const SplatScene = ({
 
     return () => {
       cancelled = true;
-      clearDwell();
-      dom.removeEventListener('pointermove', onDwellMove);
-      dom.removeEventListener('pointerdown', onDwellDown);
-      dom.removeEventListener('pointerup', onDwellUp);
-      dom.removeEventListener('pointercancel', onDwellUp);
-      dom.removeEventListener('pointerleave', clearDwell);
       dom.removeEventListener('pointerdown', onCalibrationDown);
       dom.removeEventListener('pointerup', onCalibrationUp);
       window.removeEventListener('pointerdown', onWindowPointerDown, true);
@@ -949,45 +882,6 @@ export const SplatScene = ({
         </Box>
       )}
 
-      {indicator && (
-        <Box
-          data-testid="tag-indicator"
-          onClick={() => {
-            onPlaceTag?.({ x: indicator.point.x, y: indicator.point.y, z: indicator.point.z });
-            setIndicator(null);
-          }}
-          sx={{
-            position: 'absolute',
-            left: indicator.x,
-            top: indicator.y,
-            transform: 'translate(-50%, -50%)',
-            width: 44,
-            height: 44,
-            borderRadius: '50%',
-            background: 'rgba(255, 255, 255, 0.2)',
-            backdropFilter: 'blur(8px)',
-            border: '2px solid rgba(255, 255, 255, 0.8)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
-            fontSize: 24,
-            fontWeight: 300,
-            cursor: 'pointer',
-            zIndex: 25,
-            userSelect: 'none',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
-            animation: 'splatDwellPulse 1.2s ease-in-out infinite',
-            '@keyframes splatDwellPulse': {
-              '0%, 100%': { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
-              '50%': { transform: 'translate(-50%, -50%) scale(1.15)', opacity: 0.7 },
-            },
-          }}
-        >
-          +
-        </Box>
-      )}
-
       {!isLoading && !error && (
         <ToggleButtonGroup
           className="cosmic-hud"
@@ -1093,8 +987,8 @@ export const SplatScene = ({
           {mode === 'orbit'
             ? 'Ziehen: drehen · Mausrad/Pinch: zoomen'
             : isMobile
-              ? 'Stick: gehen · Wischen: umsehen · Tippen: hingehen · Halten: Ort anlegen'
-              : `WASD: gehen (Shift: rennen) · Leertaste: springen · C: ducken · Z: liegen · Maus: umsehen · Klick auf Tag: öffnen · Rechtsklick halten: Menüs · Esc: Maus freigeben · ${DWELL_MS / 1000} s ruhen: Ort anlegen${hasCollider ? '' : ' · ohne Kollision'}`}
+              ? 'Stick: gehen · Wischen: umsehen · Tippen: hingehen'
+              : `WASD: gehen (Shift: rennen) · Leertaste: springen · C: ducken · Z: liegen · Maus: umsehen · Klick auf Tag: öffnen · Rechtsklick: Tag anlegen · Rechtsklick halten: Menüs · Esc: Maus freigeben${hasCollider ? '' : ' · ohne Kollision'}`}
         </Typography>
       )}
     </Box>

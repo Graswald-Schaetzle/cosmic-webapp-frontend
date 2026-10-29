@@ -89,7 +89,6 @@ export class WalkControls {
   private readonly right = new THREE.Vector3();
   private readonly desired = new THREE.Vector3();
   private lastSafe = new THREE.Vector3();
-  private lastLookActivity = 0;
 
   constructor(
     private readonly camera: THREE.PerspectiveCamera,
@@ -148,16 +147,6 @@ export class WalkControls {
     document.removeEventListener('pointerlockchange', this.onLockChange);
     document.removeEventListener('pointerlockerror', this.onLockError);
     document.removeEventListener('mousemove', this.onMouseMove);
-  }
-
-  /** True while the user is moving or looking, used to pause "hold still to place a tag". */
-  get isActive(): boolean {
-    return (
-      this.keys.size > 0 ||
-      this.moveInput.lengthSq() > 0 ||
-      this.target !== null ||
-      performance.now() - this.lastLookActivity < 250
-    );
   }
 
   get stance(): Stance {
@@ -374,7 +363,6 @@ export class WalkControls {
       -MAX_PITCH,
       MAX_PITCH
     );
-    this.lastLookActivity = performance.now();
   };
 
   private onPointerDown = (event: PointerEvent) => {
@@ -416,7 +404,6 @@ export class WalkControls {
     if (pointer.moved > TAP_MAX_MOVE_PX) {
       this.yaw -= dx * LOOK_SENSITIVITY;
       this.pitch = THREE.MathUtils.clamp(this.pitch - dy * LOOK_SENSITIVITY, -MAX_PITCH, MAX_PITCH);
-      this.lastLookActivity = performance.now();
     }
   };
 
