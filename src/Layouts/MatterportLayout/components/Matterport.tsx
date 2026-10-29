@@ -9,7 +9,7 @@ import {
   openNewLocationWindow,
 } from '../../../store/modalSlice.ts';
 import { useGetAllLocationsQuery, LocationItem } from '../../../api/locationApi/locationApi.ts';
-import { getMatterTags, addTagToSession } from '../../../app/matterport.ts';
+import { getMatterTags, addTagToSession, deleteMatterTag } from '../../../app/matterport.ts';
 import { loadMatterportSdk } from '../../../lib/matterportSdk';
 
 interface MatterportProps {
@@ -131,6 +131,33 @@ export default function Matterport({ children }: MatterportProps) {
       if (didInject) await refreshMattertags(sdk);
     })();
   }, [sdk, allLocations, setMattertags]);
+
+  // Remove the session tags of locations that were deleted, so they vanish without a reload.
+  useEffect(() => {
+    if (!sdk || !allLocations) return;
+
+    const currentIds = new Set(allLocations.map(l => String(l.location_id)));
+    const removedSids: string[] = [];
+    for (const [sid, location] of sidToLocationRef.current) {
+      const locationId = String(location.location_id);
+      if (currentIds.has(locationId)) continue;
+      removedSids.push(sid);
+      sidToLocationRef.current.delete(sid);
+      loadedLocationIds.current.delete(locationId);
+    }
+    if (!removedSids.length) return;
+
+    (async () => {
+      for (const sid of removedSids) {
+        try {
+          await deleteMatterTag(sdk, sid);
+        } catch (err) {
+          console.warn('[Matterport] Failed to remove tag from session:', sid, err);
+        }
+      }
+      await refreshMattertags(sdk);
+    })();
+  }, [sdk, allLocations]);
 
   useEffect(() => {
     if (!sdk) return;

@@ -245,6 +245,14 @@ export const locationApi = createApi({
       }),
       invalidatesTags: [{ type: 'Locations' }],
     }),
+
+    deleteLocation: builder.mutation<void, string>({
+      query: locationId => ({
+        url: `/locations/${locationId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: [{ type: 'Locations' }],
+    }),
   }),
 });
 
@@ -258,4 +266,5 @@ export const {
   useGetFloorsQuery,
   useGetRoomsQuery,
   useCreateLocationMutation,
+  useDeleteLocationMutation,
 } = locationApi;
