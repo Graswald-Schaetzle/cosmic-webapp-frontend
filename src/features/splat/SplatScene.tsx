@@ -13,6 +13,7 @@ import { FloorPlan, buildFloorPlan } from './floorPlan';
 import { SpaceMinimap } from './minimapImage';
 import { VirtualJoystick } from './VirtualJoystick';
 import { WalkControls } from './WalkControls';
+import { planTagApproach } from './tagApproach';
 import {
   Collider,
   createCollider,
@@ -289,6 +290,19 @@ export const SplatScene = ({
       return nearest;
     };
 
+    /** Glides to about a metre in front of a tag and turns to it, as if walking up to it. */
+    const approachTag = (marker: Marker) => {
+      if (modeRef.current !== 'walk') return;
+      const tag = marker.sprite.position;
+      const feet = planTagApproach(
+        colliderRef.current,
+        camera.position,
+        tag,
+        walk.settledEyeHeight
+      );
+      walk.flyTo(feet, tag);
+    };
+
     const handleTap = (clientX: number, clientY: number, pointerType: string) => {
       // Calibration picks are handled by the pointer listener below.
       if (calibrationRef.current) return;
@@ -300,6 +314,7 @@ export const SplatScene = ({
         const tag = findMarker(clientX, clientY, true);
         if (tag) {
           callbacks.current.onTagClick?.(tag.location);
+          approachTag(tag);
           walk.exitLock();
         }
         return;
@@ -310,6 +325,7 @@ export const SplatScene = ({
         // Opening a window with the menu button held is a menu use: the mouse stays free.
         if (menuHeld) usedMenu = true;
         callbacks.current.onTagClick?.(tag.location);
+        approachTag(tag);
         return;
       }
       if (modeRef.current === 'walk') {
@@ -1040,7 +1056,7 @@ export const SplatScene = ({
             ? 'Ziehen: drehen · Mausrad/Pinch: zoomen'
             : isMobile
               ? 'Stick: gehen · Wischen: umsehen · Tippen: hingehen · Lang tippen: Tag anlegen'
-              : `WASD: gehen (Shift: rennen) · Leertaste: springen · C: ducken · Z: liegen · Maus: umsehen · Klick auf Tag: öffnen · Rechtsklick: Tag anlegen · Rechtsklick halten: Menüs · Esc: Maus freigeben${hasCollider ? '' : ' · ohne Kollision'}`}
+              : `WASD: gehen (Shift: rennen) · Leertaste: springen · C: ducken · Z: liegen · Maus: umsehen · Klick auf Tag: hinfliegen und öffnen · Rechtsklick: Tag anlegen · Rechtsklick halten: Menüs · Esc: Maus freigeben${hasCollider ? '' : ' · ohne Kollision'}`}
         </Typography>
       )}
     </Box>
