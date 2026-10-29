@@ -2,24 +2,42 @@ import * as THREE from 'three';
 import {
   Collider,
   DEFAULT_WALK_PARAMS,
+  STANCES,
+  Stance,
+  StanceShape,
   WalkParams,
   WalkerState,
   createWalkerState,
   floorHeightBelow,
+  hasHeadroom,
+  jumpVelocity,
   stepWalker,
 } from './walkPhysics';
 
 const LOOK_SENSITIVITY = 0.0032;
+/** Radians per mouse count while the pointer is locked (mouse look as in a first-person game). */
+const MOUSE_LOOK_SENSITIVITY = 0.0022;
+/** Some browsers report one huge movement when the lock starts or ends; those are dropped. */
+const MAX_MOUSE_STEP = 250;
 const MAX_PITCH = Math.PI / 2 - 0.05;
 const TAP_MAX_MOVE_PX = 8;
 const TAP_MAX_MS = 350;
+/** A jump still works this long after the feet left the floor. */
+const JUMP_GRACE_S = 0.1;
 const MIN_FOV = 40;
 const MAX_FOV = 100;
 const TARGET_REACHED = 0.15;
 
 export interface WalkControlsOptions {
-  /** Called for a short press without dragging, with client coordinates. */
-  onTap?: (clientX: number, clientY: number) => void;
+  /**
+   * Called for a short press without dragging, with client coordinates. While the pointer is
+   * locked it is the centre of the view, where the crosshair is.
+   */
+  onTap?: (clientX: number, clientY: number, pointerType: string) => void;
+  /** Called when mouse look starts (true) or ends (false), also when the user presses Esc. */
+  onLockChange?: (locked: boolean) => void;
+  /** Called when the browser refuses to lock the pointer. */
+  onLockError?: () => void;
   params?: WalkParams;
 }
 
@@ -30,9 +48,13 @@ const isTypingTarget = (target: EventTarget | null) => {
 };
 
 /**
- * First-person controls for a splat scene: WASD / arrow keys (Shift to run), drag to look,
+ * First-person controls for a splat scene: WASD / arrow keys (Shift to run, Space to jump,
+ * C to crouch, Z to lie down), drag to look,
  * on-screen joystick input for touch, pinch to zoom, and "walk to point" targets. Movement is
  * resolved against an optional collision mesh; without one the camera flies freely.
+ *
+ * With the pointer locked (see requestLock) the mouse turns the view directly, like in a
+ * first-person game, and a click acts on the centre of the view.
  */
 export class WalkControls {
   enabled = true;
@@ -40,11 +62,21 @@ export class WalkControls {
   readonly walker: WalkerState;
   yaw = 0;
   pitch = 0;
+  /** Whether requestLock may lock the pointer; off on touch devices. */
+  mouseLook = false;
 
   /** Joystick vector in [-1, 1]: x = strafe right, y = forward. */
   moveInput = new THREE.Vector2();
 
   private readonly params: WalkParams;
+  /** The params the physics runs with: the body's height follows the stance. */
+  private readonly active: WalkParams;
+  private currentStance: Stance = 'stand';
+  /** Eye height above the feet, eased towards the stance's so a change glides. */
+  private eye: number;
+  private jumpArmed = false;
+  /** Seconds since the feet last touched the floor; ground contact flickers from frame to frame. */
+  private sinceGround = Infinity;
   private readonly keys = new Set<string>();
   private readonly pointers = new Map<
     number,
@@ -65,6 +97,8 @@ export class WalkControls {
     private readonly options: WalkControlsOptions = {}
   ) {
     this.params = options.params ?? DEFAULT_WALK_PARAMS;
+    this.active = { ...this.params };
+    this.eye = this.params.eyeHeight;
     this.walker = createWalkerState(camera.position);
     this.syncFromCamera();
     element.addEventListener('pointerdown', this.onPointerDown);
@@ -75,9 +109,34 @@ export class WalkControls {
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
     window.addEventListener('blur', this.onBlur);
+    document.addEventListener('pointerlockchange', this.onLockChange);
+    document.addEventListener('pointerlockerror', this.onLockError);
+    document.addEventListener('mousemove', this.onMouseMove);
+  }
+
+  /** True while the pointer is locked to the view and the mouse turns the camera. */
+  get locked(): boolean {
+    return document.pointerLockElement === this.element;
+  }
+
+  /** Locks the pointer; must run inside a user gesture (click, key press). */
+  requestLock() {
+    if (!this.mouseLook || this.locked || !this.element.requestPointerLock) return;
+    try {
+      // Older browsers return nothing, newer ones a promise that rejects when refused.
+      const result = this.element.requestPointerLock() as Promise<void> | undefined;
+      result?.catch?.(() => this.options.onLockError?.());
+    } catch {
+      this.options.onLockError?.();
+    }
+  }
+
+  exitLock() {
+    if (this.locked) document.exitPointerLock();
   }
 
   dispose() {
+    this.exitLock();
     this.element.removeEventListener('pointerdown', this.onPointerDown);
     this.element.removeEventListener('pointermove', this.onPointerMove);
     this.element.removeEventListener('pointerup', this.onPointerUp);
@@ -86,6 +145,9 @@ export class WalkControls {
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
     window.removeEventListener('blur', this.onBlur);
+    document.removeEventListener('pointerlockchange', this.onLockChange);
+    document.removeEventListener('pointerlockerror', this.onLockError);
+    document.removeEventListener('mousemove', this.onMouseMove);
   }
 
   /** True while the user is moving or looking, used to pause "hold still to place a tag". */
@@ -98,14 +160,44 @@ export class WalkControls {
     );
   }
 
+  get stance(): Stance {
+    return this.currentStance;
+  }
+
+  private shapeOf(stance: Stance): StanceShape {
+    if (stance !== 'stand') return STANCES[stance];
+    return {
+      height: this.params.height,
+      eyeHeight: this.params.eyeHeight,
+      speedFactor: 1,
+    };
+  }
+
+  /** Switches stance; getting taller needs free space above, otherwise nothing changes. */
+  private setStance(next: Stance): boolean {
+    if (next === this.currentStance) return true;
+    const taller = this.shapeOf(next).height > this.shapeOf(this.currentStance).height;
+    if (taller && !hasHeadroom(this.collider, this.walker.position, this.shapeOf(next).height))
+      return false;
+    this.currentStance = next;
+    return true;
+  }
+
+  /** Stands up as far as the ceiling allows (under a low shelf that is crouching). */
+  private standUp() {
+    if (!this.setStance('stand')) this.setStance('crouch');
+  }
+
   /** Takes over position and viewing direction from the camera (e.g. when leaving orbit mode). */
   syncFromCamera() {
+    this.currentStance = 'stand';
+    this.eye = this.params.eyeHeight;
     const euler = new THREE.Euler().setFromQuaternion(this.camera.quaternion, 'YXZ');
     this.yaw = euler.y;
     this.pitch = THREE.MathUtils.clamp(euler.x, -MAX_PITCH, MAX_PITCH);
     this.walker.position.set(
       this.camera.position.x,
-      this.camera.position.y - this.params.eyeHeight,
+      this.camera.position.y - this.eye,
       this.camera.position.z
     );
     this.walker.verticalVelocity = 0;
@@ -170,8 +262,12 @@ export class WalkControls {
       else this.desired.set(dx / distance, 0, dz / distance);
     }
 
-    const running = this.keys.has('ShiftLeft') || this.keys.has('ShiftRight');
-    const speed = this.params.walkSpeed * (running ? this.params.runFactor : 1);
+    const shape = this.shapeOf(this.currentStance);
+    this.active.height = shape.height;
+    this.active.eyeHeight = shape.eyeHeight;
+    const running =
+      this.currentStance === 'stand' && (this.keys.has('ShiftLeft') || this.keys.has('ShiftRight'));
+    const speed = this.params.walkSpeed * shape.speedFactor * (running ? this.params.runFactor : 1);
     this.desired.multiplyScalar(speed);
 
     // Ease in and out so starting and stopping feels soft rather than abrupt.
@@ -180,7 +276,13 @@ export class WalkControls {
 
     const before = this.walker.position.clone();
     if (this.collider) {
-      stepWalker(this.walker, this.smoothedMove, dt, this.collider, this.params);
+      this.sinceGround = this.walker.onGround ? 0 : this.sinceGround + dt;
+      if (this.jumpArmed && this.currentStance === 'stand' && this.sinceGround < JUMP_GRACE_S) {
+        this.walker.verticalVelocity = jumpVelocity(this.params);
+        this.walker.onGround = false;
+        this.sinceGround = Infinity;
+      }
+      stepWalker(this.walker, this.smoothedMove, dt, this.collider, this.active);
       // The mesh can have holes; if we ever end up far below it, go back to the last good spot.
       if (this.walker.position.y < this.collider.bounds.min.y - 1) {
         this.walker.position.copy(this.lastSafe);
@@ -196,13 +298,14 @@ export class WalkControls {
       const fly = new THREE.Vector3(this.smoothedMove.x, 0, this.smoothedMove.z);
       this.walker.position.addScaledVector(fly, dt);
     }
+    this.eye += (shape.eyeHeight - this.eye) * (1 - Math.exp(-dt * 10));
     this.applyToCamera();
   }
 
   private applyToCamera() {
     this.camera.position.set(
       this.walker.position.x,
-      this.walker.position.y + this.params.eyeHeight,
+      this.walker.position.y + this.eye,
       this.walker.position.z
     );
     this.camera.quaternion.setFromEuler(new THREE.Euler(this.pitch, this.yaw, 0, 'YXZ'));
@@ -220,21 +323,64 @@ export class WalkControls {
     if (/^(Key[WASD]|Arrow(Up|Down|Left|Right)|Shift(Left|Right))$/.test(event.code)) {
       this.keys.add(event.code);
       if (event.code.startsWith('Arrow')) event.preventDefault();
+    } else if (event.code === 'Space') {
+      // Keep the page from scrolling and a focused button from being pressed.
+      event.preventDefault();
+      if (event.repeat) return;
+      // Like in a shooter, Space first gets you up from crouching or lying; then it jumps.
+      if (this.currentStance === 'stand') this.jumpArmed = true;
+      else this.standUp();
+    } else if (!event.repeat && event.code === 'KeyC') {
+      if (this.currentStance === 'crouch') this.standUp();
+      else this.setStance('crouch');
+    } else if (!event.repeat && event.code === 'KeyZ') {
+      if (this.currentStance === 'prone') this.standUp();
+      else this.setStance('prone');
     }
   };
 
   private onKeyUp = (event: KeyboardEvent) => {
     this.keys.delete(event.code);
+    if (event.code === 'Space') {
+      this.jumpArmed = false;
+      if (this.enabled && !isTypingTarget(event.target)) event.preventDefault();
+    }
   };
 
   private onBlur = () => {
     this.keys.clear();
+    this.jumpArmed = false;
     this.moveInput.set(0, 0);
   };
 
+  private onLockChange = () => {
+    // Pointer states from before the switch would turn into bogus drags or taps.
+    this.pointers.clear();
+    this.pinchDistance = 0;
+    // A button that had focus (a menu used with the secondary button) would react to Space.
+    if (this.locked) (document.activeElement as HTMLElement | null)?.blur?.();
+    this.options.onLockChange?.(this.locked);
+  };
+
+  private onLockError = () => this.options.onLockError?.();
+
+  private onMouseMove = (event: MouseEvent) => {
+    if (!this.enabled || !this.locked) return;
+    if (Math.abs(event.movementX) > MAX_MOUSE_STEP || Math.abs(event.movementY) > MAX_MOUSE_STEP)
+      return;
+    this.yaw -= event.movementX * MOUSE_LOOK_SENSITIVITY;
+    this.pitch = THREE.MathUtils.clamp(
+      this.pitch - event.movementY * MOUSE_LOOK_SENSITIVITY,
+      -MAX_PITCH,
+      MAX_PITCH
+    );
+    this.lastLookActivity = performance.now();
+  };
+
   private onPointerDown = (event: PointerEvent) => {
-    if (!this.enabled) return;
-    this.element.setPointerCapture?.(event.pointerId);
+    // Only the primary button looks and taps; the secondary one is used for the menus.
+    if (!this.enabled || (event.pointerType === 'mouse' && event.button !== 0)) return;
+    if (!this.locked) this.element.setPointerCapture?.(event.pointerId);
     this.pointers.set(event.pointerId, {
       x: event.clientX,
       y: event.clientY,
@@ -248,7 +394,8 @@ export class WalkControls {
 
   private onPointerMove = (event: PointerEvent) => {
     const pointer = this.pointers.get(event.pointerId);
-    if (!this.enabled || !pointer) return;
+    // While locked the mouse turns the view (onMouseMove) and the pointer position stands still.
+    if (!this.enabled || !pointer || this.locked) return;
     const dx = event.clientX - pointer.x;
     const dy = event.clientY - pointer.y;
     pointer.x = event.clientX;
@@ -280,7 +427,17 @@ export class WalkControls {
     if (!this.enabled || !pointer || event.type === 'pointercancel') return;
     const isTap =
       pointer.moved <= TAP_MAX_MOVE_PX && performance.now() - pointer.startT <= TAP_MAX_MS;
-    if (isTap && this.pointers.size === 0) this.options.onTap?.(event.clientX, event.clientY);
+    if (!isTap || this.pointers.size !== 0) return;
+    if (this.locked) {
+      const rect = this.element.getBoundingClientRect();
+      this.options.onTap?.(
+        rect.left + rect.width / 2,
+        rect.top + rect.height / 2,
+        event.pointerType
+      );
+    } else {
+      this.options.onTap?.(event.clientX, event.clientY, event.pointerType);
+    }
   };
 
   private onWheel = (event: WheelEvent) => {

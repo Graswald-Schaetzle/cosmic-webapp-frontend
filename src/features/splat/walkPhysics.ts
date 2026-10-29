@@ -9,6 +9,8 @@ export interface WalkParams {
   gravity: number;
   walkSpeed: number;
   runFactor: number;
+  /** How high a jump from the ground lifts the feet. */
+  jumpHeight: number;
   /** Maximum frame time that is simulated at once. */
   maxStep: number;
 }
@@ -20,8 +22,36 @@ export const DEFAULT_WALK_PARAMS: WalkParams = {
   gravity: -18,
   walkSpeed: 1.8,
   runFactor: 2,
+  jumpHeight: 0.6,
   maxStep: 1 / 60,
 };
+
+/** Standing, crouching and lying down (as in a first-person game). */
+export type Stance = 'stand' | 'crouch' | 'prone';
+
+export interface StanceShape {
+  /** Height of the body capsule. */
+  height: number;
+  /** Eye height above the feet. */
+  eyeHeight: number;
+  /** Walking speed relative to standing. */
+  speedFactor: number;
+}
+
+export const STANCES: Record<Stance, StanceShape> = {
+  stand: {
+    height: DEFAULT_WALK_PARAMS.height,
+    eyeHeight: DEFAULT_WALK_PARAMS.eyeHeight,
+    speedFactor: 1,
+  },
+  crouch: { height: 1.1, eyeHeight: 0.95, speedFactor: 0.55 },
+  // Never lower than the capsule is wide (two radii).
+  prone: { height: 0.55, eyeHeight: 0.35, speedFactor: 0.25 },
+};
+
+/** Upward speed that lifts the feet by `jumpHeight` against gravity. */
+export const jumpVelocity = (params: WalkParams = DEFAULT_WALK_PARAMS): number =>
+  Math.sqrt(2 * Math.abs(params.gravity) * params.jumpHeight);
 
 export interface Collider {
   bvh: MeshBVH;
@@ -241,4 +271,16 @@ export function mostOpenYaw(collider: Collider, eye: THREE.Vector3, samples = 24
     }
   }
   return bestYaw;
+}
+
+/** Whether a body of the given height fits above the feet without touching a ceiling or shelf. */
+export function hasHeadroom(
+  collider: Collider | null,
+  feet: THREE.Vector3,
+  height: number
+): boolean {
+  if (!collider) return true;
+  const lift = 0.1;
+  const origin = new THREE.Vector3(feet.x, feet.y + lift, feet.z);
+  return !raycastCollider(collider, origin, new THREE.Vector3(0, 1, 0), height - lift);
 }

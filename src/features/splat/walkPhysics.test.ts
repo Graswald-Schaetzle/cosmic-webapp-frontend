@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import {
+  STANCES,
   createCollider,
   createWalkerState,
   findStartSpot,
   floorHeightBelow,
+  hasHeadroom,
+  jumpVelocity,
   mostOpenYaw,
   raycastCollider,
   stepWalker,
@@ -102,5 +105,47 @@ describe('walkPhysics', () => {
   it('raycasts against the mesh', () => {
     const hit = raycastCollider(collider, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1));
     expect(hit?.z).toBeCloseTo(-2);
+  });
+
+  it('jumps about as high as configured and lands again', () => {
+    const walker = createWalkerState(new THREE.Vector3(0, -0.98, 0));
+    settle(walker, collider);
+    const floorY = walker.position.y;
+    walker.verticalVelocity = jumpVelocity();
+    walker.onGround = false;
+    let peak = floorY;
+    for (let i = 0; i < 90; i++) {
+      stepWalker(walker, new THREE.Vector3(), 1 / 60, collider);
+      peak = Math.max(peak, walker.position.y);
+    }
+    expect(peak - floorY).toBeGreaterThan(0.5);
+    expect(peak - floorY).toBeLessThan(0.7);
+    expect(walker.position.y).toBeCloseTo(floorY, 1);
+  });
+
+  it('keeps lower stances lower than the capsule is wide, and slower', () => {
+    expect(STANCES.crouch.height).toBeLessThan(STANCES.stand.height);
+    expect(STANCES.prone.height).toBeLessThan(STANCES.crouch.height);
+    expect(STANCES.prone.height).toBeGreaterThanOrEqual(0.5);
+    expect(STANCES.prone.speedFactor).toBeLessThan(STANCES.crouch.speedFactor);
+    expect(STANCES.crouch.eyeHeight).toBeLessThan(STANCES.crouch.height);
+  });
+
+  it('only lets the body get taller where there is room above', () => {
+    const feet = new THREE.Vector3(0, -1, 0);
+    // The room is open at the top.
+    expect(hasHeadroom(collider, feet, STANCES.stand.height)).toBe(true);
+    // A low shelf 1.3 m above the floor: crouching fits, standing does not.
+    const shelf = new THREE.Mesh(new THREE.BufferGeometry());
+    shelf.geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute([-1, 0.3, -1, 1, 0.3, -1, 1, 0.3, 1, -1, 0.3, 1], 3)
+    );
+    shelf.geometry.setIndex([0, 1, 2, 0, 2, 3]);
+    const low = createCollider(new THREE.Group().add(shelf));
+    expect(hasHeadroom(low, feet, STANCES.stand.height)).toBe(false);
+    expect(hasHeadroom(low, feet, STANCES.crouch.height)).toBe(true);
+    expect(hasHeadroom(low, feet, STANCES.prone.height)).toBe(true);
+    expect(hasHeadroom(null, feet, STANCES.stand.height)).toBe(true);
   });
 });

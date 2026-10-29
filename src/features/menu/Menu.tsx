@@ -1062,6 +1062,7 @@ export function Menu() {
   return (
     <DndProvider backend={MultiBackend} options={HTML5toTouch}>
       <Box
+        className="cosmic-hud"
         sx={{
           position: 'fixed',
           top: '50%',
