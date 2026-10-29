@@ -27,6 +27,25 @@ const JUMP_GRACE_S = 0.1;
 const MIN_FOV = 40;
 const MAX_FOV = 100;
 const TARGET_REACHED = 0.15;
+/** A glide takes this long at least and at most, in seconds (see flyTo). */
+const GLIDE_MIN_S = 0.7;
+const GLIDE_MAX_S = 2.4;
+const GLIDE_S_PER_M = 0.25;
+
+/** A smooth move to a spot and viewing direction, started with flyTo. */
+interface Glide {
+  fromFeet: THREE.Vector3;
+  toFeet: THREE.Vector3;
+  fromYaw: number;
+  /** The yaw change along the shorter way round, in radians. */
+  deltaYaw: number;
+  fromPitch: number;
+  toPitch: number;
+  elapsed: number;
+  duration: number;
+}
+
+const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
 export interface WalkControlsOptions {
   /**
@@ -84,6 +103,7 @@ export class WalkControls {
   >();
   private pinchDistance = 0;
   private target: THREE.Vector3 | null = null;
+  private glide: Glide | null = null;
   private readonly smoothedMove = new THREE.Vector3();
   private readonly forward = new THREE.Vector3();
   private readonly right = new THREE.Vector3();
@@ -153,6 +173,16 @@ export class WalkControls {
     return this.currentStance;
   }
 
+  /** Eye height above the feet in the current stance, once the view has settled into it. */
+  get settledEyeHeight(): number {
+    return this.shapeOf(this.currentStance).eyeHeight;
+  }
+
+  /** True while the camera glides to a spot started with flyTo. */
+  get gliding(): boolean {
+    return this.glide !== null;
+  }
+
   private shapeOf(stance: Stance): StanceShape {
     if (stance !== 'stand') return STANCES[stance];
     return {
@@ -192,11 +222,13 @@ export class WalkControls {
     this.walker.verticalVelocity = 0;
     this.walker.onGround = false;
     this.target = null;
+    this.glide = null;
     this.lastSafe.copy(this.walker.position);
   }
 
   /** Puts the walker on the floor below the given point, standing there. */
   placeAt(point: THREE.Vector3) {
+    this.glide = null;
     let y = point.y;
     if (this.collider) {
       const floor = floorHeightBelow(this.collider, new THREE.Vector3(point.x, point.y, point.z));
@@ -216,7 +248,63 @@ export class WalkControls {
   }
 
   walkTo(point: THREE.Vector3) {
+    this.glide = null;
     this.target = point.clone();
+  }
+
+  /**
+   * Glides the camera to stand at `feet` and look at `lookAt`, easing in and out; `feet` null
+   * only turns on the spot. The collision mesh is not consulted on the way, so the caller picks
+   * a clear path. `screenX` is where the point should appear across the view, from -1 (left
+   * edge) to 1 (right edge), 0 being the middle. Walking or dragging the view takes over again.
+   */
+  flyTo(feet: THREE.Vector3 | null, lookAt: THREE.Vector3, screenX = 0) {
+    const toFeet = feet ? feet.clone() : this.walker.position.clone();
+    const eye = toFeet.y + this.settledEyeHeight;
+    const dx = lookAt.x - toFeet.x;
+    const dz = lookAt.z - toFeet.z;
+    const ahead = Math.hypot(dx, dz);
+    // Standing right under or over the point, the direction is undefined; keep the heading.
+    // Turning the view to the right of the point (a lower yaw) moves the point to the left.
+    const halfWidth = Math.tan(THREE.MathUtils.degToRad(this.camera.fov) / 2) * this.camera.aspect;
+    const toYaw = ahead > 1e-3 ? Math.atan2(-dx, -dz) + Math.atan(screenX * halfWidth) : this.yaw;
+    const toPitch = THREE.MathUtils.clamp(
+      Math.atan2(lookAt.y - eye, Math.max(ahead, 1e-3)),
+      -MAX_PITCH,
+      MAX_PITCH
+    );
+    const twoPi = Math.PI * 2;
+    const deltaYaw = THREE.MathUtils.euclideanModulo(toYaw - this.yaw + Math.PI, twoPi) - Math.PI;
+    this.target = null;
+    this.glide = {
+      fromFeet: this.walker.position.clone(),
+      toFeet,
+      fromYaw: this.yaw,
+      deltaYaw,
+      fromPitch: this.pitch,
+      toPitch,
+      elapsed: 0,
+      duration: Math.min(
+        GLIDE_MIN_S + toFeet.distanceTo(this.walker.position) * GLIDE_S_PER_M,
+        GLIDE_MAX_S
+      ),
+    };
+  }
+
+  private stepGlide(dt: number) {
+    const glide = this.glide;
+    if (!glide) return;
+    glide.elapsed += dt;
+    const t = Math.min(glide.elapsed / glide.duration, 1);
+    const eased = easeInOutCubic(t);
+    this.walker.position.lerpVectors(glide.fromFeet, glide.toFeet, eased);
+    this.walker.verticalVelocity = 0;
+    this.yaw = glide.fromYaw + glide.deltaYaw * eased;
+    this.pitch = glide.fromPitch + (glide.toPitch - glide.fromPitch) * eased;
+    if (t >= 1) {
+      this.glide = null;
+      this.lastSafe.copy(this.walker.position);
+    }
   }
 
   update(dt: number) {
@@ -234,7 +322,19 @@ export class WalkControls {
     if (this.keys.has('KeyS') || this.keys.has('ArrowDown')) ahead -= 1;
 
     const manual = strafe !== 0 || ahead !== 0;
-    if (manual) this.target = null;
+    if (manual) {
+      this.target = null;
+      this.glide = null;
+    }
+
+    if (this.glide) {
+      this.smoothedMove.set(0, 0, 0);
+      this.stepGlide(dt);
+      this.eye +=
+        (this.shapeOf(this.currentStance).eyeHeight - this.eye) * (1 - Math.exp(-dt * 10));
+      this.applyToCamera();
+      return;
+    }
 
     this.desired.set(0, 0, 0);
     if (manual) {
@@ -402,6 +502,7 @@ export class WalkControls {
       return;
     }
     if (pointer.moved > TAP_MAX_MOVE_PX) {
+      this.glide = null;
       this.yaw -= dx * LOOK_SENSITIVITY;
       this.pitch = THREE.MathUtils.clamp(this.pitch - dy * LOOK_SENSITIVITY, -MAX_PITCH, MAX_PITCH);
     }

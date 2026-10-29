@@ -22,6 +22,7 @@ import { ObjectSegment, segmentContains, segmentObjectAt, segmentVolume } from '
 import { SpaceMinimap } from './minimapImage';
 import { VirtualJoystick } from './VirtualJoystick';
 import { WalkControls } from './WalkControls';
+import { planTagApproach } from './tagApproach';
 import {
   Collider,
   createCollider,
@@ -41,6 +42,10 @@ const MARKER_PICK_RADIUS_PX = 28;
 /** Half size of the "[ ]" reticle in the middle of the view while the mouse looks around. */
 const RETICLE_HALF_W_PX = 40;
 const RETICLE_HALF_H_PX = 30;
+/** Width of the tag window (see MatterTagWindow), which opens in the middle of the screen. */
+const TAG_WINDOW_WIDTH_PX = 380;
+/** Below this much free room beside the tag window the tag stays in the middle of the view. */
+const MIN_FREE_SIDE_PX = 160;
 /** Colour of the "[ ]" reticle while a tag is inside it. */
 const RETICLE_TAG_COLOR = '#3380FF';
 /** What a hovered tag object is brightened by (added to the splat colours) and how soft its edge is. */
@@ -333,6 +338,24 @@ export const SplatScene = ({
     const findTag = (clientX: number, clientY: number, inReticle: boolean): Marker | null =>
       findSegmentTag(clientX, clientY) ?? findMarker(clientX, clientY, inReticle);
 
+    /** Glides to about a metre in front of a tag and turns to it, as if walking up to it. */
+    const approachTag = (marker: Marker) => {
+      if (modeRef.current !== 'walk') return;
+      const tag = marker.sprite.position;
+      const feet = planTagApproach(
+        colliderRef.current,
+        camera.position,
+        tag,
+        walk.settledEyeHeight
+      );
+      // Next to the tag window, not behind it: in the middle of the free strip on its left.
+      const width = renderer.domElement.clientWidth;
+      const freeSide = width / 2 - TAG_WINDOW_WIDTH_PX / 2;
+      const screenX =
+        mouseLookRef.current && freeSide >= MIN_FREE_SIDE_PX ? -1 + freeSide / width : 0;
+      walk.flyTo(feet, tag, screenX);
+    };
+
     const handleTap = (clientX: number, clientY: number, pointerType: string) => {
       // Calibration picks are handled by the pointer listener below.
       if (calibrationRef.current) return;
@@ -344,6 +367,7 @@ export const SplatScene = ({
         const tag = findTag(clientX, clientY, true);
         if (tag) {
           callbacks.current.onTagClick?.(tag.location);
+          approachTag(tag);
           walk.exitLock();
         }
         return;
@@ -354,6 +378,7 @@ export const SplatScene = ({
         // Opening a window with the menu button held is a menu use: the mouse stays free.
         if (menuHeld) usedMenu = true;
         callbacks.current.onTagClick?.(tag.location);
+        approachTag(tag);
         return;
       }
       if (modeRef.current === 'walk') {
@@ -1190,7 +1215,7 @@ export const SplatScene = ({
             ? 'Ziehen: drehen · Mausrad/Pinch: zoomen'
             : isMobile
               ? 'Stick: gehen · Wischen: umsehen · Tippen: hingehen · Lang tippen: Tag anlegen'
-              : `WASD: gehen (Shift: rennen) · Leertaste: springen · C: ducken · Z: liegen · Maus: umsehen · Klick auf Objekt: Tag öffnen · Rechtsklick: Tag anlegen · Rechtsklick halten: Menüs · Esc: Maus freigeben${hasCollider ? '' : ' · ohne Kollision'}`}
+              : `WASD: gehen (Shift: rennen) · Leertaste: springen · C: ducken · Z: liegen · Maus: umsehen · Klick auf Objekt: hinfliegen und Tag öffnen · Rechtsklick: Tag anlegen · Rechtsklick halten: Menüs · Esc: Maus freigeben${hasCollider ? '' : ' · ohne Kollision'}`}
         </Typography>
       )}
     </Box>
