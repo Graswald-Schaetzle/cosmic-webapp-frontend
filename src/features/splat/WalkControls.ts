@@ -10,6 +10,10 @@ import {
 } from './walkPhysics';
 
 const LOOK_SENSITIVITY = 0.0032;
+/** Radians per mouse count while the pointer is locked (mouse look as in a first-person game). */
+const MOUSE_LOOK_SENSITIVITY = 0.0022;
+/** Some browsers report one huge movement when the lock starts or ends; those are dropped. */
+const MAX_MOUSE_STEP = 250;
 const MAX_PITCH = Math.PI / 2 - 0.05;
 const TAP_MAX_MOVE_PX = 8;
 const TAP_MAX_MS = 350;
@@ -18,8 +22,15 @@ const MAX_FOV = 100;
 const TARGET_REACHED = 0.15;
 
 export interface WalkControlsOptions {
-  /** Called for a short press without dragging, with client coordinates. */
-  onTap?: (clientX: number, clientY: number) => void;
+  /**
+   * Called for a short press without dragging, with client coordinates. While the pointer is
+   * locked it is the centre of the view, where the crosshair is.
+   */
+  onTap?: (clientX: number, clientY: number, pointerType: string) => void;
+  /** Called when mouse look starts (true) or ends (false), also when the user presses Esc. */
+  onLockChange?: (locked: boolean) => void;
+  /** Called when the browser refuses to lock the pointer. */
+  onLockError?: () => void;
   params?: WalkParams;
 }
 
@@ -33,6 +44,9 @@ const isTypingTarget = (target: EventTarget | null) => {
  * First-person controls for a splat scene: WASD / arrow keys (Shift to run), drag to look,
  * on-screen joystick input for touch, pinch to zoom, and "walk to point" targets. Movement is
  * resolved against an optional collision mesh; without one the camera flies freely.
+ *
+ * With the pointer locked (see requestLock) the mouse turns the view directly, like in a
+ * first-person game, and a click acts on the centre of the view.
  */
 export class WalkControls {
   enabled = true;
@@ -40,6 +54,8 @@ export class WalkControls {
   readonly walker: WalkerState;
   yaw = 0;
   pitch = 0;
+  /** Whether requestLock may lock the pointer; off on touch devices. */
+  mouseLook = false;
 
   /** Joystick vector in [-1, 1]: x = strafe right, y = forward. */
   moveInput = new THREE.Vector2();
@@ -75,9 +91,34 @@ export class WalkControls {
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
     window.addEventListener('blur', this.onBlur);
+    document.addEventListener('pointerlockchange', this.onLockChange);
+    document.addEventListener('pointerlockerror', this.onLockError);
+    document.addEventListener('mousemove', this.onMouseMove);
+  }
+
+  /** True while the pointer is locked to the view and the mouse turns the camera. */
+  get locked(): boolean {
+    return document.pointerLockElement === this.element;
+  }
+
+  /** Locks the pointer; must run inside a user gesture (click, key press). */
+  requestLock() {
+    if (!this.mouseLook || this.locked || !this.element.requestPointerLock) return;
+    try {
+      // Older browsers return nothing, newer ones a promise that rejects when refused.
+      const result = this.element.requestPointerLock() as Promise<void> | undefined;
+      result?.catch?.(() => this.options.onLockError?.());
+    } catch {
+      this.options.onLockError?.();
+    }
+  }
+
+  exitLock() {
+    if (this.locked) document.exitPointerLock();
   }
 
   dispose() {
+    this.exitLock();
     this.element.removeEventListener('pointerdown', this.onPointerDown);
     this.element.removeEventListener('pointermove', this.onPointerMove);
     this.element.removeEventListener('pointerup', this.onPointerUp);
@@ -86,6 +127,9 @@ export class WalkControls {
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
     window.removeEventListener('blur', this.onBlur);
+    document.removeEventListener('pointerlockchange', this.onLockChange);
+    document.removeEventListener('pointerlockerror', this.onLockError);
+    document.removeEventListener('mousemove', this.onMouseMove);
   }
 
   /** True while the user is moving or looking, used to pause "hold still to place a tag". */
@@ -232,9 +276,32 @@ export class WalkControls {
     this.moveInput.set(0, 0);
   };
 
+  private onLockChange = () => {
+    // Pointer states from before the switch would turn into bogus drags or taps.
+    this.pointers.clear();
+    this.pinchDistance = 0;
+    this.options.onLockChange?.(this.locked);
+  };
+
+  private onLockError = () => this.options.onLockError?.();
+
+  private onMouseMove = (event: MouseEvent) => {
+    if (!this.enabled || !this.locked) return;
+    if (Math.abs(event.movementX) > MAX_MOUSE_STEP || Math.abs(event.movementY) > MAX_MOUSE_STEP)
+      return;
+    this.yaw -= event.movementX * MOUSE_LOOK_SENSITIVITY;
+    this.pitch = THREE.MathUtils.clamp(
+      this.pitch - event.movementY * MOUSE_LOOK_SENSITIVITY,
+      -MAX_PITCH,
+      MAX_PITCH
+    );
+    this.lastLookActivity = performance.now();
+  };
+
   private onPointerDown = (event: PointerEvent) => {
-    if (!this.enabled) return;
-    this.element.setPointerCapture?.(event.pointerId);
+    // Only the primary button looks and taps; the secondary one is used for the menus.
+    if (!this.enabled || (event.pointerType === 'mouse' && event.button !== 0)) return;
+    if (!this.locked) this.element.setPointerCapture?.(event.pointerId);
     this.pointers.set(event.pointerId, {
       x: event.clientX,
       y: event.clientY,
@@ -248,7 +315,8 @@ export class WalkControls {
 
   private onPointerMove = (event: PointerEvent) => {
     const pointer = this.pointers.get(event.pointerId);
-    if (!this.enabled || !pointer) return;
+    // While locked the mouse turns the view (onMouseMove) and the pointer position stands still.
+    if (!this.enabled || !pointer || this.locked) return;
     const dx = event.clientX - pointer.x;
     const dy = event.clientY - pointer.y;
     pointer.x = event.clientX;
@@ -280,7 +348,17 @@ export class WalkControls {
     if (!this.enabled || !pointer || event.type === 'pointercancel') return;
     const isTap =
       pointer.moved <= TAP_MAX_MOVE_PX && performance.now() - pointer.startT <= TAP_MAX_MS;
-    if (isTap && this.pointers.size === 0) this.options.onTap?.(event.clientX, event.clientY);
+    if (!isTap || this.pointers.size !== 0) return;
+    if (this.locked) {
+      const rect = this.element.getBoundingClientRect();
+      this.options.onTap?.(
+        rect.left + rect.width / 2,
+        rect.top + rect.height / 2,
+        event.pointerType
+      );
+    } else {
+      this.options.onTap?.(event.clientX, event.clientY, event.pointerType);
+    }
   };
 
   private onWheel = (event: WheelEvent) => {

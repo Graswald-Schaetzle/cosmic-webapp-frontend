@@ -312,6 +312,8 @@ export const FloorPlanMap = ({
   if (!open) {
     return (
       <IconButton
+        className="cosmic-hud"
+        data-keep-look
         aria-label="Minimap öffnen"
         onClick={() => toggle(true)}
         sx={{
@@ -337,6 +339,8 @@ export const FloorPlanMap = ({
   return (
     // The window look of the rest of the app: translucent dark glass with large rounded corners.
     <Box
+      className="cosmic-hud"
+      data-keep-look
       data-testid="floor-plan-map"
       sx={{
         position: 'absolute',

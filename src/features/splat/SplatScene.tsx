@@ -29,6 +29,18 @@ const MARKER_PICK_RADIUS_PX = 28;
 
 export type ViewMode = 'walk' | 'orbit';
 
+/**
+ * How the mouse is used on desktop while walking:
+ * - free: the pointer is a normal cursor; a click on the scene starts mouse look.
+ * - look: the pointer is locked and the mouse turns the view like in a first-person game; the
+ *   menus are faded out so the scene stays clear.
+ * - menu: the secondary mouse button is held; the pointer is released so the menus can be used,
+ *   they are brought forward and the scene steps back.
+ * The state is mirrored to `data-look-mode` on <html> so the app's menus (outside this
+ * component) can follow it with the `cosmic-hud` class.
+ */
+export type LookState = 'free' | 'look' | 'menu';
+
 // Signed download URLs carry a query string (?X-Goog-Signature=...), so the file extension has
 // to be read from the URL path. Unknown extensions are left to Spark's content detection.
 export const getSplatFileType = (url: string): SplatFileType | undefined => {
@@ -121,6 +133,8 @@ export const SplatScene = ({
   onLoadingChange,
 }: SplatSceneProps) => {
   const isMobile = useIsMobile();
+  const mouseLookRef = useRef(!isMobile);
+  mouseLookRef.current = !isMobile;
   const placement = useMemo(() => resolvePlacement(frame, view), [frame, view]);
   const placementRef = useRef(placement);
   placementRef.current = placement;
@@ -148,6 +162,9 @@ export const SplatScene = ({
   const [hasCollider, setHasCollider] = useState(false);
   const [mode, setModeState] = useState<ViewMode>('orbit');
   const [indicator, setIndicator] = useState<Indicator | null>(null);
+  const indicatorRef = useRef<Indicator | null>(null);
+  indicatorRef.current = indicator;
+  const [lookState, setLookState] = useState<LookState>('free');
   const [showHint, setShowHint] = useState(true);
   const [floorPlan, setFloorPlan] = useState<FloorPlan | null>(null);
   // Where the camera is, for the floor plan; updated every frame without re-rendering.
@@ -166,6 +183,7 @@ export const SplatScene = ({
       walk.placeAt(camera.position);
       camera.up.set(0, 1, 0);
     } else {
+      walk.exitLock();
       walk.enabled = false;
       orbit.enabled = true;
       const direction = new THREE.Vector3();
@@ -239,10 +257,27 @@ export const SplatScene = ({
       };
     };
 
-    const handleTap = (clientX: number, clientY: number) => {
+    const centerOfView = () => {
+      const rect = renderer.domElement.getBoundingClientRect();
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    };
+
+    // Mouse look: the secondary button is held (menu), and what the menus did meanwhile.
+    let menuHeld = false;
+    let usedMenu = false;
+    let relockOnUnlock = false;
+
+    const handleTap = (clientX: number, clientY: number, pointerType: string) => {
+      const shownIndicator = indicatorRef.current;
       setIndicator(null);
       // Calibration picks are handled by the pointer listener below.
       if (calibrationRef.current) return;
+      // With the pointer locked the "+" sits under the crosshair, where the click lands.
+      if (walk.locked && shownIndicator) {
+        const { point } = shownIndicator;
+        callbacks.current.onPlaceTag?.({ x: point.x, y: point.y, z: point.z });
+        return;
+      }
       let nearest: Marker | null = null;
       let nearestDistance = MARKER_PICK_RADIUS_PX;
       for (const marker of markersRef.current) {
@@ -260,18 +295,51 @@ export const SplatScene = ({
         return;
       }
       if (modeRef.current === 'walk') {
+        // A click on the empty scene hands the mouse to the view, unless the menus are in use.
+        if (pointerType === 'mouse' && walk.mouseLook) {
+          if (!menuHeld) walk.requestLock();
+          return;
+        }
         const point = pickPoint(clientX, clientY);
         if (point) walk.walkTo(point);
       }
     };
 
-    const walk = new WalkControls(camera, renderer.domElement, { onTap: handleTap });
+    const walk = new WalkControls(camera, renderer.domElement, {
+      onTap: handleTap,
+      onLockChange: locked => {
+        setIndicator(null);
+        lockedOffset = { x: 0, y: 0 };
+        if (locked) {
+          setLookState('look');
+          const center = centerOfView();
+          startDwell(center.x, center.y);
+          return;
+        }
+        clearDwell();
+        if (relockOnUnlock) {
+          // The menu button was released before the browser had let go; take the mouse back.
+          relockOnUnlock = false;
+          walk.requestLock();
+          return;
+        }
+        setLookState(menuHeld ? 'menu' : 'free');
+      },
+      onLockError: () => {
+        menuHeld = false;
+        relockOnUnlock = false;
+        setLookState('free');
+      },
+    });
+    walk.mouseLook = mouseLookRef.current;
     walk.enabled = false;
     walkRef.current = walk;
 
     // "Hold still to place a tag": the pointer rests for DWELL_MS without moving or walking.
     let dwellTimer: ReturnType<typeof setTimeout> | null = null;
     let dwellAnchor = { x: 0, y: 0 };
+    // While the pointer is locked it does not move; the mouse's travel since the dwell began.
+    let lockedOffset = { x: 0, y: 0 };
     let touchDown = false;
     const clearDwell = () => {
       if (dwellTimer) clearTimeout(dwellTimer);
@@ -291,6 +359,17 @@ export const SplatScene = ({
     };
     const onDwellMove = (event: PointerEvent) => {
       if (event.pointerType === 'touch' && !touchDown) return;
+      if (walk.locked) {
+        lockedOffset.x += event.movementX;
+        lockedOffset.y += event.movementY;
+        if (Math.hypot(lockedOffset.x, lockedOffset.y) > DWELL_MOVE_PX) {
+          lockedOffset = { x: 0, y: 0 };
+          setIndicator(null);
+          const center = centerOfView();
+          startDwell(center.x, center.y);
+        }
+        return;
+      }
       const moved = Math.hypot(event.clientX - dwellAnchor.x, event.clientY - dwellAnchor.y);
       if (moved > DWELL_MOVE_PX) {
         setIndicator(null);
@@ -298,6 +377,8 @@ export const SplatScene = ({
       }
     };
     const onDwellDown = (event: PointerEvent) => {
+      // A click under the crosshair confirms the "+" (see handleTap); it must not clear it first.
+      if (walk.locked) return;
       if (event.pointerType === 'touch') touchDown = true;
       setIndicator(null);
       startDwell(event.clientX, event.clientY);
@@ -331,6 +412,47 @@ export const SplatScene = ({
     };
     dom.addEventListener('pointerdown', onCalibrationDown);
     dom.addEventListener('pointerup', onCalibrationUp);
+
+    // Holding the secondary mouse button lets go of the pointer for as long as it is held, so
+    // the menus can be clicked; letting go takes the mouse back unless a menu was used (it may
+    // have opened a window that needs the cursor).
+    const onWindowPointerDown = (event: PointerEvent) => {
+      if (event.pointerType !== 'mouse') return;
+      if (event.button === 2 && walk.locked) {
+        menuHeld = true;
+        usedMenu = false;
+        walk.exitLock();
+      } else if (event.button === 0 && menuHeld) {
+        const target = event.target as Element | null;
+        if (target !== dom && !target?.closest?.('[data-keep-look]')) usedMenu = true;
+      }
+    };
+    const onWindowPointerUp = (event: PointerEvent) => {
+      if (event.button !== 2 || !menuHeld) return;
+      menuHeld = false;
+      if (usedMenu || modeRef.current !== 'walk') {
+        setLookState('free');
+      } else if (walk.locked) {
+        relockOnUnlock = true;
+      } else {
+        walk.requestLock();
+      }
+    };
+    const onWindowBlur = () => {
+      if (!menuHeld) return;
+      menuHeld = false;
+      setLookState('free');
+    };
+    const onContextMenu = (event: MouseEvent) => {
+      if (!walk.mouseLook || modeRef.current !== 'walk') return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest?.('input, textarea, [contenteditable]')) return;
+      event.preventDefault();
+    };
+    window.addEventListener('pointerdown', onWindowPointerDown, true);
+    window.addEventListener('pointerup', onWindowPointerUp, true);
+    window.addEventListener('blur', onWindowBlur);
+    window.addEventListener('contextmenu', onContextMenu);
 
     const spark = new SparkRenderer({ renderer });
     scene.add(spark);
@@ -471,6 +593,11 @@ export const SplatScene = ({
       dom.removeEventListener('pointerleave', clearDwell);
       dom.removeEventListener('pointerdown', onCalibrationDown);
       dom.removeEventListener('pointerup', onCalibrationUp);
+      window.removeEventListener('pointerdown', onWindowPointerDown, true);
+      window.removeEventListener('pointerup', onWindowPointerUp, true);
+      window.removeEventListener('blur', onWindowBlur);
+      window.removeEventListener('contextmenu', onContextMenu);
+      setLookState('free');
       resizeObserver.disconnect();
       renderer.setAnimationLoop(null);
       walk.dispose();
@@ -637,6 +764,14 @@ export const SplatScene = ({
     // Textures are shared per type; dispose them with the markers on the next sync.
   }, [tags, isLoading]);
 
+  // The app's menus follow the mouse look state through the document (see LookState).
+  useEffect(() => {
+    document.documentElement.dataset.lookMode = lookState;
+    return () => {
+      delete document.documentElement.dataset.lookMode;
+    };
+  }, [lookState]);
+
   // Hide the control hint after a few seconds.
   useEffect(() => {
     if (isLoading) return;
@@ -647,6 +782,39 @@ export const SplatScene = ({
   return (
     <Box sx={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
       <Box ref={containerRef} sx={{ position: 'absolute', inset: 0 }} />
+
+      {/* While the menus are held forward, the scene steps back. */}
+      <Box
+        data-testid="look-dim"
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 10,
+          pointerEvents: 'none',
+          backgroundColor: 'rgba(0, 0, 0, 0.45)',
+          opacity: lookState === 'menu' ? 1 : 0,
+          transition: 'opacity 0.25s ease',
+        }}
+      />
+
+      {lookState === 'look' && (
+        <Box
+          data-testid="look-crosshair"
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            width: 6,
+            height: 6,
+            transform: 'translate(-50%, -50%)',
+            borderRadius: '50%',
+            backgroundColor: 'rgba(255, 255, 255, 0.85)',
+            boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.45)',
+            zIndex: 15,
+            pointerEvents: 'none',
+          }}
+        />
+      )}
 
       {isLoading && (
         <Box
@@ -741,6 +909,8 @@ export const SplatScene = ({
 
       {!isLoading && !error && (
         <ToggleButtonGroup
+          className="cosmic-hud"
+          data-keep-look
           exclusive
           size="small"
           value={mode}
@@ -790,6 +960,34 @@ export const SplatScene = ({
         <VirtualJoystick onChange={(x, y) => walkRef.current?.moveInput.set(x, y)} />
       )}
 
+      {!isLoading &&
+        !error &&
+        mode === 'walk' &&
+        !isMobile &&
+        !isCalibrating &&
+        lookState === 'free' && (
+          <Typography
+            sx={{
+              position: 'absolute',
+              bottom: 76,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 20,
+              px: 2,
+              py: 0.75,
+              borderRadius: '16px',
+              backgroundColor: 'rgba(46, 46, 46, 0.6)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              color: 'rgba(255,255,255,0.85)',
+              fontSize: 12,
+              pointerEvents: 'none',
+            }}
+          >
+            Klicken, um dich mit der Maus umzusehen
+          </Typography>
+        )}
+
       {!isLoading && !error && showHint && (
         <Typography
           sx={{
@@ -815,7 +1013,7 @@ export const SplatScene = ({
             ? 'Ziehen: drehen · Mausrad/Pinch: zoomen'
             : isMobile
               ? 'Stick: gehen · Wischen: umsehen · Tippen: hingehen · Halten: Ort anlegen'
-              : `WASD: gehen (Shift: schneller) · Ziehen: umsehen · Klick: hingehen · ${DWELL_MS / 1000} s ruhen: Ort anlegen${hasCollider ? '' : ' · ohne Kollision'}`}
+              : `WASD: gehen (Shift: schneller) · Maus: umsehen · Klick: hingehen · Rechtsklick halten: Menüs · Esc: Maus freigeben · ${DWELL_MS / 1000} s ruhen: Ort anlegen${hasCollider ? '' : ' · ohne Kollision'}`}
         </Typography>
       )}
     </Box>

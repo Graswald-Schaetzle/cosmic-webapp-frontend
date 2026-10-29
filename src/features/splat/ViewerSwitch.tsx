@@ -82,6 +82,8 @@ export function ViewerSwitch({ children }: { children?: ReactNode }) {
       )}
       {both && (
         <ToggleButtonGroup
+          className="cosmic-hud"
+          data-keep-look
           exclusive
           size="small"
           value={viewer}

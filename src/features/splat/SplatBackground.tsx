@@ -142,6 +142,8 @@ export function SplatBackground({ space, children }: SplatBackgroundProps) {
         ) : (
           calibrationAvailable && (
             <Button
+              className="cosmic-hud"
+              data-keep-look
               size="small"
               onClick={() => setCalibrating(true)}
               sx={{

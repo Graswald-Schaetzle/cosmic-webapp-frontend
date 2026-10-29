@@ -212,3 +212,19 @@
     @apply bg-background text-foreground;
   }
 }
+
+/*
+ * Menus and controls of the 3D viewer. While the mouse turns the view (data-look-mode="look",
+ * set by SplatScene) they fade into the background; holding the secondary mouse button brings
+ * them back at full strength.
+ */
+.cosmic-hud {
+  transition:
+    opacity 0.25s ease,
+    filter 0.25s ease;
+}
+html[data-look-mode='look'] .cosmic-hud {
+  opacity: 0.3;
+  filter: brightness(0.6);
+  pointer-events: none;
+}
