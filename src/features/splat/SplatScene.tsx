@@ -3,13 +3,22 @@ import { Box, CircularProgress, ToggleButton, ToggleButtonGroup, Typography } fr
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { SparkRenderer, SplatMesh, SplatFileType } from '@sparkjsdev/spark';
+import {
+  SparkRenderer,
+  SplatEdit,
+  SplatEditRgbaBlendMode,
+  SplatEditSdf,
+  SplatEditSdfType,
+  SplatMesh,
+  SplatFileType,
+} from '@sparkjsdev/spark';
 import { LocationItem } from '../../api/locationApi/locationApi';
 import { SplatView } from '../../api/reconstruction/reconstructionApi';
 import { SpaceFrame, applyPlacementTo, placementToMatrix, resolvePlacement } from './spaceFrame';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { FloorPlanMap, MapPose, MapTag } from './FloorPlanMap';
 import { FloorPlan, buildFloorPlan } from './floorPlan';
+import { ObjectSegment, segmentContains, segmentObjectAt, segmentVolume } from './objectSegment';
 import { SpaceMinimap } from './minimapImage';
 import { VirtualJoystick } from './VirtualJoystick';
 import { WalkControls } from './WalkControls';
@@ -34,6 +43,13 @@ const RETICLE_HALF_W_PX = 40;
 const RETICLE_HALF_H_PX = 30;
 /** Colour of the "[ ]" reticle while a tag is inside it. */
 const RETICLE_TAG_COLOR = '#3380FF';
+/** What a hovered tag object is brightened by (added to the splat colours) and how soft its edge is. */
+const GLOW_COLOR = new THREE.Color(0.1, 0.17, 0.32);
+const GLOW_SOFT_EDGE = 0.1;
+/** Per second; how fast the glow fades in and out. */
+const GLOW_SPEED = 14;
+/** A tag further than this from the collision mesh gets no object, it keeps its marker. */
+const SEGMENT_MAX_SNAP = 0.3;
 
 export type ViewMode = 'walk' | 'orbit';
 
@@ -95,6 +111,8 @@ interface Marker {
   location: LocationItem;
   sprite: THREE.Sprite;
   visible: boolean;
+  /** The tag is shown as its object (lit on hover) instead of as a marker. */
+  segmented: boolean;
 }
 
 interface SplatSceneProps {
@@ -144,6 +162,8 @@ export const SplatScene = ({
   const splatRef = useRef<SplatMesh | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const markersRef = useRef<Marker[]>([]);
+  const segmentsRef = useRef<Map<string, ObjectSegment>>(new Map());
+  const hoveredIdRef = useRef<string | null>(null);
   const calibrationMarkersRef = useRef<THREE.Sprite[]>([]);
   // The collision mesh as loaded (without placement) and the placement its collider was built for.
   const colliderSourceRef = useRef<THREE.Object3D | null>(null);
@@ -289,6 +309,30 @@ export const SplatScene = ({
       return nearest;
     };
 
+    /** The tag whose object the ray through a screen point hits (the smallest, where they overlap). */
+    const findSegmentTag = (clientX: number, clientY: number): Marker | null => {
+      const segments = segmentsRef.current;
+      if (!segments.size) return null;
+      const point = pickPoint(clientX, clientY);
+      if (!point) return null;
+      let nearest: Marker | null = null;
+      let nearestVolume = Infinity;
+      for (const marker of markersRef.current) {
+        const segment = segments.get(marker.location.location_id);
+        if (!segment || !segmentContains(segment, point)) continue;
+        const volume = segmentVolume(segment);
+        if (volume < nearestVolume) {
+          nearest = marker;
+          nearestVolume = volume;
+        }
+      }
+      return nearest;
+    };
+
+    /** The tag under a screen point: its lit-up object, or its marker (rooms, tags without object). */
+    const findTag = (clientX: number, clientY: number, inReticle: boolean): Marker | null =>
+      findSegmentTag(clientX, clientY) ?? findMarker(clientX, clientY, inReticle);
+
     const handleTap = (clientX: number, clientY: number, pointerType: string) => {
       // Calibration picks are handled by the pointer listener below.
       if (calibrationRef.current) return;
@@ -297,7 +341,7 @@ export const SplatScene = ({
       if (locked) {
         // Mouse look: the click acts inside the "[ ]" in the middle of the view. The windows
         // that open need the cursor, so the mouse is let go.
-        const tag = findMarker(clientX, clientY, true);
+        const tag = findTag(clientX, clientY, true);
         if (tag) {
           callbacks.current.onTagClick?.(tag.location);
           walk.exitLock();
@@ -305,7 +349,7 @@ export const SplatScene = ({
         return;
       }
 
-      const tag = findMarker(clientX, clientY, false);
+      const tag = findTag(clientX, clientY, false);
       if (tag) {
         // Opening a window with the menu button held is a menu use: the mouse stays free.
         if (menuHeld) usedMenu = true;
@@ -390,7 +434,8 @@ export const SplatScene = ({
     dom.addEventListener('pointercancel', clearLongPress);
     dom.addEventListener('pointerleave', clearLongPress);
 
-    // Calibration: a tap (press and release without dragging) on the model picks a point.
+    // A tap (press and release without dragging) on the model picks a calibration point; in the
+    // orbit view, where walking is off, it opens the tag under it.
     let pressAt: { x: number; y: number } | null = null;
     const onCalibrationDown = (event: PointerEvent) => {
       pressAt = { x: event.clientX, y: event.clientY };
@@ -398,14 +443,49 @@ export const SplatScene = ({
     const onCalibrationUp = (event: PointerEvent) => {
       const press = pressAt;
       pressAt = null;
-      const active = calibrationRef.current;
-      if (!active || !press) return;
+      if (!press) return;
       if (Math.hypot(event.clientX - press.x, event.clientY - press.y) > TAP_MOVE_PX) return;
-      const point = pickPoint(event.clientX, event.clientY);
-      if (point) active.onPick(point);
+      const active = calibrationRef.current;
+      if (active) {
+        const point = pickPoint(event.clientX, event.clientY);
+        if (point) active.onPick(point);
+        return;
+      }
+      if (modeRef.current !== 'orbit' || (event.pointerType === 'mouse' && event.button !== 0))
+        return;
+      const tag = findTag(event.clientX, event.clientY, false);
+      if (tag) callbacks.current.onTagClick?.(tag.location);
     };
     dom.addEventListener('pointerdown', onCalibrationDown);
     dom.addEventListener('pointerup', onCalibrationUp);
+
+    // Where the mouse is over the view, for lighting up the tag object under it.
+    let hoverAt: { x: number; y: number } | null = null;
+    const onHoverMove = (event: PointerEvent) => {
+      hoverAt = event.pointerType === 'touch' ? null : { x: event.clientX, y: event.clientY };
+    };
+    const onHoverLeave = () => {
+      hoverAt = null;
+    };
+    dom.addEventListener('pointermove', onHoverMove);
+    dom.addEventListener('pointerleave', onHoverLeave);
+
+    // The glow of a hovered tag object: a soft box that brightens the splats inside it.
+    const glowEdit = new SplatEdit({
+      rgbaBlendMode: SplatEditRgbaBlendMode.ADD_RGBA,
+      softEdge: GLOW_SOFT_EDGE,
+    });
+    // Opacity 0: only the colour is added, the splats keep their transparency.
+    const glowBox = new SplatEditSdf({
+      type: SplatEditSdfType.BOX,
+      color: new THREE.Color(0, 0, 0),
+      opacity: 0,
+    });
+    glowEdit.add(glowBox);
+    glowEdit.visible = false;
+    scene.add(glowEdit);
+    let glow = 0;
+    const up = new THREE.Vector3(0, 1, 0);
 
     // A short secondary click places a tag where the crosshair points (or at the cursor while the
     // mouse is free). Holding the button lets go of the pointer for as long as it is held, so the
@@ -545,7 +625,19 @@ export const SplatScene = ({
             getMode: () => modeRef.current,
             pickPoint,
             markers: () =>
-              markersRef.current.map(m => ({ id: m.location.location_id, visible: m.visible })),
+              markersRef.current.map(m => ({
+                id: m.location.location_id,
+                visible: m.visible,
+                segmented: m.segmented,
+              })),
+            segments: () =>
+              [...segmentsRef.current].map(([id, s]) => ({
+                id,
+                method: s.method,
+                center: s.center.toArray(),
+                size: s.halfExtents.toArray().map(v => 2 * v),
+              })),
+            hovered: () => hoveredIdRef.current,
           };
         }
         setIsLoading(false);
@@ -586,11 +678,11 @@ export const SplatScene = ({
       pose.fov = 2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camera.aspect);
       pose.ready = true;
 
-      // Hide markers that are behind walls.
+      // Hide markers that are behind walls, and those whose tag shows as its object instead.
       for (const marker of markersRef.current) {
-        let visible = true;
+        let visible = !marker.segmented;
         const collider = colliderRef.current;
-        if (collider) {
+        if (visible && collider) {
           toMarker.subVectors(marker.sprite.position, camera.position);
           const distance = toMarker.length();
           const hit = raycastCollider(collider, camera.position, toMarker, distance - 0.15);
@@ -599,9 +691,26 @@ export const SplatScene = ({
         marker.visible = visible;
         marker.sprite.visible = visible;
       }
+
+      // Light up the tag object under the crosshair (mouse look) or the cursor.
+      const aim = walk.locked ? centerOfView() : menuHeld ? null : hoverAt;
+      const hovered = aim && !calibrationRef.current ? findSegmentTag(aim.x, aim.y) : null;
+      const hoveredId = hovered?.location.location_id ?? null;
+      hoveredIdRef.current = hoveredId;
+      const hoveredSegment = hoveredId ? segmentsRef.current.get(hoveredId) : undefined;
+      if (hoveredSegment) {
+        glowBox.position.copy(hoveredSegment.center);
+        glowBox.quaternion.setFromAxisAngle(up, hoveredSegment.yaw);
+        glowBox.scale.copy(hoveredSegment.halfExtents);
+      }
+      glow += ((hoveredSegment ? 1 : 0) - glow) * (1 - Math.exp(-dt * GLOW_SPEED));
+      glowEdit.visible = glow > 0.01;
+      glowBox.color.copy(GLOW_COLOR).multiplyScalar(glow);
+      if (!walk.locked) dom.style.cursor = hoveredSegment ? 'pointer' : '';
+
       // Tell the reticle when a tag is inside it, so the user knows a click opens the tag.
-      let inReticle = false;
-      if (walk.locked) {
+      let inReticle = Boolean(hoveredSegment) && walk.locked;
+      if (walk.locked && !inReticle) {
         const halfW = renderer.domElement.clientWidth / 2;
         const halfH = renderer.domElement.clientHeight / 2;
         for (const marker of markersRef.current) {
@@ -634,6 +743,10 @@ export const SplatScene = ({
       dom.removeEventListener('pointerleave', clearLongPress);
       dom.removeEventListener('pointerdown', onCalibrationDown);
       dom.removeEventListener('pointerup', onCalibrationUp);
+      dom.removeEventListener('pointermove', onHoverMove);
+      dom.removeEventListener('pointerleave', onHoverLeave);
+      dom.style.cursor = '';
+      scene.remove(glowEdit);
       window.removeEventListener('pointerdown', onWindowPointerDown, true);
       window.removeEventListener('pointerup', onWindowPointerUp, true);
       window.removeEventListener('blur', onWindowBlur);
@@ -800,10 +913,47 @@ export const SplatScene = ({
         sprite.renderOrder = 999;
         sprite.position.set(Number(location.x), Number(location.y), Number(location.z));
         scene.add(sprite);
-        return { location, sprite, visible: true };
+        return { location, sprite, visible: true, segmented: false };
       });
     // Textures are shared per type; dispose them with the markers on the next sync.
   }, [tags, isLoading]);
+
+  // Cut the object out of the collision mesh for every object tag. Those tags are then shown as
+  // their object (lit on hover) rather than as a marker; room tags and tags that are not on the
+  // mesh keep their marker. Done one tag per tick so a long list does not freeze the view, and
+  // again after a calibration, which moves the mesh under the tags.
+  useEffect(() => {
+    segmentsRef.current = new Map();
+    for (const marker of markersRef.current) marker.segmented = false;
+    const collider = colliderRef.current;
+    if (isLoading || !collider) return;
+
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const queue = markersRef.current.filter(marker => marker.location.tag_type !== 'room');
+    const step = () => {
+      const marker = queue.shift();
+      if (cancelled || !marker) return;
+      try {
+        const snapped = collider.bvh.closestPointToPoint(marker.sprite.position);
+        if (snapped && snapped.distance <= SEGMENT_MAX_SNAP) {
+          segmentsRef.current.set(
+            marker.location.location_id,
+            segmentObjectAt(collider, snapped.point)
+          );
+          marker.segmented = true;
+        }
+      } catch (err) {
+        console.warn('Tag object unavailable, keeping its marker:', err);
+      }
+      timer = setTimeout(step, 0);
+    };
+    step();
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [tags, isLoading, placement]);
 
   // The app's menus follow the mouse look state through the document (see LookState).
   useEffect(() => {
@@ -1040,7 +1190,7 @@ export const SplatScene = ({
             ? 'Ziehen: drehen · Mausrad/Pinch: zoomen'
             : isMobile
               ? 'Stick: gehen · Wischen: umsehen · Tippen: hingehen · Lang tippen: Tag anlegen'
-              : `WASD: gehen (Shift: rennen) · Leertaste: springen · C: ducken · Z: liegen · Maus: umsehen · Klick auf Tag: öffnen · Rechtsklick: Tag anlegen · Rechtsklick halten: Menüs · Esc: Maus freigeben${hasCollider ? '' : ' · ohne Kollision'}`}
+              : `WASD: gehen (Shift: rennen) · Leertaste: springen · C: ducken · Z: liegen · Maus: umsehen · Klick auf Objekt: Tag öffnen · Rechtsklick: Tag anlegen · Rechtsklick halten: Menüs · Esc: Maus freigeben${hasCollider ? '' : ' · ohne Kollision'}`}
         </Typography>
       )}
     </Box>
