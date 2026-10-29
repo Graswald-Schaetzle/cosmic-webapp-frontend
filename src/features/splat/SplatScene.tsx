@@ -8,12 +8,15 @@ import { LocationItem } from '../../api/locationApi/locationApi';
 import { SplatView } from '../../api/reconstruction/reconstructionApi';
 import { SpaceFrame, applyPlacementTo, placementToMatrix, resolvePlacement } from './spaceFrame';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { FloorPlanMap, MapPose, MapTag } from './FloorPlanMap';
+import { FloorPlan, buildFloorPlan } from './floorPlan';
 import { VirtualJoystick } from './VirtualJoystick';
 import { WalkControls } from './WalkControls';
 import {
   Collider,
   createCollider,
   findStartSpot,
+  floorHeightBelow,
   mostOpenYaw,
   raycastCollider,
 } from './walkPhysics';
@@ -142,6 +145,9 @@ export const SplatScene = ({
   const [mode, setModeState] = useState<ViewMode>('orbit');
   const [indicator, setIndicator] = useState<Indicator | null>(null);
   const [showHint, setShowHint] = useState(true);
+  const [floorPlan, setFloorPlan] = useState<FloorPlan | null>(null);
+  // Where the camera is, for the floor plan; updated every frame without re-rendering.
+  const poseRef = useRef<MapPose>({ ready: false, x: 0, z: 0, heading: 0, fov: 1.5 });
 
   const applyMode = useCallback((next: ViewMode) => {
     const walk = walkRef.current;
@@ -420,10 +426,20 @@ export const SplatScene = ({
 
     const clock = new THREE.Clock();
     const toMarker = new THREE.Vector3();
+    const forward = new THREE.Vector3();
+    const pose = poseRef.current;
     renderer.setAnimationLoop(() => {
       const dt = clock.getDelta();
       if (modeRef.current === 'walk') walk.update(dt);
       else orbit.update();
+
+      camera.getWorldDirection(forward);
+      pose.x = camera.position.x;
+      pose.z = camera.position.z;
+      // Looking straight up or down has no direction on the plan; keep the last one.
+      if (Math.abs(forward.y) < 0.98) pose.heading = Math.atan2(forward.z, forward.x);
+      pose.fov = 2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camera.aspect);
+      pose.ready = true;
 
       // Hide markers that are behind walls.
       for (const marker of markersRef.current) {
@@ -468,6 +484,7 @@ export const SplatScene = ({
       colliderRef.current = null;
       colliderSourceRef.current = null;
       colliderPlacementRef.current = null;
+      pose.ready = false;
       splatRef.current = null;
       sceneRef.current = null;
       walkRef.current = null;
@@ -502,6 +519,52 @@ export const SplatScene = ({
       if (walkRef.current) walkRef.current.collider = rebuilt;
     }
   }, [flipped, isLoading, placement]);
+
+  // The floor plan is cut from the collision mesh at its current placement, so it is built after
+  // the effect above has placed the mesh, and again after every calibration.
+  useEffect(() => {
+    const source = colliderSourceRef.current;
+    if (isLoading || !source) {
+      setFloorPlan(null);
+      return;
+    }
+    // Let the first frames render before the one-off cut (a few hundred ms for large meshes).
+    const timer = setTimeout(() => {
+      try {
+        setFloorPlan(buildFloorPlan(source));
+      } catch (err) {
+        console.warn('Floor plan unavailable:', err);
+        setFloorPlan(null);
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [isLoading, placement]);
+
+  const teleportTo = useCallback(
+    (x: number, z: number) => {
+      const walk = walkRef.current;
+      const collider = colliderRef.current;
+      if (!walk || !collider || !floorPlan) return;
+      // Only spots with a floor below them; the plan also shows walls and the void around them.
+      const probe = new THREE.Vector3(x, floorPlan.floorY + 1.5, z);
+      if (floorHeightBelow(collider, probe) === null) return;
+      if (modeRef.current !== 'walk') applyMode('walk');
+      walk.placeAt(probe);
+    },
+    [applyMode, floorPlan]
+  );
+
+  const mapTags = useMemo<MapTag[]>(
+    () =>
+      tags
+        .filter(tag => Number.isFinite(Number(tag.x)) && Number.isFinite(Number(tag.z)))
+        .map(tag => ({
+          x: Number(tag.x),
+          z: Number(tag.z),
+          color: TAG_COLORS[tag.tag_type === 'room' ? 'room' : 'object'],
+        })),
+    [tags]
+  );
 
   // Calibrating happens from the outside: orbit view, no walking, no tag placing.
   const isCalibrating = Boolean(calibration);
@@ -705,6 +768,16 @@ export const SplatScene = ({
             Umschauen
           </ToggleButton>
         </ToggleButtonGroup>
+      )}
+
+      {!isLoading && !error && !isCalibrating && floorPlan && (
+        <FloorPlanMap
+          plan={floorPlan}
+          poseRef={poseRef}
+          tags={mapTags}
+          isMobile={isMobile}
+          onTeleport={teleportTo}
+        />
       )}
 
       {!isLoading && !error && mode === 'walk' && isMobile && (
