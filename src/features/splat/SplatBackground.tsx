@@ -45,6 +45,13 @@ export function SplatBackground({ space, children }: SplatBackgroundProps) {
     [output?.space_frame, output?.splat_view]
   );
 
+  // Imports calibrate themselves from the collision mesh. The button stays for spaces without a
+  // frame, and anyone can open it with ?calibrate to correct a space by hand.
+  const calibrationAvailable = useMemo(
+    () => !output?.space_frame || new URLSearchParams(window.location.search).has('calibrate'),
+    [output?.space_frame]
+  );
+
   const calibration = useMemo(
     () =>
       calibrating
@@ -133,25 +140,27 @@ export function SplatBackground({ space, children }: SplatBackgroundProps) {
             }}
           />
         ) : (
-          <Button
-            size="small"
-            onClick={() => setCalibrating(true)}
-            sx={{
-              position: 'absolute',
-              right: 16,
-              bottom: 24,
-              zIndex: 20,
-              px: 2,
-              textTransform: 'none',
-              color: 'rgba(255,255,255,0.85)',
-              backgroundColor: 'rgba(46, 46, 46, 0.6)',
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-              borderRadius: '20px',
-            }}
-          >
-            Kalibrieren
-          </Button>
+          calibrationAvailable && (
+            <Button
+              size="small"
+              onClick={() => setCalibrating(true)}
+              sx={{
+                position: 'absolute',
+                right: 16,
+                bottom: 24,
+                zIndex: 20,
+                px: 2,
+                textTransform: 'none',
+                color: 'rgba(255,255,255,0.85)',
+                backgroundColor: 'rgba(46, 46, 46, 0.6)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                borderRadius: '20px',
+              }}
+            >
+              Kalibrieren
+            </Button>
+          )
         ))}
       {children}
     </div>
