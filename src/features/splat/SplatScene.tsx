@@ -26,6 +26,12 @@ import {
 export const DWELL_MS = 3000;
 export const DWELL_MOVE_PX = 15;
 const MARKER_PICK_RADIUS_PX = 28;
+/** Half size of the "[ ]" reticle in the middle of the view while the mouse looks around. */
+const RETICLE_HALF_W_PX = 40;
+const RETICLE_HALF_H_PX = 30;
+/** How far in front of a wall, object or tag a click beams you, in metres. */
+const BEAM_STANDOFF = 0.4;
+const BEAM_TAG_STANDOFF = 0.9;
 
 export type ViewMode = 'walk' | 'orbit';
 
@@ -165,6 +171,8 @@ export const SplatScene = ({
   const indicatorRef = useRef<Indicator | null>(null);
   indicatorRef.current = indicator;
   const [lookState, setLookState] = useState<LookState>('free');
+  // Colour of the tag that is inside the "[ ]" reticle right now, if any.
+  const [reticleColor, setReticleColor] = useState<string | null>(null);
   const [showHint, setShowHint] = useState(true);
   const [floorPlan, setFloorPlan] = useState<FloorPlan | null>(null);
   // Where the camera is, for the floor plan; updated every frame without re-rendering.
@@ -267,31 +275,88 @@ export const SplatScene = ({
     let usedMenu = false;
     let relockOnUnlock = false;
 
+    /** The visible tag marker under a screen point, or inside the reticle while the mouse looks. */
+    const findMarker = (clientX: number, clientY: number, inReticle: boolean): Marker | null => {
+      let nearest: Marker | null = null;
+      let nearestDistance = Infinity;
+      for (const marker of markersRef.current) {
+        if (!marker.visible) continue;
+        const screen = projectToClient(marker.sprite.position);
+        if (!screen.inFront) continue;
+        const dx = Math.abs(screen.x - clientX);
+        const dy = Math.abs(screen.y - clientY);
+        const distance = Math.hypot(dx, dy);
+        const hit = inReticle
+          ? dx <= RETICLE_HALF_W_PX && dy <= RETICLE_HALF_H_PX
+          : distance < MARKER_PICK_RADIUS_PX;
+        if (hit && distance < nearestDistance) {
+          nearest = marker;
+          nearestDistance = distance;
+        }
+      }
+      return nearest;
+    };
+
+    /**
+     * Puts the walker on the floor at a point of the model. Hits on walls and objects land a
+     * little in front of them, on the side the walker comes from.
+     */
+    const beamTo = (point: THREE.Vector3, standoff: number): boolean => {
+      const collider = colliderRef.current;
+      if (!collider) return false;
+      const top = Math.min(point.y, camera.position.y) + 0.3;
+      const floorAtPoint = floorHeightBelow(collider, new THREE.Vector3(point.x, top, point.z));
+      const onFloor = floorAtPoint !== null && point.y - floorAtPoint < 0.15;
+      let x = point.x;
+      let z = point.z;
+      if (!onFloor) {
+        const dx = camera.position.x - point.x;
+        const dz = camera.position.z - point.z;
+        const distance = Math.hypot(dx, dz);
+        if (distance > 1e-3) {
+          const back = Math.min(standoff, distance);
+          x += (dx / distance) * back;
+          z += (dz / distance) * back;
+        }
+      }
+      const probe = new THREE.Vector3(x, top, z);
+      if (floorHeightBelow(collider, probe) === null) return false;
+      walk.placeAt(probe);
+      return true;
+    };
+
     const handleTap = (clientX: number, clientY: number, pointerType: string) => {
       const shownIndicator = indicatorRef.current;
       setIndicator(null);
       // Calibration picks are handled by the pointer listener below.
       if (calibrationRef.current) return;
-      // With the pointer locked the "+" sits under the crosshair, where the click lands.
-      if (walk.locked && shownIndicator) {
-        const { point } = shownIndicator;
-        callbacks.current.onPlaceTag?.({ x: point.x, y: point.y, z: point.z });
+      const locked = walk.locked;
+
+      if (locked) {
+        // Mouse look: the click lands inside the "[ ]" in the middle of the view.
+        if (shownIndicator) {
+          const { point } = shownIndicator;
+          callbacks.current.onPlaceTag?.({ x: point.x, y: point.y, z: point.z });
+          // The window that opens needs the cursor.
+          walk.exitLock();
+          return;
+        }
+        const tag = findMarker(clientX, clientY, true);
+        if (tag) {
+          const position = tag.sprite.position;
+          if (beamTo(position, BEAM_TAG_STANDOFF)) walk.lookAt(position);
+          return;
+        }
+        const point = pickPoint(clientX, clientY);
+        if (point) beamTo(point, BEAM_STANDOFF);
         return;
       }
-      let nearest: Marker | null = null;
-      let nearestDistance = MARKER_PICK_RADIUS_PX;
-      for (const marker of markersRef.current) {
-        if (!marker.visible) continue;
-        const screen = projectToClient(marker.sprite.position);
-        if (!screen.inFront) continue;
-        const distance = Math.hypot(screen.x - clientX, screen.y - clientY);
-        if (distance < nearestDistance) {
-          nearest = marker;
-          nearestDistance = distance;
-        }
-      }
-      if (nearest) {
-        callbacks.current.onTagClick?.(nearest.location);
+
+      const tag = findMarker(clientX, clientY, false);
+      if (tag) {
+        // Opening a window with the menu button held is a menu use: the mouse stays free.
+        if (menuHeld) usedMenu = true;
+        callbacks.current.onTagClick?.(tag.location);
         return;
       }
       if (modeRef.current === 'walk') {
@@ -300,6 +365,7 @@ export const SplatScene = ({
           if (!menuHeld) walk.requestLock();
           return;
         }
+        // Touch: walk to the tapped spot.
         const point = pickPoint(clientX, clientY);
         if (point) walk.walkTo(point);
       }
@@ -552,6 +618,8 @@ export const SplatScene = ({
 
     const clock = new THREE.Clock();
     const toMarker = new THREE.Vector3();
+    const reticleProbe = new THREE.Vector3();
+    let reticleColorShown: string | null = null;
     const forward = new THREE.Vector3();
     const pose = poseRef.current;
     renderer.setAnimationLoop(() => {
@@ -579,6 +647,31 @@ export const SplatScene = ({
         }
         marker.visible = visible;
         marker.sprite.visible = visible;
+      }
+      // Tell the reticle when a tag is inside it, so the user knows a click beams to the tag.
+      let inReticle: Marker | null = null;
+      if (walk.locked) {
+        const halfW = renderer.domElement.clientWidth / 2;
+        const halfH = renderer.domElement.clientHeight / 2;
+        for (const marker of markersRef.current) {
+          if (!marker.visible) continue;
+          reticleProbe.copy(marker.sprite.position).project(camera);
+          if (
+            reticleProbe.z < 1 &&
+            Math.abs(reticleProbe.x * halfW) <= RETICLE_HALF_W_PX &&
+            Math.abs(reticleProbe.y * halfH) <= RETICLE_HALF_H_PX
+          ) {
+            inReticle = marker;
+            break;
+          }
+        }
+      }
+      const reticleColor = inReticle
+        ? TAG_COLORS[inReticle.location.tag_type === 'room' ? 'room' : 'object']
+        : null;
+      if (reticleColor !== reticleColorShown) {
+        reticleColorShown = reticleColor;
+        setReticleColor(reticleColor);
       }
       renderer.render(scene, camera);
     });
@@ -799,21 +892,46 @@ export const SplatScene = ({
 
       {lookState === 'look' && (
         <Box
-          data-testid="look-crosshair"
+          data-testid="look-reticle"
           sx={{
             position: 'absolute',
             top: '50%',
             left: '50%',
-            width: 6,
-            height: 6,
+            width: RETICLE_HALF_W_PX * 2,
+            height: RETICLE_HALF_H_PX * 2,
             transform: 'translate(-50%, -50%)',
-            borderRadius: '50%',
-            backgroundColor: 'rgba(255, 255, 255, 0.85)',
-            boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.45)',
+            color: reticleColor ?? 'rgba(255, 255, 255, 0.9)',
+            filter: 'drop-shadow(0 0 1.5px rgba(0, 0, 0, 0.7))',
+            transition: 'color 0.15s ease',
             zIndex: 15,
             pointerEvents: 'none',
           }}
-        />
+        >
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: 14,
+              height: '100%',
+              border: '2px solid currentColor',
+              borderRight: 'none',
+              borderRadius: '2px 0 0 2px',
+            }}
+          />
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: 14,
+              height: '100%',
+              border: '2px solid currentColor',
+              borderLeft: 'none',
+              borderRadius: '0 2px 2px 0',
+            }}
+          />
+        </Box>
       )}
 
       {isLoading && (
@@ -1013,7 +1131,7 @@ export const SplatScene = ({
             ? 'Ziehen: drehen · Mausrad/Pinch: zoomen'
             : isMobile
               ? 'Stick: gehen · Wischen: umsehen · Tippen: hingehen · Halten: Ort anlegen'
-              : `WASD: gehen (Shift: schneller) · Maus: umsehen · Klick: hingehen · Rechtsklick halten: Menüs · Esc: Maus freigeben · ${DWELL_MS / 1000} s ruhen: Ort anlegen${hasCollider ? '' : ' · ohne Kollision'}`}
+              : `WASD: gehen (Shift: schneller) · Maus: umsehen · Klick: hinbeamen · Rechtsklick halten: Menüs · Esc: Maus freigeben · ${DWELL_MS / 1000} s ruhen: Ort anlegen${hasCollider ? '' : ' · ohne Kollision'}`}
         </Typography>
       )}
     </Box>
