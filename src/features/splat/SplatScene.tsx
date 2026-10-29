@@ -26,6 +26,8 @@ import {
 const TAP_MOVE_PX = 15;
 /** A secondary click shorter than this places a tag; holding longer only opens the menus. */
 const SECONDARY_CLICK_MAX_MS = 350;
+/** Pressing and holding a spot on a touch screen for this long places a tag. */
+const LONG_PRESS_MS = 600;
 const MARKER_PICK_RADIUS_PX = 28;
 /** Half size of the "[ ]" reticle in the middle of the view while the mouse looks around. */
 const RETICLE_HALF_W_PX = 40;
@@ -349,6 +351,45 @@ export const SplatScene = ({
 
     const dom = renderer.domElement;
 
+    // Touch: pressing and holding a spot without moving places a tag there (the counterpart of
+    // the secondary click on desktop). A second finger (pinch) or any movement cancels it.
+    let longPress: {
+      timer: ReturnType<typeof setTimeout>;
+      id: number;
+      x: number;
+      y: number;
+    } | null = null;
+    const clearLongPress = () => {
+      if (longPress) clearTimeout(longPress.timer);
+      longPress = null;
+    };
+    const onLongPressDown = (event: PointerEvent) => {
+      const alreadyPressing = longPress !== null;
+      clearLongPress();
+      if (event.pointerType !== 'touch' || alreadyPressing) return;
+      if (modeRef.current !== 'walk' || calibrationRef.current) return;
+      const { clientX: x, clientY: y, pointerId: id } = event;
+      const timer = setTimeout(() => {
+        longPress = null;
+        const point = pickPoint(x, y);
+        if (!point) return;
+        navigator.vibrate?.(30);
+        callbacks.current.onPlaceTag?.({ x: point.x, y: point.y, z: point.z });
+      }, LONG_PRESS_MS);
+      longPress = { timer, id, x, y };
+    };
+    const onLongPressMove = (event: PointerEvent) => {
+      if (!longPress || event.pointerId !== longPress.id) return;
+      if (Math.hypot(event.clientX - longPress.x, event.clientY - longPress.y) > TAP_MOVE_PX) {
+        clearLongPress();
+      }
+    };
+    dom.addEventListener('pointerdown', onLongPressDown);
+    dom.addEventListener('pointermove', onLongPressMove);
+    dom.addEventListener('pointerup', clearLongPress);
+    dom.addEventListener('pointercancel', clearLongPress);
+    dom.addEventListener('pointerleave', clearLongPress);
+
     // Calibration: a tap (press and release without dragging) on the model picks a point.
     let pressAt: { x: number; y: number } | null = null;
     const onCalibrationDown = (event: PointerEvent) => {
@@ -415,8 +456,13 @@ export const SplatScene = ({
       setLookState('free');
     };
     const onContextMenu = (event: MouseEvent) => {
-      if (!walk.mouseLook || modeRef.current !== 'walk') return;
+      if (modeRef.current !== 'walk') return;
       const target = event.target as HTMLElement | null;
+      // Touch: holding a spot places a tag, the browser's own long-press menu must not open.
+      if (!walk.mouseLook) {
+        if (target === dom) event.preventDefault();
+        return;
+      }
       if (target?.closest?.('input, textarea, [contenteditable]')) return;
       event.preventDefault();
     };
@@ -580,6 +626,12 @@ export const SplatScene = ({
 
     return () => {
       cancelled = true;
+      clearLongPress();
+      dom.removeEventListener('pointerdown', onLongPressDown);
+      dom.removeEventListener('pointermove', onLongPressMove);
+      dom.removeEventListener('pointerup', clearLongPress);
+      dom.removeEventListener('pointercancel', clearLongPress);
+      dom.removeEventListener('pointerleave', clearLongPress);
       dom.removeEventListener('pointerdown', onCalibrationDown);
       dom.removeEventListener('pointerup', onCalibrationUp);
       window.removeEventListener('pointerdown', onWindowPointerDown, true);
@@ -987,7 +1039,7 @@ export const SplatScene = ({
           {mode === 'orbit'
             ? 'Ziehen: drehen · Mausrad/Pinch: zoomen'
             : isMobile
-              ? 'Stick: gehen · Wischen: umsehen · Tippen: hingehen'
+              ? 'Stick: gehen · Wischen: umsehen · Tippen: hingehen · Lang tippen: Tag anlegen'
               : `WASD: gehen (Shift: rennen) · Leertaste: springen · C: ducken · Z: liegen · Maus: umsehen · Klick auf Tag: öffnen · Rechtsklick: Tag anlegen · Rechtsklick halten: Menüs · Esc: Maus freigeben${hasCollider ? '' : ' · ohne Kollision'}`}
         </Typography>
       )}
