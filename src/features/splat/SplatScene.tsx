@@ -868,7 +868,7 @@ export const SplatScene = ({
   // Hide the control hint after a few seconds.
   useEffect(() => {
     if (isLoading) return;
-    const timer = setTimeout(() => setShowHint(false), 9000);
+    const timer = setTimeout(() => setShowHint(false), 14000);
     return () => clearTimeout(timer);
   }, [isLoading]);
 
@@ -1131,7 +1131,7 @@ export const SplatScene = ({
             ? 'Ziehen: drehen · Mausrad/Pinch: zoomen'
             : isMobile
               ? 'Stick: gehen · Wischen: umsehen · Tippen: hingehen · Halten: Ort anlegen'
-              : `WASD: gehen (Shift: schneller) · Maus: umsehen · Klick: hinbeamen · Rechtsklick halten: Menüs · Esc: Maus freigeben · ${DWELL_MS / 1000} s ruhen: Ort anlegen${hasCollider ? '' : ' · ohne Kollision'}`}
+              : `WASD: gehen (Shift: rennen) · Leertaste: springen · C: ducken · Z: liegen · Maus: umsehen · Klick: hinbeamen · Rechtsklick halten: Menüs · Esc: Maus freigeben · ${DWELL_MS / 1000} s ruhen: Ort anlegen${hasCollider ? '' : ' · ohne Kollision'}`}
         </Typography>
       )}
     </Box>
