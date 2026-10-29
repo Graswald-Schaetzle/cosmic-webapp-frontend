@@ -9,6 +9,8 @@ import HomeWorkIcon from '@mui/icons-material/HomeWork';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ViewInArIcon from '@mui/icons-material/ViewInAr';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import StarIcon from '@mui/icons-material/Star';
+import StarBorderIcon from '@mui/icons-material/StarBorder';
 import { Dialog } from '../../components/Dialog';
 
 const paperStyles = {
@@ -28,12 +30,16 @@ const paperStyles = {
 function SpaceCard({
   space,
   isActive,
+  isDefault,
   onSelect,
+  onToggleDefault,
   onViewReconstruction,
 }: {
   space: Space;
   isActive: boolean;
+  isDefault: boolean;
   onSelect: () => void;
+  onToggleDefault: () => void;
   onViewReconstruction: () => void;
 }) {
   const hasCompletedSplat =
@@ -102,10 +108,32 @@ function SpaceCard({
         <HomeWorkIcon sx={{ color: 'rgba(255,255,255,0.2)', fontSize: 48 }} />
       </Box>
 
-      {/* Name */}
-      <Typography sx={{ color: '#fff', fontSize: '14px', fontWeight: 600 }}>
-        {space.name}
-      </Typography>
+      {/* Name + start-space star */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <Typography sx={{ color: '#fff', fontSize: '14px', fontWeight: 600, mr: 'auto' }}>
+          {space.name}
+        </Typography>
+        <IconButton
+          size="small"
+          aria-label={isDefault ? 'Remove as start space' : 'Set as start space'}
+          title={isDefault ? 'Start space (click to remove)' : 'Set as start space'}
+          onClick={e => {
+            e.stopPropagation();
+            onToggleDefault();
+          }}
+          sx={{
+            p: '2px',
+            color: isDefault ? '#FFC107' : 'rgba(255,255,255,0.4)',
+            '&:hover': { color: '#FFC107', backgroundColor: 'rgba(255,255,255,0.1)' },
+          }}
+        >
+          {isDefault ? (
+            <StarIcon sx={{ fontSize: 20 }} />
+          ) : (
+            <StarBorderIcon sx={{ fontSize: 20 }} />
+          )}
+        </IconButton>
+      </Box>
 
       {/* Date + badge row */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
@@ -187,7 +215,7 @@ export const SpacesWindow = () => {
   const dispatch = useDispatch();
   const { isOpen } = useSelector((state: RootState) => state.modal.spacesWindowModal);
   const { data: spaces, isLoading, error } = useGetMySpacesQuery(undefined, { skip: !isOpen });
-  const { activeSpaceId, switchSpace } = useSpace();
+  const { activeSpaceId, switchSpace, defaultSpaceId, setDefaultSpace } = useSpace();
 
   const handleClose = () => dispatch(closeSpacesWindow());
 
@@ -298,7 +326,11 @@ export const SpacesWindow = () => {
               key={space.space_id}
               space={space}
               isActive={space.space_id === activeSpaceId}
+              isDefault={space.space_id === defaultSpaceId}
               onSelect={() => handleSpaceSelect(space)}
+              onToggleDefault={() =>
+                setDefaultSpace(space.space_id === defaultSpaceId ? null : space.space_id)
+              }
               onViewReconstruction={() => handleViewReconstruction(space)}
             />
           ))}

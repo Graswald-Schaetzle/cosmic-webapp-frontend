@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useCallback, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Space,
@@ -15,7 +15,24 @@ interface SpaceContextType {
   spaces: Space[];
   isLoading: boolean;
   switchSpace: (spaceId: number) => Promise<void>;
+  /** Space that is opened first after login / page load (starred in "My Spaces"). */
+  defaultSpaceId: number | null;
+  /** Star a space as the start space, or pass null to remove the star. */
+  setDefaultSpace: (spaceId: number | null) => void;
 }
+
+const DEFAULT_SPACE_KEY_PREFIX = 'cosmic_default_space_';
+
+const readDefaultSpaceId = (userId: number | undefined): number | null => {
+  if (userId === undefined) return null;
+  try {
+    const raw = localStorage.getItem(DEFAULT_SPACE_KEY_PREFIX + userId);
+    const parsed = raw === null ? NaN : Number(raw);
+    return Number.isInteger(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+};
 
 const SpaceContext = createContext<SpaceContextType>({
   activeSpace: null,
@@ -23,6 +40,8 @@ const SpaceContext = createContext<SpaceContextType>({
   spaces: [],
   isLoading: true,
   switchSpace: async () => {},
+  defaultSpaceId: null,
+  setDefaultSpace: () => {},
 });
 
 export const useSpace = () => useContext(SpaceContext);
@@ -39,7 +58,31 @@ export function SpaceProvider({ children }: SpaceProviderProps) {
   const { data: serverActiveSpaceId, isLoading: activeSpaceLoading } = useGetActiveSpaceQuery();
   const [setActiveSpaceMutation] = useSetActiveSpaceMutation();
 
-  // Resolve active space from server response or auto-select first space
+  const userId = useSelector((state: RootState) => state.user.currentUser?.user_id);
+  const [defaultSpaceId, setDefaultSpaceId] = useState<number | null>(() =>
+    readDefaultSpaceId(userId)
+  );
+  const initialResolved = useRef(false);
+
+  const setDefaultSpace = useCallback(
+    (spaceId: number | null) => {
+      setDefaultSpaceId(spaceId);
+      if (userId === undefined) return;
+      try {
+        if (spaceId === null) {
+          localStorage.removeItem(DEFAULT_SPACE_KEY_PREFIX + userId);
+        } else {
+          localStorage.setItem(DEFAULT_SPACE_KEY_PREFIX + userId, String(spaceId));
+        }
+      } catch {
+        // localStorage unavailable — the star only lasts for this session
+      }
+    },
+    [userId]
+  );
+
+  // Resolve the start space once per session: starred default space, then the
+  // space the server remembers as active, then the first space.
   useEffect(() => {
     if (spacesLoading || activeSpaceLoading) return;
     if (spaces.length === 0) {
@@ -47,24 +90,35 @@ export function SpaceProvider({ children }: SpaceProviderProps) {
       return;
     }
 
-    // If server has an active space and it still exists in user's spaces, use it
-    if (serverActiveSpaceId) {
-      const serverSpace = spaces.find(s => s.space_id === serverActiveSpaceId);
-      if (serverSpace) {
-        if (activeSpaceId !== serverSpace.space_id) {
-          dispatch(setActiveSpace(serverSpace));
-        }
-        return;
+    if (!initialResolved.current) {
+      initialResolved.current = true;
+      const startSpace =
+        spaces.find(s => s.space_id === defaultSpaceId) ??
+        spaces.find(s => s.space_id === serverActiveSpaceId) ??
+        spaces[0];
+      dispatch(setActiveSpace(startSpace));
+      if (startSpace.space_id !== serverActiveSpaceId) {
+        setActiveSpaceMutation(startSpace.space_id);
       }
+      return;
     }
 
-    // No valid server active space — auto-select first space
+    // Active space disappeared from the user's spaces — fall back to the first one
     if (!activeSpaceId || !spaces.find(s => s.space_id === activeSpaceId)) {
       const firstSpace = spaces[0];
       dispatch(setActiveSpace(firstSpace));
       setActiveSpaceMutation(firstSpace.space_id);
     }
-  }, [spaces, spacesLoading, activeSpaceLoading, serverActiveSpaceId, activeSpaceId, dispatch, setActiveSpaceMutation]);
+  }, [
+    spaces,
+    spacesLoading,
+    activeSpaceLoading,
+    serverActiveSpaceId,
+    activeSpaceId,
+    defaultSpaceId,
+    dispatch,
+    setActiveSpaceMutation,
+  ]);
 
   // Keep activeSpace object in sync when spaces data refreshes
   useEffect(() => {
@@ -96,6 +150,8 @@ export function SpaceProvider({ children }: SpaceProviderProps) {
         spaces,
         isLoading,
         switchSpace,
+        defaultSpaceId,
+        setDefaultSpace,
       }}
     >
       {children}
