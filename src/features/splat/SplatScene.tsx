@@ -29,9 +29,8 @@ const MARKER_PICK_RADIUS_PX = 28;
 /** Half size of the "[ ]" reticle in the middle of the view while the mouse looks around. */
 const RETICLE_HALF_W_PX = 40;
 const RETICLE_HALF_H_PX = 30;
-/** How far in front of a wall, object or tag a click beams you, in metres. */
-const BEAM_STANDOFF = 0.4;
-const BEAM_TAG_STANDOFF = 0.9;
+/** Colour of the "[ ]" reticle while a tag is inside it. */
+const RETICLE_TAG_COLOR = '#3380FF';
 
 export type ViewMode = 'walk' | 'orbit';
 
@@ -171,8 +170,8 @@ export const SplatScene = ({
   const indicatorRef = useRef<Indicator | null>(null);
   indicatorRef.current = indicator;
   const [lookState, setLookState] = useState<LookState>('free');
-  // Colour of the tag that is inside the "[ ]" reticle right now, if any.
-  const [reticleColor, setReticleColor] = useState<string | null>(null);
+  // Whether a tag is inside the "[ ]" reticle right now.
+  const [tagInReticle, setTagInReticle] = useState(false);
   const [showHint, setShowHint] = useState(true);
   const [floorPlan, setFloorPlan] = useState<FloorPlan | null>(null);
   // Where the camera is, for the floor plan; updated every frame without re-rendering.
@@ -297,34 +296,6 @@ export const SplatScene = ({
       return nearest;
     };
 
-    /**
-     * Puts the walker on the floor at a point of the model. Hits on walls and objects land a
-     * little in front of them, on the side the walker comes from.
-     */
-    const beamTo = (point: THREE.Vector3, standoff: number): boolean => {
-      const collider = colliderRef.current;
-      if (!collider) return false;
-      const top = Math.min(point.y, camera.position.y) + 0.3;
-      const floorAtPoint = floorHeightBelow(collider, new THREE.Vector3(point.x, top, point.z));
-      const onFloor = floorAtPoint !== null && point.y - floorAtPoint < 0.15;
-      let x = point.x;
-      let z = point.z;
-      if (!onFloor) {
-        const dx = camera.position.x - point.x;
-        const dz = camera.position.z - point.z;
-        const distance = Math.hypot(dx, dz);
-        if (distance > 1e-3) {
-          const back = Math.min(standoff, distance);
-          x += (dx / distance) * back;
-          z += (dz / distance) * back;
-        }
-      }
-      const probe = new THREE.Vector3(x, top, z);
-      if (floorHeightBelow(collider, probe) === null) return false;
-      walk.placeAt(probe);
-      return true;
-    };
-
     const handleTap = (clientX: number, clientY: number, pointerType: string) => {
       const shownIndicator = indicatorRef.current;
       setIndicator(null);
@@ -333,22 +304,17 @@ export const SplatScene = ({
       const locked = walk.locked;
 
       if (locked) {
-        // Mouse look: the click lands inside the "[ ]" in the middle of the view.
-        if (shownIndicator) {
-          const { point } = shownIndicator;
-          callbacks.current.onPlaceTag?.({ x: point.x, y: point.y, z: point.z });
-          // The window that opens needs the cursor.
-          walk.exitLock();
-          return;
-        }
+        // Mouse look: the click acts inside the "[ ]" in the middle of the view. The windows
+        // that open need the cursor, so the mouse is let go.
         const tag = findMarker(clientX, clientY, true);
         if (tag) {
-          const position = tag.sprite.position;
-          if (beamTo(position, BEAM_TAG_STANDOFF)) walk.lookAt(position);
-          return;
+          callbacks.current.onTagClick?.(tag.location);
+          walk.exitLock();
+        } else if (shownIndicator) {
+          const { point } = shownIndicator;
+          callbacks.current.onPlaceTag?.({ x: point.x, y: point.y, z: point.z });
+          walk.exitLock();
         }
-        const point = pickPoint(clientX, clientY);
-        if (point) beamTo(point, BEAM_STANDOFF);
         return;
       }
 
@@ -619,7 +585,7 @@ export const SplatScene = ({
     const clock = new THREE.Clock();
     const toMarker = new THREE.Vector3();
     const reticleProbe = new THREE.Vector3();
-    let reticleColorShown: string | null = null;
+    let tagInReticleShown = false;
     const forward = new THREE.Vector3();
     const pose = poseRef.current;
     renderer.setAnimationLoop(() => {
@@ -648,8 +614,8 @@ export const SplatScene = ({
         marker.visible = visible;
         marker.sprite.visible = visible;
       }
-      // Tell the reticle when a tag is inside it, so the user knows a click beams to the tag.
-      let inReticle: Marker | null = null;
+      // Tell the reticle when a tag is inside it, so the user knows a click opens the tag.
+      let inReticle = false;
       if (walk.locked) {
         const halfW = renderer.domElement.clientWidth / 2;
         const halfH = renderer.domElement.clientHeight / 2;
@@ -661,17 +627,14 @@ export const SplatScene = ({
             Math.abs(reticleProbe.x * halfW) <= RETICLE_HALF_W_PX &&
             Math.abs(reticleProbe.y * halfH) <= RETICLE_HALF_H_PX
           ) {
-            inReticle = marker;
+            inReticle = true;
             break;
           }
         }
       }
-      const reticleColor = inReticle
-        ? TAG_COLORS[inReticle.location.tag_type === 'room' ? 'room' : 'object']
-        : null;
-      if (reticleColor !== reticleColorShown) {
-        reticleColorShown = reticleColor;
-        setReticleColor(reticleColor);
+      if (inReticle !== tagInReticleShown) {
+        tagInReticleShown = inReticle;
+        setTagInReticle(inReticle);
       }
       renderer.render(scene, camera);
     });
@@ -900,7 +863,7 @@ export const SplatScene = ({
             width: RETICLE_HALF_W_PX * 2,
             height: RETICLE_HALF_H_PX * 2,
             transform: 'translate(-50%, -50%)',
-            color: reticleColor ?? 'rgba(255, 255, 255, 0.9)',
+            color: tagInReticle ? RETICLE_TAG_COLOR : 'rgba(255, 255, 255, 0.9)',
             filter: 'drop-shadow(0 0 1.5px rgba(0, 0, 0, 0.7))',
             transition: 'color 0.15s ease',
             zIndex: 15,
@@ -1131,7 +1094,7 @@ export const SplatScene = ({
             ? 'Ziehen: drehen · Mausrad/Pinch: zoomen'
             : isMobile
               ? 'Stick: gehen · Wischen: umsehen · Tippen: hingehen · Halten: Ort anlegen'
-              : `WASD: gehen (Shift: rennen) · Leertaste: springen · C: ducken · Z: liegen · Maus: umsehen · Klick: hinbeamen · Rechtsklick halten: Menüs · Esc: Maus freigeben · ${DWELL_MS / 1000} s ruhen: Ort anlegen${hasCollider ? '' : ' · ohne Kollision'}`}
+              : `WASD: gehen (Shift: rennen) · Leertaste: springen · C: ducken · Z: liegen · Maus: umsehen · Klick auf Tag: öffnen · Rechtsklick halten: Menüs · Esc: Maus freigeben · ${DWELL_MS / 1000} s ruhen: Ort anlegen${hasCollider ? '' : ' · ohne Kollision'}`}
         </Typography>
       )}
     </Box>
