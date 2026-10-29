@@ -528,7 +528,8 @@ export const SplatScene = ({
   // the effect above has placed the mesh, and again after every calibration.
   useEffect(() => {
     const source = colliderSourceRef.current;
-    if (isLoading || !source) {
+    // Phones have no minimap (the screen is too small for it), so there is no plan to cut.
+    if (isLoading || !source || isMobile) {
       setFloorPlan(null);
       return;
     }
@@ -542,7 +543,7 @@ export const SplatScene = ({
       }
     }, 0);
     return () => clearTimeout(timer);
-  }, [isLoading, placement]);
+  }, [isLoading, placement, isMobile]);
 
   const teleportTo = useCallback(
     (x: number, z: number) => {
@@ -774,14 +775,13 @@ export const SplatScene = ({
         </ToggleButtonGroup>
       )}
 
-      {!isLoading && !error && !isCalibrating && (floorPlan || minimap) && (
+      {!isLoading && !error && !isCalibrating && !isMobile && (floorPlan || minimap) && (
         <FloorPlanMap
           plan={floorPlan}
           minimap={minimap}
           placement={placement}
           poseRef={poseRef}
           tags={mapTags}
-          isMobile={isMobile}
           onTeleport={teleportTo}
         />
       )}

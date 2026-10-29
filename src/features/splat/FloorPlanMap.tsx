@@ -32,7 +32,6 @@ interface FloorPlanMapProps {
   placement: SplatPlacement;
   poseRef: MutableRefObject<MapPose>;
   tags?: MapTag[];
-  isMobile?: boolean;
   /** Called with a spot of the space frame when the user taps the plan. */
   onTeleport?: (x: number, z: number) => void;
 }
@@ -47,6 +46,9 @@ const COLORS = {
   marker: '#1FA9E8',
 };
 const CONE_LENGTH = 38;
+/** The panel's largest size; it sits bottom left, clear of the mode switch in the middle. */
+const MAX_WIDTH = 280;
+const MAX_HEIGHT = 260;
 /** The longest side of the image used to find the drawn area, in pixels. */
 const CROP_PROBE_SIZE = 512;
 /** Empty paper kept around the drawing, in pixels of a 1024 px wide image. */
@@ -130,12 +132,11 @@ interface MapSource {
   drawBase: (ctx: CanvasRenderingContext2D) => void;
 }
 
-const readOpen = (fallback: boolean) => {
+const readOpen = () => {
   try {
-    const value = localStorage.getItem(STORAGE_KEY);
-    return value === null ? fallback : value === '1';
+    return localStorage.getItem(STORAGE_KEY) !== '0';
   } catch {
-    return fallback;
+    return true;
   }
 };
 
@@ -218,22 +219,19 @@ export const FloorPlanMap = ({
   placement,
   poseRef,
   tags = [],
-  isMobile,
   onTeleport,
 }: FloorPlanMapProps) => {
-  const [open, setOpen] = useState(() => readOpen(!isMobile));
+  const [open, setOpen] = useState(readOpen);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const tagsRef = useRef(tags);
   tagsRef.current = tags;
   const minimapImage = useMinimapImage(minimap?.url);
-  const maxWidth = isMobile ? 190 : 300;
-  const maxHeight = isMobile ? 150 : 230;
   const source = useMemo<MapSource | null>(() => {
     if (minimap && minimapImage.status === 'loading') return null;
     if (minimap && minimapImage.status === 'ready') {
       const { image, crop } = minimapImage.loaded;
       const size = { width: image.naturalWidth, height: image.naturalHeight };
-      const view = createImageView(minimap.frame, placement, size, crop, maxWidth, maxHeight);
+      const view = createImageView(minimap.frame, placement, size, crop, MAX_WIDTH, MAX_HEIGHT);
       return {
         kind: 'image',
         view,
@@ -255,9 +253,9 @@ export const FloorPlanMap = ({
       };
     }
     if (!plan) return null;
-    const view = createPlanView(plan, maxWidth, maxHeight, PADDING);
+    const view = createPlanView(plan, MAX_WIDTH, MAX_HEIGHT, PADDING);
     return { kind: 'plan', view, drawBase: ctx => drawPlan(ctx, plan, view) };
-  }, [minimap, minimapImage, placement, plan, maxWidth, maxHeight]);
+  }, [minimap, minimapImage, placement, plan]);
 
   const toggle = (next: boolean) => {
     setOpen(next);
@@ -324,8 +322,8 @@ export const FloorPlanMap = ({
         onClick={() => toggle(true)}
         sx={{
           position: 'absolute',
-          right: 16,
-          bottom: 68,
+          left: 16,
+          bottom: 24,
           zIndex: 20,
           color: 'rgba(255,255,255,0.9)',
           ...glass,
@@ -342,8 +340,8 @@ export const FloorPlanMap = ({
       data-testid="floor-plan-map"
       sx={{
         position: 'absolute',
-        right: 16,
-        bottom: 68,
+        left: 16,
+        bottom: 24,
         zIndex: 20,
         borderRadius: '14px',
         overflow: 'hidden',
