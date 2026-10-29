@@ -46,7 +46,7 @@ const COLORS = {
   marker: '#1FA9E8',
 };
 const CONE_LENGTH = 38;
-/** The panel's largest size; it sits bottom left, clear of the mode switch in the middle. */
+/** The map's largest size; the panel sits bottom left, clear of the mode switch in the middle. */
 const MAX_WIDTH = 280;
 const MAX_HEIGHT = 260;
 /** The longest side of the image used to find the drawn area, in pixels. */
@@ -306,28 +306,27 @@ export const FloorPlanMap = ({
     return () => cancelAnimationFrame(frame);
   }, [open, source, poseRef]);
 
-  const glass = {
-    backgroundColor: 'rgba(46, 46, 46, 0.6)',
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
-  };
-
   if (!source) return null;
   const { view } = source;
 
   if (!open) {
     return (
       <IconButton
-        aria-label="Grundriss öffnen"
+        aria-label="Minimap öffnen"
         onClick={() => toggle(true)}
         sx={{
           position: 'absolute',
           left: 16,
           bottom: 24,
           zIndex: 20,
-          color: 'rgba(255,255,255,0.9)',
-          ...glass,
-          '&:hover': { backgroundColor: 'rgba(46, 46, 46, 0.8)' },
+          width: 44,
+          height: 44,
+          color: '#FFFFFF',
+          // Same glass as the other floating controls of the viewer.
+          backgroundColor: 'rgba(46, 46, 46, 0.6)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          '&:hover': { backgroundColor: 'rgba(46, 46, 46, 0.85)' },
         }}
       >
         <MapOutlinedIcon />
@@ -336,6 +335,7 @@ export const FloorPlanMap = ({
   }
 
   return (
+    // The window look of the rest of the app: translucent dark glass with large rounded corners.
     <Box
       data-testid="floor-plan-map"
       sx={{
@@ -343,10 +343,14 @@ export const FloorPlanMap = ({
         left: 16,
         bottom: 24,
         zIndex: 20,
-        borderRadius: '14px',
-        overflow: 'hidden',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.35)',
-        backgroundColor: source.kind === 'image' ? COLORS.floor : COLORS.body,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        padding: '12px',
+        borderRadius: '32px',
+        backgroundColor: 'rgba(46, 46, 46, 0.35)',
+        backdropFilter: 'blur(100px)',
+        WebkitBackdropFilter: 'blur(100px)',
       }}
     >
       <Box
@@ -354,39 +358,59 @@ export const FloorPlanMap = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          pl: 1.75,
-          pr: 0.5,
           height: 32,
-          ...glass,
-          // The plan below is light, so the header needs more weight than the floating buttons.
-          backgroundColor: 'rgba(46, 46, 46, 0.92)',
+          pl: 1.5,
         }}
       >
-        <Typography sx={{ color: '#fff', fontSize: 12, fontWeight: 600 }}>Grundriss</Typography>
+        <Typography
+          sx={{
+            color: '#FFFFFF',
+            fontSize: 16,
+            fontWeight: 700,
+            fontFamily:
+              '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+          }}
+        >
+          Minimap
+        </Typography>
         <IconButton
           size="small"
-          aria-label="Grundriss schließen"
+          aria-label="Minimap schließen"
           onClick={() => toggle(false)}
-          sx={{ color: 'rgba(255,255,255,0.8)' }}
+          sx={{
+            width: 32,
+            height: 32,
+            color: '#FFFFFF',
+            backgroundColor: '#00000033',
+            '&:hover': { backgroundColor: '#FFFFFF1A' },
+          }}
         >
-          <CloseIcon sx={{ fontSize: 16 }} />
+          <CloseIcon sx={{ fontSize: 18 }} />
         </IconButton>
       </Box>
-      <canvas
-        ref={canvasRef}
-        onClick={event => {
-          if (!onTeleport) return;
-          const rect = event.currentTarget.getBoundingClientRect();
-          const [x, z] = view.toPlan(event.clientX - rect.left, event.clientY - rect.top);
-          onTeleport(x, z);
+      <Box
+        sx={{
+          borderRadius: '20px',
+          overflow: 'hidden',
+          backgroundColor: source.kind === 'image' ? COLORS.floor : COLORS.body,
         }}
-        style={{
-          display: 'block',
-          width: view.width,
-          height: view.height,
-          cursor: onTeleport ? 'pointer' : 'default',
-        }}
-      />
+      >
+        <canvas
+          ref={canvasRef}
+          onClick={event => {
+            if (!onTeleport) return;
+            const rect = event.currentTarget.getBoundingClientRect();
+            const [x, z] = view.toPlan(event.clientX - rect.left, event.clientY - rect.top);
+            onTeleport(x, z);
+          }}
+          style={{
+            display: 'block',
+            width: view.width,
+            height: view.height,
+            cursor: onTeleport ? 'pointer' : 'default',
+          }}
+        />
+      </Box>
     </Box>
   );
 };
