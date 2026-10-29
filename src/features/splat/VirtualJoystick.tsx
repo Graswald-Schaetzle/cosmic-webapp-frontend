@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react';
 import { Box } from '@mui/material';
 
-const SIZE = 132;
-const KNOB = 56;
+const SIZE = 104;
+const KNOB = 44;
 const RADIUS = (SIZE - KNOB) / 2;
 
 interface VirtualJoystickProps {
@@ -54,7 +54,8 @@ export const VirtualJoystick = ({ onChange }: VirtualJoystickProps) => {
       onPointerCancel={release}
       sx={{
         position: 'absolute',
-        left: 24,
+        left: '50%',
+        transform: 'translateX(-50%)',
         bottom: 'max(32px, env(safe-area-inset-bottom))',
         width: SIZE,
         height: SIZE,
