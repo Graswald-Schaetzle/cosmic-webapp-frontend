@@ -8,16 +8,25 @@ import {
   Paper,
   CircularProgress,
   Chip,
+  Menu,
+  MenuItem,
+  ListItemIcon,
 } from '@mui/material';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
+import { ConfirmDeletionModal } from '../../components/ConfirmDeletionModal';
 import { ObjectInfoTab } from './components/ObjectInfoTab';
 import { RoomInfoTab } from './components/RoomInfoTab';
 import { DocumentTab } from './components/DocumentTab.tsx';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store.ts';
 import { closeMatterTagWindow, setMatterTagActiveTab } from '../../store/modalSlice.ts';
-import { useGetLocationByTagIdQuery } from '../../api/locationApi/locationApi';
+import {
+  useGetLocationByTagIdQuery,
+  useDeleteLocationMutation,
+} from '../../api/locationApi/locationApi';
 import { LocationDetailResponse } from '../../api/locationApi/locationApi';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export function MatterTagWindow() {
   const dispatch = useDispatch();
@@ -56,6 +65,10 @@ export function MatterTagWindow() {
   // Always use fetched location data from API
   const locationData = fetchedLocationData;
 
+  const [deleteLocation] = useDeleteLocationMutation();
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   if (!tag) return null;
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
@@ -63,6 +76,18 @@ export function MatterTagWindow() {
   };
 
   const handleClose = () => {
+    dispatch(closeMatterTagWindow());
+  };
+
+  const handleDeleteClick = () => {
+    setMenuAnchor(null);
+    setShowDeleteConfirm(true);
+  };
+
+  // Errors propagate to ConfirmDeletionModal, which shows them and keeps the dialog open.
+  const handleDeleteConfirm = async () => {
+    if (!locationData) return;
+    await deleteLocation(String(locationData.location_id)).unwrap();
     dispatch(closeMatterTagWindow());
   };
 
@@ -108,6 +133,8 @@ export function MatterTagWindow() {
             justifyContent: 'center',
             alignItems: 'center',
             gap: '6px',
+            // keep long names clear of the action buttons on the right
+            px: '80px',
           }}
         >
           <Typography
@@ -146,12 +173,57 @@ export function MatterTagWindow() {
           aria-label="Edit tag"
           sx={{
             position: 'absolute',
-            right: 0,
+            right: '40px',
             top: 0,
           }}
         >
           <img src="/icons/mattertag/edit.svg" alt="Edit" />
         </IconButton>
+        <IconButton
+          size="small"
+          aria-label="More actions"
+          aria-haspopup="menu"
+          aria-expanded={Boolean(menuAnchor)}
+          disabled={!locationData}
+          onClick={event => setMenuAnchor(event.currentTarget)}
+          sx={{
+            position: 'absolute',
+            right: 0,
+            top: 0,
+            width: '40px',
+            height: '40px',
+            color: '#FFFFFF',
+            '&.Mui-disabled': { color: 'rgba(255, 255, 255, 0.3)' },
+          }}
+        >
+          <MoreVertIcon />
+        </IconButton>
+        <Menu
+          anchorEl={menuAnchor}
+          open={Boolean(menuAnchor)}
+          onClose={() => setMenuAnchor(null)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+          slotProps={{
+            paper: {
+              sx: {
+                mt: '4px',
+                borderRadius: '16px',
+                backgroundColor: 'rgba(46, 46, 46, 0.85)',
+                backdropFilter: 'blur(100px)',
+                WebkitBackdropFilter: 'blur(100px)',
+                color: '#FFFFFF',
+              },
+            },
+          }}
+        >
+          <MenuItem onClick={handleDeleteClick} sx={{ color: '#FF6B6B', fontWeight: 600 }}>
+            <ListItemIcon sx={{ color: 'inherit', minWidth: '32px' }}>
+              <DeleteOutlinedIcon fontSize="small" />
+            </ListItemIcon>
+            Delete tag
+          </MenuItem>
+        </Menu>
       </Box>
 
       {/* Loading state */}
@@ -247,6 +319,15 @@ export function MatterTagWindow() {
           )}
         </>
       )}
+
+      <ConfirmDeletionModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Tag"
+        message={`Do you want to delete "${locationData?.location_name ?? 'this tag'}"? Linked tasks and documents are kept.`}
+        itemType="Tag"
+      />
     </Dialog>
   );
 }
