@@ -33,6 +33,10 @@ const MARKER_PICK_RADIUS_PX = 28;
 /** Half size of the "[ ]" reticle in the middle of the view while the mouse looks around. */
 const RETICLE_HALF_W_PX = 40;
 const RETICLE_HALF_H_PX = 30;
+/** Width of the tag window (see MatterTagWindow), which opens in the middle of the screen. */
+const TAG_WINDOW_WIDTH_PX = 380;
+/** Below this much free room beside the tag window the tag stays in the middle of the view. */
+const MIN_FREE_SIDE_PX = 160;
 /** Colour of the "[ ]" reticle while a tag is inside it. */
 const RETICLE_TAG_COLOR = '#3380FF';
 
@@ -300,7 +304,12 @@ export const SplatScene = ({
         tag,
         walk.settledEyeHeight
       );
-      walk.flyTo(feet, tag);
+      // Next to the tag window, not behind it: in the middle of the free strip on its left.
+      const width = renderer.domElement.clientWidth;
+      const freeSide = width / 2 - TAG_WINDOW_WIDTH_PX / 2;
+      const screenX =
+        mouseLookRef.current && freeSide >= MIN_FREE_SIDE_PX ? -1 + freeSide / width : 0;
+      walk.flyTo(feet, tag, screenX);
     };
 
     const handleTap = (clientX: number, clientY: number, pointerType: string) => {

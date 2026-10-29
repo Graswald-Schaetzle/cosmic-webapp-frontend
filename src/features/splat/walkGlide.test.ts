@@ -36,6 +36,17 @@ describe('WalkControls.flyTo', () => {
     expect(direction.dot(toTag)).toBeGreaterThan(0.999);
   });
 
+  it('puts the point at the requested spot across the view', () => {
+    const { camera, walk } = setup();
+    camera.aspect = 16 / 9;
+    camera.updateProjectionMatrix();
+    const tag = new THREE.Vector3(2, 1.6, -4);
+    walk.flyTo(null, tag, -0.5);
+    run(walk, 2);
+    camera.updateMatrixWorld(true);
+    expect(tag.clone().project(camera).x).toBeCloseTo(-0.5, 1);
+  });
+
   it('turns the short way round when the tag is behind', () => {
     const { camera, walk } = setup();
     walk.yaw = Math.PI * 0.9;

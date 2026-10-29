@@ -255,16 +255,19 @@ export class WalkControls {
   /**
    * Glides the camera to stand at `feet` and look at `lookAt`, easing in and out; `feet` null
    * only turns on the spot. The collision mesh is not consulted on the way, so the caller picks
-   * a clear path. Walking or dragging the view takes over again.
+   * a clear path. `screenX` is where the point should appear across the view, from -1 (left
+   * edge) to 1 (right edge), 0 being the middle. Walking or dragging the view takes over again.
    */
-  flyTo(feet: THREE.Vector3 | null, lookAt: THREE.Vector3) {
+  flyTo(feet: THREE.Vector3 | null, lookAt: THREE.Vector3, screenX = 0) {
     const toFeet = feet ? feet.clone() : this.walker.position.clone();
     const eye = toFeet.y + this.settledEyeHeight;
     const dx = lookAt.x - toFeet.x;
     const dz = lookAt.z - toFeet.z;
     const ahead = Math.hypot(dx, dz);
     // Standing right under or over the point, the direction is undefined; keep the heading.
-    const toYaw = ahead > 1e-3 ? Math.atan2(-dx, -dz) : this.yaw;
+    // Turning the view to the right of the point (a lower yaw) moves the point to the left.
+    const halfWidth = Math.tan(THREE.MathUtils.degToRad(this.camera.fov) / 2) * this.camera.aspect;
+    const toYaw = ahead > 1e-3 ? Math.atan2(-dx, -dz) + Math.atan(screenX * halfWidth) : this.yaw;
     const toPitch = THREE.MathUtils.clamp(
       Math.atan2(lookAt.y - eye, Math.max(ahead, 1e-3)),
       -MAX_PITCH,
