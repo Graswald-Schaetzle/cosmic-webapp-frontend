@@ -41,7 +41,7 @@ export const spacesApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ['Spaces', 'ActiveSpace'],
+  tagTypes: ['Spaces', 'ActiveSpace', 'DefaultSpace'],
   endpoints: builder => ({
     getMySpaces: builder.query<Space[], void>({
       query: () => '/spaces',
@@ -62,8 +62,37 @@ export const spacesApi = createApi({
       }),
       invalidatesTags: ['ActiveSpace'],
     }),
+    getDefaultSpace: builder.query<number | null, void>({
+      query: () => '/auth/user/default-space',
+      transformResponse: (response: { default_space_id: number | null }) =>
+        response.default_space_id,
+      providesTags: ['DefaultSpace'],
+    }),
+    setDefaultSpace: builder.mutation<void, number | null>({
+      query: spaceId => ({
+        url: '/auth/user/default-space',
+        method: 'PUT',
+        body: { space_id: spaceId },
+      }),
+      async onQueryStarted(spaceId, { dispatch, queryFulfilled }) {
+        // Optimistic update so the star reacts immediately; roll back on failure
+        const patch = dispatch(
+          spacesApi.util.updateQueryData('getDefaultSpace', undefined, () => spaceId)
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          patch.undo();
+        }
+      },
+    }),
   }),
 });
 
-export const { useGetMySpacesQuery, useGetActiveSpaceQuery, useSetActiveSpaceMutation } =
-  spacesApi;
+export const {
+  useGetMySpacesQuery,
+  useGetActiveSpaceQuery,
+  useSetActiveSpaceMutation,
+  useGetDefaultSpaceQuery,
+  useSetDefaultSpaceMutation,
+} = spacesApi;

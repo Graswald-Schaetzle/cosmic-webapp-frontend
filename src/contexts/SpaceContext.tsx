@@ -1,10 +1,12 @@
-import React, { createContext, useContext, useEffect, useCallback, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Space,
   useGetMySpacesQuery,
   useGetActiveSpaceQuery,
   useSetActiveSpaceMutation,
+  useGetDefaultSpaceQuery,
+  useSetDefaultSpaceMutation,
 } from '../api/spaces/spacesApi';
 import { setActiveSpace, clearActiveSpace } from '../store/spaceSlice';
 import { RootState } from '../store/store';
@@ -15,24 +17,11 @@ interface SpaceContextType {
   spaces: Space[];
   isLoading: boolean;
   switchSpace: (spaceId: number) => Promise<void>;
-  /** Space that is opened first after login / page load (starred in "My Spaces"). */
+  /** Space that is opened first after login / page load (starred in "My Spaces", stored in the backend). */
   defaultSpaceId: number | null;
   /** Star a space as the start space, or pass null to remove the star. */
   setDefaultSpace: (spaceId: number | null) => void;
 }
-
-const DEFAULT_SPACE_KEY_PREFIX = 'cosmic_default_space_';
-
-const readDefaultSpaceId = (userId: number | undefined): number | null => {
-  if (userId === undefined) return null;
-  try {
-    const raw = localStorage.getItem(DEFAULT_SPACE_KEY_PREFIX + userId);
-    const parsed = raw === null ? NaN : Number(raw);
-    return Number.isInteger(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
-};
 
 const SpaceContext = createContext<SpaceContextType>({
   activeSpace: null,
@@ -58,33 +47,21 @@ export function SpaceProvider({ children }: SpaceProviderProps) {
   const { data: serverActiveSpaceId, isLoading: activeSpaceLoading } = useGetActiveSpaceQuery();
   const [setActiveSpaceMutation] = useSetActiveSpaceMutation();
 
-  const userId = useSelector((state: RootState) => state.user.currentUser?.user_id);
-  const [defaultSpaceId, setDefaultSpaceId] = useState<number | null>(() =>
-    readDefaultSpaceId(userId)
-  );
+  const { data: defaultSpaceId = null, isLoading: defaultSpaceLoading } = useGetDefaultSpaceQuery();
+  const [setDefaultSpaceMutation] = useSetDefaultSpaceMutation();
   const initialResolved = useRef(false);
 
   const setDefaultSpace = useCallback(
     (spaceId: number | null) => {
-      setDefaultSpaceId(spaceId);
-      if (userId === undefined) return;
-      try {
-        if (spaceId === null) {
-          localStorage.removeItem(DEFAULT_SPACE_KEY_PREFIX + userId);
-        } else {
-          localStorage.setItem(DEFAULT_SPACE_KEY_PREFIX + userId, String(spaceId));
-        }
-      } catch {
-        // localStorage unavailable — the star only lasts for this session
-      }
+      setDefaultSpaceMutation(spaceId);
     },
-    [userId]
+    [setDefaultSpaceMutation]
   );
 
   // Resolve the start space once per session: starred default space, then the
   // space the server remembers as active, then the first space.
   useEffect(() => {
-    if (spacesLoading || activeSpaceLoading) return;
+    if (spacesLoading || activeSpaceLoading || defaultSpaceLoading) return;
     if (spaces.length === 0) {
       dispatch(clearActiveSpace());
       return;
@@ -113,6 +90,7 @@ export function SpaceProvider({ children }: SpaceProviderProps) {
     spaces,
     spacesLoading,
     activeSpaceLoading,
+    defaultSpaceLoading,
     serverActiveSpaceId,
     activeSpaceId,
     defaultSpaceId,
@@ -140,7 +118,7 @@ export function SpaceProvider({ children }: SpaceProviderProps) {
     [spaces, dispatch, setActiveSpaceMutation]
   );
 
-  const isLoading = spacesLoading || activeSpaceLoading;
+  const isLoading = spacesLoading || activeSpaceLoading || defaultSpaceLoading;
 
   return (
     <SpaceContext.Provider
