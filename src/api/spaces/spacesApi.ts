@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { getValidAccessToken } from '../../app/authToken';
 
 export interface SpaceLatestJob {
   job_id: number;
@@ -33,8 +34,8 @@ export const spacesApi = createApi({
   reducerPath: 'spacesApi',
   baseQuery: fetchBaseQuery({
     baseUrl: API_BASE_URL,
-    prepareHeaders: headers => {
-      const token = localStorage.getItem('access_token');
+    prepareHeaders: async headers => {
+      const token = await getValidAccessToken();
       if (token) {
         headers.set('Authorization', `Bearer ${token}`);
       }

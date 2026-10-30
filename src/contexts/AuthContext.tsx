@@ -10,6 +10,7 @@ import {
 } from '../store/locationsSlice';
 import { setCurrentUser, clearCurrentUser } from '../store/userSlice';
 import { RootState } from '../store/store';
+import { AUTH_EXPIRED_EVENT } from '../app/authToken';
 
 interface CurrentUser {
   user_id: number;
@@ -146,6 +147,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     dispatch(clearCurrentUser());
     dispatch(clearLocations());
   };
+
+  // Session can no longer be renewed (refresh token expired or invalid) — back to the login form
+  useEffect(() => {
+    window.addEventListener(AUTH_EXPIRED_EVENT, logout);
+    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, logout);
+  });
 
   return (
     <AuthContext.Provider

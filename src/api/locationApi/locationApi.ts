@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { getValidAccessToken } from '../../app/authToken';
 
 // Types for the location API response
 export interface LocationPosition {
@@ -149,8 +150,8 @@ export const locationApi = createApi({
   reducerPath: 'locationApi',
   baseQuery: fetchBaseQuery({
     baseUrl: API_BASE_URL,
-    prepareHeaders: headers => {
-      const token = localStorage.getItem('access_token');
+    prepareHeaders: async headers => {
+      const token = await getValidAccessToken();
       if (token) {
         headers.set('Authorization', `Bearer ${token}`);
       }

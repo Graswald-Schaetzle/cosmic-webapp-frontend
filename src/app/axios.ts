@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getValidAccessToken } from './authToken';
 
 const API_URL = (
   import.meta.env.VITE_API_BASE_URL || 'https://cosmic-backend-701520654148.europe-west4.run.app'
@@ -15,9 +16,9 @@ const axiosInstance = axios.create({
 
 // Request interceptor
 axiosInstance.interceptors.request.use(
-  config => {
-    // Add auth token if available
-    const token = localStorage.getItem('access_token');
+  async config => {
+    // Add auth token if available (renewed first when expired)
+    const token = await getValidAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

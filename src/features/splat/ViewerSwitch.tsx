@@ -30,7 +30,7 @@ const readChoice = (spaceId: number): Viewer | null => {
  * with a switch. Spaces without a splat behave exactly as they did.
  */
 export function ViewerSwitch({ children }: { children?: ReactNode }) {
-  const { activeSpace } = useSpace();
+  const { activeSpace, spaces, isLoading } = useSpace();
   const splat = hasSplat(activeSpace);
   const matterport = Boolean(activeSpace?.matterport_model_id);
   const both = splat && matterport;
@@ -54,9 +54,25 @@ export function ViewerSwitch({ children }: { children?: ReactNode }) {
     }
   };
 
+  // The start space is still being resolved: show a loader instead of flashing the Matterport fallback
+  const resolving = isLoading || (spaces.length > 0 && !activeSpace);
+
   return (
     <>
-      {viewer === 'splat' && activeSpace ? (
+      {resolving ? (
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#0a0a0a',
+          }}
+        >
+          <CircularProgress sx={{ color: '#fff' }} />
+        </Box>
+      ) : viewer === 'splat' && activeSpace ? (
         <Suspense
           fallback={
             <Box
