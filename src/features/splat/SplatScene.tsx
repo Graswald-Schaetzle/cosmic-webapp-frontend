@@ -10,21 +10,27 @@ import {
   SplatEditSdf,
   SplatEditSdfType,
   SplatMesh,
-  SplatFileType,
 } from '@sparkjsdev/spark';
 import { LocationItem } from '../../api/locationApi/locationApi';
 import { SplatView } from '../../api/reconstruction/reconstructionApi';
+import type { SpaceRooms } from '../../api/spaces/spacesApi';
 import { SpaceFrame, applyPlacementTo, placementToMatrix, resolvePlacement } from './spaceFrame';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { FloorPlanMap, MapPose, MapTag } from './FloorPlanMap';
 import { FloorPlan, buildFloorPlan } from './floorPlan';
 import { ObjectSegment, segmentContains, segmentObjectAt, segmentVolume } from './objectSegment';
 import { SpaceMinimap } from './minimapImage';
+import { MultiRoomController, MultiRoomStatus } from './multiRoomController';
+import { RoomSwitcher } from './RoomSwitcher';
+import { RoomEntryPose, chooseStartRoom, hasViewableRooms } from './roomLayout';
+import { createRoomSplatUnit } from './roomSplat';
+import { getSplatFileType } from './splatFileType';
 import { VirtualJoystick } from './VirtualJoystick';
 import { WalkControls } from './WalkControls';
 import { planTagApproach } from './tagApproach';
 import {
   Collider,
+  DEFAULT_WALK_PARAMS,
   createCollider,
   findStartSpot,
   floorHeightBelow,
@@ -55,6 +61,10 @@ const GLOW_SOFT_EDGE = 0.1;
 const GLOW_SPEED = 14;
 /** A tag further than this from the collision mesh gets no object, it keeps its marker. */
 const SEGMENT_MAX_SNAP = 0.3;
+/** Multi-room spaces without a collision mesh: a tap walks to the floor spot up to this far away. */
+const FLOOR_TAP_MAX_M = 15;
+/** Per second; how fast the camera follows the floor of a room that has a collision mesh. */
+const FLOOR_FOLLOW_SPEED = 10;
 
 export type ViewMode = 'walk' | 'orbit';
 
@@ -70,23 +80,7 @@ export type ViewMode = 'walk' | 'orbit';
  */
 export type LookState = 'free' | 'look' | 'menu';
 
-// Signed download URLs carry a query string (?X-Goog-Signature=...), so the file extension has
-// to be read from the URL path. Unknown extensions are left to Spark's content detection.
-export const getSplatFileType = (url: string): SplatFileType | undefined => {
-  let path = url;
-  try {
-    path = new URL(url, window.location.href).pathname;
-  } catch {
-    // keep the raw string
-  }
-  path = path.toLowerCase();
-  if (path.endsWith('.spz')) return SplatFileType.SPZ;
-  if (path.endsWith('.ply')) return SplatFileType.PLY;
-  if (path.endsWith('.ksplat')) return SplatFileType.KSPLAT;
-  if (path.endsWith('.splat')) return SplatFileType.SPLAT;
-  if (path.endsWith('.sog')) return SplatFileType.PCSOGSZIP;
-  return undefined;
-};
+export { getSplatFileType };
 
 const TAG_COLORS = { room: '#FFA600', object: '#3380FF' } as const;
 const CALIBRATION_COLOR = '#00D26A';
@@ -121,7 +115,8 @@ interface Marker {
 }
 
 interface SplatSceneProps {
-  splatUrl: string;
+  /** The space's single splat. Not used when `rooms` has rooms to show. */
+  splatUrl?: string | null;
   /** Optional low-poly collision mesh (glb). Without it the camera flies through walls. */
   collisionUrl?: string | null;
   /** Rotate the splat 180 degrees about X (for scenes exported upside down). */
@@ -142,6 +137,17 @@ interface SplatSceneProps {
   /** Called when the user right-clicks a spot of the model (the crosshair spot while looking). */
   onPlaceTag?: (position: { x: number; y: number; z: number }) => void;
   onLoadingChange?: (loading: boolean) => void;
+  /**
+   * Multi-room mode: when the space has at least one room with a finished splat, the scene is
+   * made of one splat per room instead of `splatUrl`. The start room loads first, every other
+   * room when the camera comes to the door to it (see roomLayout.ts and MultiRoomController).
+   * Room captures have no collision mesh yet, so the features that need one (minimap, tag
+   * placing, calibration, tag objects) are off in this mode and walking keeps a fixed eye height.
+   * Without viewable rooms (`rooms: []`, the spaces in production) nothing changes.
+   */
+  rooms?: SpaceRooms | null;
+  /** Sets the space's start room from the room switcher; null is the automatic one. */
+  onSetStartRoom?: (roomId: number | null) => Promise<unknown>;
 }
 
 export const SplatScene = ({
@@ -156,8 +162,21 @@ export const SplatScene = ({
   onTagClick,
   onPlaceTag,
   onLoadingChange,
+  rooms,
+  onSetStartRoom,
 }: SplatSceneProps) => {
   const isMobile = useIsMobile();
+  const isMulti = hasViewableRooms(rooms);
+  const isMultiRef = useRef(isMulti);
+  isMultiRef.current = isMulti;
+  const roomsRef = useRef(rooms);
+  roomsRef.current = rooms;
+  const controllerRef = useRef<MultiRoomController | null>(null);
+  const jumpToRoomRef = useRef<((roomId: number) => void) | null>(null);
+  // In a room without a frame the space's tags do not belong to what is shown.
+  const tagsHiddenRef = useRef(false);
+  const [roomStatus, setRoomStatus] = useState<MultiRoomStatus | null>(null);
+  const [roomError, setRoomError] = useState<string | null>(null);
   const mouseLookRef = useRef(!isMobile);
   mouseLookRef.current = !isMobile;
   const placement = useMemo(() => resolvePlacement(frame, view), [frame, view]);
@@ -206,7 +225,8 @@ export const SplatScene = ({
       orbit.enabled = false;
       walk.enabled = true;
       walk.syncFromCamera();
-      walk.placeAt(camera.position);
+      // Multi-room mode walks at a fixed eye height; the camera already is where the eyes are.
+      if (!isMultiRef.current) walk.placeAt(camera.position);
       camera.up.set(0, 1, 0);
     } else {
       walk.exitLock();
@@ -222,9 +242,10 @@ export const SplatScene = ({
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || !splatUrl) return;
+    if (!container || (!splatUrl && !isMulti)) return;
 
     let cancelled = false;
+    let controller: MultiRoomController | null = null;
     setIsLoading(true);
     setError(null);
     setHasCollider(false);
@@ -270,6 +291,16 @@ export const SplatScene = ({
       if (!colliderRef.current) return null;
       const ray = pointerToRay(clientX, clientY);
       return raycastCollider(colliderRef.current, ray.origin, ray.direction);
+    };
+
+    /** Multi-room mode without a collision mesh: the spot on the floor plane the walker is on. */
+    const pickFloorPlane = (clientX: number, clientY: number): THREE.Vector3 | null => {
+      const ray = pointerToRay(clientX, clientY);
+      if (ray.direction.y > -0.05) return null;
+      const t = (walk.walker.position.y - ray.origin.y) / ray.direction.y;
+      return t > 0 && t <= FLOOR_TAP_MAX_M
+        ? ray.origin.clone().addScaledVector(ray.direction, t)
+        : null;
     };
 
     const projectToClient = (point: THREE.Vector3) => {
@@ -388,7 +419,8 @@ export const SplatScene = ({
           return;
         }
         // Touch: walk to the tapped spot.
-        const point = pickPoint(clientX, clientY);
+        const point =
+          pickPoint(clientX, clientY) ?? (controller ? pickFloorPlane(clientX, clientY) : null);
         if (point) walk.walkTo(point);
       }
     };
@@ -578,102 +610,170 @@ export const SplatScene = ({
 
     const spark = new SparkRenderer({ renderer });
     scene.add(spark);
-    const splat = new SplatMesh({ url: splatUrl, fileType: getSplatFileType(splatUrl) });
-    applyPlacementTo(splat, placementRef.current);
-    splatRef.current = splat;
-    scene.add(splat);
-
-    const collisionPromise: Promise<Collider | null> = collisionUrl
-      ? new GLTFLoader()
-          .loadAsync(collisionUrl)
-          .then(gltf => {
-            // The collision mesh shares the splat's source frame, so it gets the same placement.
-            applyPlacementTo(gltf.scene, placementRef.current);
-            colliderSourceRef.current = gltf.scene;
-            colliderPlacementRef.current = placementRef.current;
-            return createCollider(gltf.scene);
+    let splat: SplatMesh | null = null;
+    if (isMulti) {
+      // One splat per room, loaded lazily. CAVEAT: whether Echo-3 returns splats in the capture
+      // coordinates is unverified, so room frames are estimates and rooms may overlap; the
+      // controller only ever shows the current room and the neighbours at a nearby door.
+      const placeInRoom = (pose: RoomEntryPose) => {
+        camera.position.set(pose.feet.x, pose.feet.y + DEFAULT_WALK_PARAMS.eyeHeight, pose.feet.z);
+        camera.quaternion.setFromEuler(new THREE.Euler(0, pose.yaw ?? walk.yaw, 0, 'YXZ'));
+        applyMode('walk');
+      };
+      controller = new MultiRoomController(
+        (room, matrix) => createRoomSplatUnit(scene, room, matrix),
+        status => {
+          if (!cancelled) setRoomStatus(status);
+        }
+      );
+      controllerRef.current = controller;
+      const rooms = controller;
+      if (roomsRef.current) rooms.setData(roomsRef.current, placementRef.current);
+      let jumps = 0;
+      jumpToRoomRef.current = roomId => {
+        const jump = ++jumps;
+        setRoomError(null);
+        rooms
+          .enter(roomId)
+          .then(pose => {
+            if (cancelled) return;
+            setError(null);
+            placeInRoom(pose);
           })
           .catch(err => {
-            console.warn('Collision mesh unavailable, walking without collision:', err);
-            return null;
-          })
-      : Promise.resolve(null);
+            // A newer jump took over; that one reports for itself.
+            if (cancelled || jump !== jumps) return;
+            console.warn('Room change failed:', err);
+            setRoomError('Der Raum konnte nicht geladen werden.');
+          });
+      };
 
-    Promise.all([splat.initialized, collisionPromise])
-      .then(([, loadedCollider]) => {
-        if (cancelled) return;
-        colliderRef.current = loadedCollider;
-        walk.collider = loadedCollider;
-        setHasCollider(Boolean(loadedCollider));
+      const startRoomId = chooseStartRoom(roomsRef.current);
+      (startRoomId === null
+        ? Promise.reject(new Error('Kein Raum verfügbar'))
+        : rooms.enter(startRoomId, null)
+      )
+        .then(pose => {
+          if (cancelled) return;
+          placeInRoom(pose);
+          if (new URLSearchParams(window.location.search).has('splatdebug')) {
+            (window as unknown as Record<string, unknown>).__splat = {
+              camera,
+              walk,
+              scene,
+              getMode: () => modeRef.current,
+              rooms,
+              jumpToRoom: (roomId: number) => jumpToRoomRef.current?.(roomId),
+            };
+          }
+          setIsLoading(false);
+          callbacks.current.onLoadingChange?.(false);
+        })
+        .catch(err => {
+          if (cancelled) return;
+          setError(err instanceof Error ? err.message : 'Fehler beim Laden der 3D-Szene');
+          setIsLoading(false);
+          callbacks.current.onLoadingChange?.(false);
+        });
+    } else if (splatUrl) {
+      splat = new SplatMesh({ url: splatUrl, fileType: getSplatFileType(splatUrl) });
+      const single = splat;
+      applyPlacementTo(single, placementRef.current);
+      splatRef.current = single;
+      scene.add(single);
 
-        const box = splat.getBoundingBox(true);
-        const center = box
-          .getCenter(new THREE.Vector3())
-          .applyMatrix4(placementToMatrix(placementRef.current));
-        const radius = Math.max(
-          (box.getSize(new THREE.Vector3()).length() / 2) * placementRef.current.scale,
-          0.5
-        );
-        const start = viewRef.current?.start;
-        const startTarget = start ? new THREE.Vector3(...start.target) : null;
-        const spot = loadedCollider && !start ? findStartSpot(loadedCollider) : null;
-        if (start && startTarget) {
-          camera.position.set(...start.position);
-          camera.lookAt(startTarget);
-          orbit.target.copy(startTarget);
-          if (loadedCollider) {
+      const collisionPromise: Promise<Collider | null> = collisionUrl
+        ? new GLTFLoader()
+            .loadAsync(collisionUrl)
+            .then(gltf => {
+              // The collision mesh shares the splat's source frame, so it gets the same placement.
+              applyPlacementTo(gltf.scene, placementRef.current);
+              colliderSourceRef.current = gltf.scene;
+              colliderPlacementRef.current = placementRef.current;
+              return createCollider(gltf.scene);
+            })
+            .catch(err => {
+              console.warn('Collision mesh unavailable, walking without collision:', err);
+              return null;
+            })
+        : Promise.resolve(null);
+
+      Promise.all([single.initialized, collisionPromise])
+        .then(([, loadedCollider]) => {
+          if (cancelled) return;
+          colliderRef.current = loadedCollider;
+          walk.collider = loadedCollider;
+          setHasCollider(Boolean(loadedCollider));
+
+          const box = single.getBoundingBox(true);
+          const center = box
+            .getCenter(new THREE.Vector3())
+            .applyMatrix4(placementToMatrix(placementRef.current));
+          const radius = Math.max(
+            (box.getSize(new THREE.Vector3()).length() / 2) * placementRef.current.scale,
+            0.5
+          );
+          const start = viewRef.current?.start;
+          const startTarget = start ? new THREE.Vector3(...start.target) : null;
+          const spot = loadedCollider && !start ? findStartSpot(loadedCollider) : null;
+          if (start && startTarget) {
+            camera.position.set(...start.position);
+            camera.lookAt(startTarget);
+            orbit.target.copy(startTarget);
+            if (loadedCollider) {
+              applyMode('walk');
+            } else {
+              orbit.update();
+              applyMode('orbit');
+            }
+          } else if (spot && loadedCollider) {
+            camera.position.set(spot.x, spot.y + 1.6, spot.z);
+            walk.syncFromCamera();
+            walk.yaw = mostOpenYaw(loadedCollider, camera.position);
+            camera.quaternion.setFromEuler(new THREE.Euler(0, walk.yaw, 0, 'YXZ'));
+            orbit.target.copy(center);
             applyMode('walk');
           } else {
+            orbit.target.copy(center);
+            camera.position.copy(center).add(new THREE.Vector3(0, radius * 0.6, radius * 1.6));
+            camera.far = radius * 100;
+            camera.updateProjectionMatrix();
             orbit.update();
             applyMode('orbit');
           }
-        } else if (spot && loadedCollider) {
-          camera.position.set(spot.x, spot.y + 1.6, spot.z);
-          walk.syncFromCamera();
-          walk.yaw = mostOpenYaw(loadedCollider, camera.position);
-          camera.quaternion.setFromEuler(new THREE.Euler(0, walk.yaw, 0, 'YXZ'));
-          orbit.target.copy(center);
-          applyMode('walk');
-        } else {
-          orbit.target.copy(center);
-          camera.position.copy(center).add(new THREE.Vector3(0, radius * 0.6, radius * 1.6));
-          camera.far = radius * 100;
-          camera.updateProjectionMatrix();
-          orbit.update();
-          applyMode('orbit');
-        }
-        if (new URLSearchParams(window.location.search).has('splatdebug')) {
-          (window as unknown as Record<string, unknown>).__splat = {
-            camera,
-            walk,
-            scene,
-            getMode: () => modeRef.current,
-            pickPoint,
-            markers: () =>
-              markersRef.current.map(m => ({
-                id: m.location.location_id,
-                visible: m.visible,
-                segmented: m.segmented,
-              })),
-            segments: () =>
-              [...segmentsRef.current].map(([id, s]) => ({
-                id,
-                method: s.method,
-                center: s.center.toArray(),
-                size: s.halfExtents.toArray().map(v => 2 * v),
-              })),
-            hovered: () => hoveredIdRef.current,
-          };
-        }
-        setIsLoading(false);
-        callbacks.current.onLoadingChange?.(false);
-      })
-      .catch(err => {
-        if (cancelled) return;
-        setError(err instanceof Error ? err.message : 'Fehler beim Laden der 3D-Szene');
-        setIsLoading(false);
-        callbacks.current.onLoadingChange?.(false);
-      });
+          if (new URLSearchParams(window.location.search).has('splatdebug')) {
+            (window as unknown as Record<string, unknown>).__splat = {
+              camera,
+              walk,
+              scene,
+              getMode: () => modeRef.current,
+              pickPoint,
+              markers: () =>
+                markersRef.current.map(m => ({
+                  id: m.location.location_id,
+                  visible: m.visible,
+                  segmented: m.segmented,
+                })),
+              segments: () =>
+                [...segmentsRef.current].map(([id, s]) => ({
+                  id,
+                  method: s.method,
+                  center: s.center.toArray(),
+                  size: s.halfExtents.toArray().map(v => 2 * v),
+                })),
+              hovered: () => hoveredIdRef.current,
+            };
+          }
+          setIsLoading(false);
+          callbacks.current.onLoadingChange?.(false);
+        })
+        .catch(err => {
+          if (cancelled) return;
+          setError(err instanceof Error ? err.message : 'Fehler beim Laden der 3D-Szene');
+          setIsLoading(false);
+          callbacks.current.onLoadingChange?.(false);
+        });
+    }
 
     const resizeObserver = new ResizeObserver(() => {
       const { clientWidth: w, clientHeight: h } = container;
@@ -695,6 +795,26 @@ export const SplatScene = ({
       if (modeRef.current === 'walk') walk.update(dt);
       else orbit.update();
 
+      // Multi-room mode: track the room the camera is in and load the room behind a near door.
+      if (controller && modeRef.current === 'walk') {
+        const entered = controller.update(walk.walker.position);
+        const roomCollider = controller.collider;
+        // Used for picking and for hiding markers behind walls, not for blocking the way: the
+        // doors are closed in the captures, so a wall collider would lock the user in.
+        colliderRef.current = roomCollider;
+        if (roomCollider) {
+          const floor = walk.gliding ? null : floorHeightBelow(roomCollider, camera.position);
+          if (floor !== null) {
+            walk.walker.position.y +=
+              (floor - walk.walker.position.y) * (1 - Math.exp(-dt * FLOOR_FOLLOW_SPEED));
+          }
+        } else if (entered && entered.floorY !== null) {
+          // No mesh to stand on: take the floor height of the door that was walked through.
+          walk.walker.position.y = entered.floorY;
+        }
+        tagsHiddenRef.current = controller.isolated;
+      }
+
       camera.getWorldDirection(forward);
       pose.x = camera.position.x;
       pose.z = camera.position.z;
@@ -705,7 +825,7 @@ export const SplatScene = ({
 
       // Hide markers that are behind walls, and those whose tag shows as its object instead.
       for (const marker of markersRef.current) {
-        let visible = !marker.segmented;
+        let visible = !marker.segmented && !tagsHiddenRef.current;
         const collider = colliderRef.current;
         if (visible && collider) {
           toMarker.subVectors(marker.sprite.position, camera.position);
@@ -799,8 +919,14 @@ export const SplatScene = ({
       sceneRef.current = null;
       walkRef.current = null;
       orbitRef.current = null;
-      scene.remove(splat);
-      splat.dispose();
+      if (splat) {
+        scene.remove(splat);
+        splat.dispose();
+      }
+      controller?.dispose();
+      controllerRef.current = null;
+      jumpToRoomRef.current = null;
+      tagsHiddenRef.current = false;
       scene.remove(spark);
       spark.dispose();
       renderer.dispose();
@@ -809,7 +935,19 @@ export const SplatScene = ({
         delete (window as unknown as Record<string, unknown>).__splat;
       }
     };
-  }, [splatUrl, collisionUrl, applyMode]);
+  }, [splatUrl, collisionUrl, applyMode, isMulti]);
+
+  // Multi-room mode: new room data (a room was captured again, the start room or a frame
+  // changed) or a new placement of the space moves or replaces single rooms; the scene stays.
+  useEffect(() => {
+    if (rooms) controllerRef.current?.setData(rooms, placement);
+  }, [rooms, placement]);
+
+  useEffect(() => {
+    if (!roomError) return;
+    const timer = setTimeout(() => setRoomError(null), 6000);
+    return () => clearTimeout(timer);
+  }, [roomError]);
 
   // Keep the splat and its collision mesh at the space's placement. A calibration changes it
   // without reloading the files; only the collider's BVH is rebuilt. Splats exported from some
@@ -876,6 +1014,19 @@ export const SplatScene = ({
         })),
     [tags]
   );
+
+  // Multi-room mode: what the hint shows while rooms are fetched.
+  const loadingRoomNames = useMemo(() => {
+    if (!isMulti || !roomStatus?.loadingRoomIds.length) return [];
+    return roomStatus.loadingRoomIds.map(
+      id => rooms?.rooms.find(room => room.room_id === id)?.name ?? 'Raum'
+    );
+  }, [isMulti, roomStatus, rooms]);
+  const walkHint = isMulti
+    ? isMobile
+      ? 'Stick: gehen · Wischen: umsehen · Tippen: hingehen · Durch eine Tür gehen oder unten rechts einen Raum wählen'
+      : 'WASD: gehen (Shift: rennen) · C: ducken · Z: liegen · Maus: umsehen · Klick auf Tag: hinfliegen und öffnen · Rechtsklick halten: Menüs · Esc: Maus freigeben · Durch eine Tür gehen oder unten rechts einen Raum wählen'
+    : null;
 
   // Calibrating happens from the outside: orbit view, no walking, no tag placing.
   const isCalibrating = Boolean(calibration);
@@ -951,7 +1102,8 @@ export const SplatScene = ({
     segmentsRef.current = new Map();
     for (const marker of markersRef.current) marker.segmented = false;
     const collider = colliderRef.current;
-    if (isLoading || !collider) return;
+    // Not in multi-room mode: the mesh there is the current room's and changes while walking.
+    if (isLoading || !collider || isMulti) return;
 
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -978,7 +1130,7 @@ export const SplatScene = ({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [tags, isLoading, placement]);
+  }, [tags, isLoading, placement, isMulti]);
 
   // The app's menus follow the mouse look state through the document (see LookState).
   useEffect(() => {
@@ -1158,6 +1310,50 @@ export const SplatScene = ({
         />
       )}
 
+      {isMulti && rooms && !isLoading && !isCalibrating && (
+        <RoomSwitcher
+          data={rooms}
+          status={roomStatus}
+          onJump={roomId => jumpToRoomRef.current?.(roomId)}
+          onSetStartRoom={onSetStartRoom}
+        />
+      )}
+
+      {isMulti && !isLoading && (loadingRoomNames.length > 0 || roomError) && (
+        <Box
+          className="cosmic-hud"
+          role="status"
+          data-testid="room-loading-hint"
+          sx={{
+            position: 'absolute',
+            // Where the minimap is in single-splat mode; on phones below the control hint.
+            ...(isMobile ? { top: 116, left: '50%', transform: 'translateX(-50%)' } : {}),
+            ...(isMobile ? {} : { left: 16, bottom: 24 }),
+            zIndex: 20,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            px: 2,
+            py: 0.75,
+            maxWidth: 'calc(100% - 32px)',
+            borderRadius: '16px',
+            backgroundColor: 'rgba(46, 46, 46, 0.6)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            color: roomError ? '#FF6B6B' : 'rgba(255,255,255,0.85)',
+            fontSize: 12,
+            pointerEvents: 'none',
+          }}
+        >
+          {roomError ?? (
+            <>
+              <CircularProgress size={12} sx={{ color: '#FFFFFF', flexShrink: 0 }} />
+              {`${loadingRoomNames.join(', ')} wird geladen …`}
+            </>
+          )}
+        </Box>
+      )}
+
       {!isLoading && !error && mode === 'walk' && isMobile && (
         <VirtualJoystick onChange={(x, y) => walkRef.current?.moveInput.set(x, y)} />
       )}
@@ -1213,9 +1409,11 @@ export const SplatScene = ({
         >
           {mode === 'orbit'
             ? 'Ziehen: drehen · Mausrad/Pinch: zoomen'
-            : isMobile
-              ? 'Stick: gehen · Wischen: umsehen · Tippen: hingehen · Lang tippen: Tag anlegen'
-              : `WASD: gehen (Shift: rennen) · Leertaste: springen · C: ducken · Z: liegen · Maus: umsehen · Klick auf Objekt: hinfliegen und Tag öffnen · Rechtsklick: Tag anlegen · Rechtsklick halten: Menüs · Esc: Maus freigeben${hasCollider ? '' : ' · ohne Kollision'}`}
+            : walkHint
+              ? walkHint
+              : isMobile
+                ? 'Stick: gehen · Wischen: umsehen · Tippen: hingehen · Lang tippen: Tag anlegen'
+                : `WASD: gehen (Shift: rennen) · Leertaste: springen · C: ducken · Z: liegen · Maus: umsehen · Klick auf Objekt: hinfliegen und Tag öffnen · Rechtsklick: Tag anlegen · Rechtsklick halten: Menüs · Esc: Maus freigeben${hasCollider ? '' : ' · ohne Kollision'}`}
         </Typography>
       )}
     </Box>

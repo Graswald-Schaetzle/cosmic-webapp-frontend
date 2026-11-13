@@ -20,9 +20,43 @@ mit Kalibrierung und ein Start-Space pro Nutzer.
   Alle weiteren Räume werden **nachgeladen, sobald man an der Tür bzw. Schwelle zum nächsten Raum steht oder ihn betritt**, nicht alle auf einmal.
 - Ausrichtung der Räume: Der Nutzer markiert in der iOS-App die Tür zum nächsten Raum und startet dort direkt hinter der Tür.
   Das ergibt eine grobe Zuordnung des Übergangs, auch wenn das ARKit-Tracking abreißt (Details: `cosmic-ios/docs/echo3-capture-plan.md`).
-- Stand im Code: Der Viewer (`SplatScene`, Props `splatUrl`/`collisionUrl`) kann bisher nur **einen** Splat pro Space anzeigen und muss dafür umgebaut werden.
-  Im Backend gibt es `room_connections` (Türverknüpfungen) und `reconstruction_jobs.room_frame` (Lage eines Raums im Space), die noch kein Endpunkt befüllt.
-  Wie die Räume zueinander ausgerichtet werden, hängt davon ab, in welchem Koordinatensystem Echo-3 die Splats zurückgibt (noch ungeklärt).
+- Stand im Code (Viewer, Schritt 5 des Plans, umgesetzt; mit echten Mehrraum-Daten noch nicht geprüft):
+  - **API** (`src/api/spaces/spacesApi.ts`): `getSpaceRooms` (`GET /spaces/:id/rooms`) und `setSpaceStartRoom`
+    (`PUT /spaces/:id/start-room`). Vertrag: `cosmic-backend/docs/multi-room-spaces.md`.
+  - **Umschaltung** (`SplatBackground`): Hat der Space mindestens einen Raum mit Status `completed` und Splat, läuft der
+    Mehrraum-Modus (`SplatScene`-Prop `rooms`). Sonst (`rooms: []`, Anfrage fehlgeschlagen) gilt unverändert der
+    Ein-Splat-Weg über `latest_job` und `GET /reconstruction-jobs/:id/output`. Die Szene startet erst, wenn die Raum-Anfrage
+    beantwortet ist. `space_frame` kommt im Mehrraum-Modus aus dem Job-Output des Startraums.
+    `ViewerSwitch` zeigt den Splat-Viewer auch dann, wenn nur Räume (kein fertiger `latest_job`) vorhanden sind.
+  - **Reine Logik mit Tests** (`src/features/splat/roomLayout.ts`): Raum-Matrix = Space-Platzierung ∘ `room_frame`, Türen in den
+    Space-Frame, aktueller Raum, Lade-/Sichtbarkeitsmenge, Startraum, Einstiegsposition.
+    `multiRoomController.ts` wendet das auf die Raum-Einheiten an, `roomSplat.ts` ist eine Einheit (eigenes `SplatMesh`
+    plus optionales Kollisionsmesh), `RoomSwitcher.tsx` die Raumliste.
+  - **Laden**: Startraum zuerst. Ein Nachbarraum lädt, sobald die Kamera höchstens 1,5 m (horizontal) von der Türschwelle
+    entfernt ist und die Schwelle ungefähr auf Fußhöhe liegt (±1,2 m). Nie alle Räume auf einmal.
+  - **Aktueller Raum**: Wechsel, wenn die Kamera mehr als 0,3 m hinter der Türebene steht (Türposition + Normale, seitlich
+    Türbreite/2 + 0,6 m); zurück erst 0,3 m auf der anderen Seite. Ersatz ohne Tür (man kann durch Wände gehen): Ist die Kamera
+    mehr als 0,5 m außerhalb der Bounding-Box des aktuellen Raums, gewinnt der geladene Raum, dessen Box sie enthält, sonst
+    der Raum hinter der nächsten durchschrittenen Tür (bis 4 m).
+  - **Speicher**: Im Speicher bleiben der aktuelle Raum und seine bereits geladenen direkten Nachbarn (höchstens 4 Räume;
+    darüber fliegen die Nachbarn mit den entferntesten Türen raus, aber nur jenseits von 3 m). Räume, die zwei Türen entfernt
+    sind, werden entsorgt (`SplatMesh.dispose()`). Angezeigt werden nur der aktuelle Raum und Nachbarn, deren Tür höchstens
+    3 m entfernt ist.
+  - **Neuaufnahme**: Eine Einheit hängt an der `job_id` des Raums. Ändert sie sich, wird nur dieser Raum ersetzt.
+    Solange ein Raum `processing` ist, wird die Raumliste alle 30 s neu abgefragt.
+  - **Raumliste** (Pille unten rechts, Glas-HUD): Räume nach Stockwerk, Tippen springt in den Raum (Einstieg 1,8 m hinter der
+    Eingangstür, sonst Mitte des Splats). Stern = „Als Startraum festlegen“, darunter „Startraum automatisch wählen“.
+    Räume mit `processing`/`failed` sind deaktiviert. Räume ohne `room_frame` („Nicht ausgerichtet“) werden allein gezeigt,
+    solange man darin ist; die Tags des Spaces sind dort ausgeblendet.
+  - **Ohne Kollisionsmesh** (bei Raum-Aufnahmen bisher immer): Gehen auf fester Augenhöhe (1,6 m über der Türschwelle), keine
+    Wände. Minimap, Kalibrieren, Tag-Anlegen per Rechtsklick/Langdruck und Tag-Objekte sind im Mehrraum-Modus aus;
+    vorhandene Tags werden als Marker gezeigt. Hat ein Raum ein `collision_url`, dient das Mesh für Bodenhöhe, Tag-Anlegen und
+    das Verdecken von Markern, aber nicht als Wand (die Türen sind in den Aufnahmen geschlossen).
+  - **Vorbehalt**: Ob Echo-3 die Splats in den Capture-Koordinaten zurückgibt, ist ungeklärt. `room_frame` aus Türen ist
+    deshalb eine Schätzung; Räume können sich überlappen oder Lücken haben. Der Viewer rechnet damit (nur nahe Nachbarn
+    sichtbar, kein Raumwechsel innerhalb der eigenen Box, Raumliste als Ausweg), sieht dann aber nicht richtig aus.
+  - Offen: Feinausrichtung der Räume, Kollisionsmeshes für Raum-Aufnahmen, Minimap über mehrere Räume, Treppen (ohne Mesh
+    wechselt man das Stockwerk nur über die Raumliste), `SpaceViewerWindow`/`LazySplatViewer` zeigen weiter nur einen Splat.
 
 ## Repos (GitHub-Organisation `Graswald-Schaetzle`)
 | Repo | Inhalt |

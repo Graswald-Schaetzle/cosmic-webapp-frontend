@@ -1,7 +1,8 @@
 import { ReactNode, Suspense, lazy, useEffect, useState } from 'react';
 import { Box, CircularProgress, ToggleButton, ToggleButtonGroup } from '@mui/material';
-import { Space } from '../../api/spaces/spacesApi';
+import { Space, useGetSpaceRoomsQuery } from '../../api/spaces/spacesApi';
 import { useSpace } from '../../contexts/SpaceContext';
+import { hasViewableRooms } from './roomAvailability';
 import Matterport from '../../Layouts/MatterportLayout/components/Matterport';
 // The splat renderer is large; only spaces that are shown as a splat ever download it.
 const SplatBackground = lazy(() =>
@@ -31,7 +32,14 @@ const readChoice = (spaceId: number): Viewer | null => {
  */
 export function ViewerSwitch({ children }: { children?: ReactNode }) {
   const { activeSpace, spaces, isLoading } = useSpace();
-  const splat = hasSplat(activeSpace);
+  // A multi-room space is a splat space as soon as one room has a finished splat, whatever the
+  // state of its latest job (which may be the capture of another room that is still processing).
+  // Until this has answered, and for spaces without room captures, `latest_job` decides alone.
+  const { data: rooms } = useGetSpaceRoomsQuery(activeSpace?.space_id ?? 0, {
+    skip: !activeSpace,
+  });
+  const splat =
+    hasSplat(activeSpace) || (rooms?.space_id === activeSpace?.space_id && hasViewableRooms(rooms));
   const matterport = Boolean(activeSpace?.matterport_model_id);
   const both = splat && matterport;
 

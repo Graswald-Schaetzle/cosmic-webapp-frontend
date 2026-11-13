@@ -2,7 +2,11 @@ import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import * as THREE from 'three';
 import { Box, Button, CircularProgress, Typography } from '@mui/material';
-import { Space } from '../../api/spaces/spacesApi';
+import {
+  Space,
+  useGetSpaceRoomsQuery,
+  useSetSpaceStartRoomMutation,
+} from '../../api/spaces/spacesApi';
 import { locationApi } from '../../api/locationApi/locationApi';
 import {
   useGetJobOutputQuery,
@@ -12,9 +16,13 @@ import { useMatterport } from '../../contexts/MatterportContext';
 import { RootState } from '../../store/store';
 import { openMatterTagWindow, openNewLocationWindow } from '../../store/modalSlice';
 import { CalibrationPanel, CalibrationStep } from './CalibrationPanel';
+import { chooseStartRoom, hasViewableRooms } from './roomLayout';
 import { SplatScene } from './SplatScene';
 import { SplatPlacement, resolvePlacement } from './spaceFrame';
 import { locationToTagPayload } from './tagPayload';
+
+/** While a room of the space is still being processed, the rooms are asked for again this often. */
+const ROOMS_POLL_MS = 30000;
 
 interface SplatBackgroundProps {
   space: Space;
@@ -25,16 +33,53 @@ interface SplatBackgroundProps {
 export function SplatBackground({ space, children }: SplatBackgroundProps) {
   const dispatch = useDispatch();
   const { setIsLoading } = useMatterport();
-  const jobId = space.latest_job?.job_id ?? null;
+  // Multi-room spaces: one splat per room (see cosmic-backend/docs/multi-room-spaces.md). The
+  // scene is only started once this has answered, so a multi-room space never starts as a
+  // single splat first. If the request fails (e.g. a backend without the endpoint), or the
+  // space has no room with a finished splat (`rooms: []`), the single-splat path below is used
+  // exactly as before.
+  const [processingRooms, setProcessingRooms] = useState(false);
+  const { data: rooms, isLoading: roomsLoading } = useGetSpaceRoomsQuery(space.space_id, {
+    pollingInterval: processingRooms ? ROOMS_POLL_MS : 0,
+  });
+  const hasProcessingRooms = Boolean(rooms?.rooms?.some(room => room.status === 'processing'));
+  useEffect(() => setProcessingRooms(hasProcessingRooms), [hasProcessingRooms]);
+  const multiRoom = hasViewableRooms(rooms);
+  const [setSpaceStartRoom] = useSetSpaceStartRoomMutation();
+  const setStartRoom = useCallback(
+    async (roomId: number | null) => {
+      try {
+        await setSpaceStartRoom({ spaceId: space.space_id, roomId }).unwrap();
+      } catch (err) {
+        const message = (err as { data?: { error?: string } })?.data?.error;
+        throw new Error(message ?? 'Speichern fehlgeschlagen');
+      }
+    },
+    [setSpaceStartRoom, space.space_id]
+  );
+
+  // The space frame and view come with a job's output. A multi-room space asks with the capture
+  // of its start room: `latest_job` may be a capture that is still being processed.
+  const startRoomJobId = useMemo(() => {
+    const startRoomId = chooseStartRoom(rooms);
+    return rooms?.rooms.find(room => room.room_id === startRoomId)?.job_id ?? null;
+  }, [rooms]);
+  const jobId = multiRoom ? startRoomJobId : (space.latest_job?.job_id ?? null);
   const {
     data: output,
-    isLoading,
+    isLoading: outputLoading,
     isError,
   } = useGetJobOutputQuery(jobId!, {
     skip: jobId === null,
   });
+  const isLoading = roomsLoading || outputLoading;
   const tags = useSelector((state: RootState) => state.locations.locations);
-  const splatUrl = output?.spz_url ?? output?.splat_url ?? output?.ply_url ?? null;
+  const singleSplatUrl = output?.spz_url ?? output?.splat_url ?? output?.ply_url ?? null;
+  // A multi-room scene starts once the space frame is known (or cannot be had): the rooms are
+  // placed with it. Any job of the space reports the same frame.
+  const multiRoomReady = multiRoom && (jobId === null || output !== undefined || isError);
+  // The single-splat scene waits for the rooms request, which runs alongside the output request.
+  const splatUrl = multiRoom || roomsLoading ? null : singleSplatUrl;
 
   const [setSpaceFrame] = useSetSpaceFrameMutation();
   const [calibrating, setCalibrating] = useState(false);
@@ -86,7 +131,18 @@ export function SplatBackground({ space, children }: SplatBackgroundProps) {
   return (
     <div className="relative w-full h-full" style={{ background: '#0a0a0a' }}>
       <div className="absolute inset-0">
-        {splatUrl ? (
+        {multiRoomReady && rooms ? (
+          <SplatScene
+            key="rooms"
+            rooms={rooms}
+            onSetStartRoom={setStartRoom}
+            view={output?.splat_view}
+            frame={output?.space_frame}
+            tags={tags}
+            onTagClick={location => dispatch(openMatterTagWindow(locationToTagPayload(location)))}
+            onPlaceTag={position => dispatch(openNewLocationWindow({ position, floorId: '' }))}
+          />
+        ) : splatUrl ? (
           <SplatScene
             key={splatUrl}
             splatUrl={splatUrl}
@@ -110,7 +166,7 @@ export function SplatBackground({ space, children }: SplatBackgroundProps) {
               gap: 2,
             }}
           >
-            {isLoading ? (
+            {isLoading || multiRoom ? (
               <CircularProgress sx={{ color: '#fff' }} />
             ) : (
               <Typography sx={{ color: isError ? '#FF6B6B' : '#aaa', fontSize: 14 }}>
@@ -122,7 +178,9 @@ export function SplatBackground({ space, children }: SplatBackgroundProps) {
           </Box>
         )}
       </div>
-      {output?.collision_url &&
+      {/* Calibrating needs the space's collision mesh; room captures have none yet. */}
+      {!multiRoom &&
+        output?.collision_url &&
         (calibrating ? (
           <CalibrationPanel
             placement={placement}
